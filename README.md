@@ -1,0 +1,3 @@
+﻿# Clash-of-clans
+
+Kingdoms: A mobile village strategy game inspired by Clash of Clans, developed with Unity 6 and URP.
