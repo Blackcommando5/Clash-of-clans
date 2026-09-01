@@ -3,3 +3,4 @@
 - [2026-09-01T11:42:15] Configure package manifest for URP and Input System
 - [2026-09-01T13:20:40] Pin Unity editor engine version to 6000.3.13f1
 - [2026-09-01T15:05:10] Setup base quality profiles and rendering layers
+- [2026-09-01T16:30:25] Document initial project architecture in README
