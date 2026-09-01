@@ -4,3 +4,4 @@
 - [2026-09-01T13:20:40] Pin Unity editor engine version to 6000.3.13f1
 - [2026-09-01T15:05:10] Setup base quality profiles and rendering layers
 - [2026-09-01T16:30:25] Document initial project architecture in README
+- [2026-09-01T18:15:00] Add project settings and mobile orientation rules
