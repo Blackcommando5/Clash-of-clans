@@ -5,3 +5,4 @@
 - [2026-09-01T15:05:10] Setup base quality profiles and rendering layers
 - [2026-09-01T16:30:25] Document initial project architecture in README
 - [2026-09-01T18:15:00] Add project settings and mobile orientation rules
+- [2026-09-02T09:15:20] Add input actions map for touch and mouse gestures
