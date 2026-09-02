@@ -4,3 +4,6 @@ Kingdoms: A mobile village strategy game inspired by Clash of Clans, developed w
 
 ## Architecture
 Modular architecture built on Unity 6 and URP.
+
+## Controls
+Supports multi-touch gestures and mouse input.
