@@ -12,3 +12,4 @@
 - [2026-09-02T17:10:30] Document input bindings and rendering dependencies
 - [2026-09-03T09:00:15] Import TextMesh Pro core resources and font assets
 - [2026-09-03T10:45:30] Create base ground material asset for village map
+- [2026-09-03T12:15:00] Add honey timber palette material for buildings
