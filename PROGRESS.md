@@ -14,3 +14,4 @@
 - [2026-09-03T10:45:30] Create base ground material asset for village map
 - [2026-09-03T12:15:00] Add honey timber palette material for buildings
 - [2026-09-03T14:00:20] Add dark timber material for structural elements
+- [2026-09-03T15:30:45] Add warm stone texture material for foundations
