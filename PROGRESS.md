@@ -15,3 +15,4 @@
 - [2026-09-03T12:15:00] Add honey timber palette material for buildings
 - [2026-09-03T14:00:20] Add dark timber material for structural elements
 - [2026-09-03T15:30:45] Add warm stone texture material for foundations
+- [2026-09-03T17:05:10] Add terracotta roof material for town hall styling
