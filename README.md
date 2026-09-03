@@ -7,3 +7,6 @@ Modular architecture built on Unity 6 and URP.
 
 ## Controls
 Supports multi-touch gestures and mouse input.
+
+## Visual Styling
+Handcrafted low-poly palette for mobile performance.
