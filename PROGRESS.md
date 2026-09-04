@@ -17,3 +17,4 @@
 - [2026-09-03T15:30:45] Add warm stone texture material for foundations
 - [2026-09-03T17:05:10] Add terracotta roof material for town hall styling
 - [2026-09-03T18:40:00] Document stylized village art palette in project doc
+- [2026-09-04T09:20:00] Implement custom URP village ground grid shader
