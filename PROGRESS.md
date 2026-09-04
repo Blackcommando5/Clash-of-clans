@@ -20,3 +20,4 @@
 - [2026-09-04T09:20:00] Implement custom URP village ground grid shader
 - [2026-09-04T11:10:30] Add procedural pine tree materials and cone mesh
 - [2026-09-04T13:00:15] Add shiny gold coin material for resource display
+- [2026-09-04T14:45:50] Create dynamic green and red placement indicator
