@@ -10,3 +10,6 @@ Supports multi-touch gestures and mouse input.
 
 ## Visual Styling
 Handcrafted low-poly palette for mobile performance.
+
+## Village Map
+120x120 world boundary with centered 44x44 grid.
