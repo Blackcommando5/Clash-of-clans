@@ -13,3 +13,5 @@ Handcrafted low-poly palette for mobile performance.
 
 ## Village Map
 120x120 world boundary with centered 44x44 grid.
+
+Smooth orthographic zoom clamped between 8 and 32 units.
