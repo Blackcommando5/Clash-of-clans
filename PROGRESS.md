@@ -25,3 +25,4 @@
 - [2026-09-04T18:00:00] Document 120x120 ground plane and 44x44 grid design
 - [2026-09-05T09:30:00] Create isometric village camera navigation system
 - [2026-09-05T11:15:20] Implement dual-touch pinch and mouse wheel zooming
+- [2026-09-05T13:00:40] Add exponential momentum decay and boundary bounds
