@@ -28,3 +28,4 @@
 - [2026-09-05T13:00:40] Add exponential momentum decay and boundary bounds
 - [2026-09-05T14:45:00] Prevent camera pan triggers while tapping UI buttons
 - [2026-09-05T16:30:15] Add camera setup guide and control specifications
+- [2026-09-05T18:10:00] Tune camera pan sensitivity for high DPI screens

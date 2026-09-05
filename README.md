@@ -19,3 +19,5 @@ Smooth orthographic zoom clamped between 8 and 32 units.
 Viewport frustum bounding prevents seeing past ground borders.
 
 Integrated GraphicRaycaster detection blocks world dragging.
+
+DPI adaptive panning ensures uniform feel across devices.
