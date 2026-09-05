@@ -17,3 +17,5 @@ Handcrafted low-poly palette for mobile performance.
 Smooth orthographic zoom clamped between 8 and 32 units.
 
 Viewport frustum bounding prevents seeing past ground borders.
+
+Integrated GraphicRaycaster detection blocks world dragging.
