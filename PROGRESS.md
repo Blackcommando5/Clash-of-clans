@@ -27,3 +27,4 @@
 - [2026-09-05T11:15:20] Implement dual-touch pinch and mouse wheel zooming
 - [2026-09-05T13:00:40] Add exponential momentum decay and boundary bounds
 - [2026-09-05T14:45:00] Prevent camera pan triggers while tapping UI buttons
+- [2026-09-05T16:30:15] Add camera setup guide and control specifications
