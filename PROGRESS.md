@@ -23,3 +23,4 @@
 - [2026-09-04T14:45:50] Create dynamic green and red placement indicator
 - [2026-09-04T16:20:10] Add utility materials and default readme descriptor
 - [2026-09-04T18:00:00] Document 120x120 ground plane and 44x44 grid design
+- [2026-09-05T09:30:00] Create isometric village camera navigation system
