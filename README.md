@@ -21,3 +21,5 @@ Viewport frustum bounding prevents seeing past ground borders.
 Integrated GraphicRaycaster detection blocks world dragging.
 
 DPI adaptive panning ensures uniform feel across devices.
+
+Safe area anchors support Android camera notches.
