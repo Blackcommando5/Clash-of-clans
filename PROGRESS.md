@@ -30,3 +30,4 @@
 - [2026-09-05T16:30:15] Add camera setup guide and control specifications
 - [2026-09-05T18:10:00] Tune camera pan sensitivity for high DPI screens
 - [2026-09-06T09:10:00] Create procedural rounded mesh UI panel generator
+- [2026-09-06T10:50:30] Add illustrated kingdoms splash screen artwork asset
