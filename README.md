@@ -27,3 +27,5 @@ Safe area anchors support Android camera notches.
 Rotating hint carousel displays tips during startup.
 
 0.0 - 0.9 scene stream progress mapped smoothly to 100%.
+
+CanvasGroup alpha fade smoothly reveals village.
