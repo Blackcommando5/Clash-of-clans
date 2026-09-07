@@ -38,3 +38,4 @@
 - [2026-09-06T19:00:20] Document welcome screen layout and transition flow
 - [2026-09-07T09:40:00] Implement asynchronous scene loading state machine
 - [2026-09-07T11:55:10] Add rotating gameplay hints during village load
+- [2026-09-07T14:10:30] Normalize asynchronous load progress to 100 percent
