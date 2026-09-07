@@ -23,3 +23,5 @@ Integrated GraphicRaycaster detection blocks world dragging.
 DPI adaptive panning ensures uniform feel across devices.
 
 Safe area anchors support Android camera notches.
+
+Rotating hint carousel displays tips during startup.
