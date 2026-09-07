@@ -40,3 +40,4 @@
 - [2026-09-07T11:55:10] Add rotating gameplay hints during village load
 - [2026-09-07T14:10:30] Normalize asynchronous load progress to 100 percent
 - [2026-09-07T16:25:00] Implement smooth canvas alpha fade-out transition
+- [2026-09-07T18:20:45] Document loading sequence and scene handoff in guide
