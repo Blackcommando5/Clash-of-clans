@@ -36,3 +36,4 @@
 - [2026-09-06T16:00:45] Implement mobile cutout safe area anchor scaling
 - [2026-09-06T17:30:00] Add high-resolution preview render of welcome UI
 - [2026-09-06T19:00:20] Document welcome screen layout and transition flow
+- [2026-09-07T09:40:00] Implement asynchronous scene loading state machine
