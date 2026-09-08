@@ -45,3 +45,4 @@
 - [2026-09-08T11:00:30] Build runtime Chief nameplate and onboarding modal
 - [2026-09-08T12:45:15] Adjust modal dialog position for mobile keyboard
 - [2026-09-08T14:30:00] Implement name confirmation dialog and edit fallback
+- [2026-09-08T16:15:40] Include visual preview of player naming popup dialog
