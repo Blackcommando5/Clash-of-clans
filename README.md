@@ -33,3 +33,5 @@ CanvasGroup alpha fade smoothly reveals village.
 Documented async transition pipeline.
 
 Virtual keyboard bounds shift dialog upward dynamically.
+
+Provides Chief confirmation step before commit.

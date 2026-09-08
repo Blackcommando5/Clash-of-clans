@@ -44,3 +44,4 @@
 - [2026-09-08T09:15:00] Add player profile model and name validation rules
 - [2026-09-08T11:00:30] Build runtime Chief nameplate and onboarding modal
 - [2026-09-08T12:45:15] Adjust modal dialog position for mobile keyboard
+- [2026-09-08T14:30:00] Implement name confirmation dialog and edit fallback
