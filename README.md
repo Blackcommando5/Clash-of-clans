@@ -31,3 +31,5 @@ Rotating hint carousel displays tips during startup.
 CanvasGroup alpha fade smoothly reveals village.
 
 Documented async transition pipeline.
+
+Virtual keyboard bounds shift dialog upward dynamically.

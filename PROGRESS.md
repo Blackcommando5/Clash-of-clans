@@ -43,3 +43,4 @@
 - [2026-09-07T18:20:45] Document loading sequence and scene handoff in guide
 - [2026-09-08T09:15:00] Add player profile model and name validation rules
 - [2026-09-08T11:00:30] Build runtime Chief nameplate and onboarding modal
+- [2026-09-08T12:45:15] Adjust modal dialog position for mobile keyboard
