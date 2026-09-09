@@ -49,3 +49,4 @@
 - [2026-09-08T18:00:00] Document first-time user onboarding specifications
 - [2026-09-09T09:00:00] Create village state data structure and building model
 - [2026-09-09T10:40:20] Implement grid collision and boundary placement checks
+- [2026-09-09T12:15:45] Add atomic village state persistence with rollback
