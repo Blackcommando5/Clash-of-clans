@@ -35,3 +35,5 @@ Documented async transition pipeline.
 Virtual keyboard bounds shift dialog upward dynamically.
 
 Provides Chief confirmation step before commit.
+
+Axis-aligned grid intersection prevents overlapping structures.
