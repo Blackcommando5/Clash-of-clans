@@ -53,3 +53,4 @@
 - [2026-09-09T14:00:10] Create 4x4 Town Hall starter building prefab asset
 - [2026-09-09T15:40:30] Create 3x3 Gold Mine production building prefab asset
 - [2026-09-09T17:15:00] Add decorative pine tree prefab for village border
+- [2026-09-09T18:50:20] Document building footprint dimensions and boundaries

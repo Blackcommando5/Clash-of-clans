@@ -39,3 +39,5 @@ Provides Chief confirmation step before commit.
 Axis-aligned grid intersection prevents overlapping structures.
 
 Atomic serialization prevents corrupted saves on write failures.
+
+Grid system uses 1 world unit per cell.
