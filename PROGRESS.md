@@ -60,3 +60,4 @@
 - [2026-09-10T13:30:40] Implement interactive grid placement with touch drag
 - [2026-09-10T15:00:10] Add gold generation accrual and one-tap collection
 - [2026-09-10T16:30:00] Assemble main playable village scene with hierarchy
+- [2026-09-10T17:45:20] Add visual renders of village gameplay and shop UI
