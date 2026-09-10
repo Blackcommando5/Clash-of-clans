@@ -56,3 +56,4 @@
 - [2026-09-09T18:50:20] Document building footprint dimensions and boundaries
 - [2026-09-10T09:10:00] Implement main village gameplay and HUD controller
 - [2026-09-10T10:30:15] Generate procedural forest border around village map
+- [2026-09-10T12:00:00] Build in-game shop dialog for purchasing gold mines

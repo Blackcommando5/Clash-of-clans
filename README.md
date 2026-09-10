@@ -43,3 +43,5 @@ Atomic serialization prevents corrupted saves on write failures.
 Grid system uses 1 world unit per cell.
 
 Deterministic random seed scatters 52 boundary pines.
+
+In-game shop cards display building stats and costs.
