@@ -54,3 +54,4 @@
 - [2026-09-09T15:40:30] Create 3x3 Gold Mine production building prefab asset
 - [2026-09-09T17:15:00] Add decorative pine tree prefab for village border
 - [2026-09-09T18:50:20] Document building footprint dimensions and boundaries
+- [2026-09-10T09:10:00] Implement main village gameplay and HUD controller
