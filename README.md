@@ -45,3 +45,5 @@ Grid system uses 1 world unit per cell.
 Deterministic random seed scatters 52 boundary pines.
 
 In-game shop cards display building stats and costs.
+
+Real-time raycast ground snapping with visual footprint.
