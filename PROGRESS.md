@@ -61,3 +61,4 @@
 - [2026-09-10T15:00:10] Add gold generation accrual and one-tap collection
 - [2026-09-10T16:30:00] Assemble main playable village scene with hierarchy
 - [2026-09-10T17:45:20] Add visual renders of village gameplay and shop UI
+- [2026-09-10T19:00:00] Document village economy specs and validation status

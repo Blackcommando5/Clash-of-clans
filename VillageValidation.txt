@@ -1,0 +1,1 @@
+PASS: state validation, overlap/bounds, resource cost, cancellation, production, offline cap, clock rollback, storage overflow, mine limit, corrupt-save preservation, name onboarding integration, EventSystem lifetime, camera lock/unlock, preview, purchase, collection and scene-reload persistence. Rendered village and shop with URP.
