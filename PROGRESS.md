@@ -58,3 +58,4 @@
 - [2026-09-10T10:30:15] Generate procedural forest border around village map
 - [2026-09-10T12:00:00] Build in-game shop dialog for purchasing gold mines
 - [2026-09-10T13:30:40] Implement interactive grid placement with touch drag
+- [2026-09-10T15:00:10] Add gold generation accrual and one-tap collection

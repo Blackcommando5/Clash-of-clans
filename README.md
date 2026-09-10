@@ -47,3 +47,5 @@ Deterministic random seed scatters 52 boundary pines.
 In-game shop cards display building stats and costs.
 
 Real-time raycast ground snapping with visual footprint.
+
+60 gold/min generation rate with 500 gold capacity.
