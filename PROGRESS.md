@@ -55,3 +55,4 @@
 - [2026-09-09T17:15:00] Add decorative pine tree prefab for village border
 - [2026-09-09T18:50:20] Document building footprint dimensions and boundaries
 - [2026-09-10T09:10:00] Implement main village gameplay and HUD controller
+- [2026-09-10T10:30:15] Generate procedural forest border around village map
