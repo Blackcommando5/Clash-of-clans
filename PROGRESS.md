@@ -63,3 +63,4 @@
 - [2026-09-10T17:45:20] Add visual renders of village gameplay and shop UI
 - [2026-09-10T19:00:00] Document village economy specs and validation status
 - [2026-09-11T09:15:00] Write comprehensive 17-part beginner developer guide
+- [2026-09-11T11:00:30] Structure empty modules for combat and troops systems
