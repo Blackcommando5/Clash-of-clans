@@ -51,3 +51,5 @@ Real-time raycast ground snapping with visual footprint.
 60 gold/min generation rate with 500 gold capacity.
 
 Resource counters format values using N0 format specifier.
+
+Focus loss smoothly halts camera inertia.
