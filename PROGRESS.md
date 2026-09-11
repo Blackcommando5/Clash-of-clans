@@ -66,3 +66,4 @@
 - [2026-09-11T11:00:30] Structure empty modules for combat and troops systems
 - [2026-09-11T12:45:00] Format resource counters with comma group separators
 - [2026-09-11T14:30:15] Refine camera focus restore on application resumes
+- [2026-09-11T16:15:00] Update README with comprehensive project documentation
