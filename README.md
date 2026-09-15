@@ -2,6 +2,10 @@
 
 Kingdoms: A mobile village strategy game inspired by Clash of Clans, developed with Unity 6 and URP.
 
+Current work: [Home Village interface and progression](HOME_VILLAGE_PROGRESS.md) adds building selection/movement, two builders, timed upgrades, Town Hall tiers, resource bars, model previews, and a detailed Town Hall. The full game and multiplayer are not complete.
+
+Latest development: [resource milestone](RESOURCE_MILESTONE.md) adds Elixir Collectors, Gold/Elixir Storage, individual collection, Collect All, and migration of existing villages. See [the phase checklist](GAME_DEVELOPMENT_PHASES.md) for completed and remaining work.
+
 ## Architecture
 Modular architecture built on Unity 6 and URP.
 

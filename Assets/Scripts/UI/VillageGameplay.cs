@@ -10,9 +10,10 @@ using Touch = UnityEngine.InputSystem.EnhancedTouch.Touch;
 namespace Kingdoms.UI
 {
     [DefaultExecutionOrder(50), DisallowMultipleComponent]
-    public sealed class VillageGameplay : MonoBehaviour
+    public sealed partial class VillageGameplay : MonoBehaviour
     {
         public GameObject townHallPrefab, goldMinePrefab, pinePrefab;
+        public GameObject elixirCollectorPrefab, goldStoragePrefab, elixirStoragePrefab;
         public Material footprintMaterial;
         public Font titleFont, bodyFont;
         public Camera viewCamera;
@@ -21,19 +22,24 @@ namespace Kingdoms.UI
         public bool IsPlacing => preview != null;
 
         Transform world;
-        GameObject hud, shop, placementBar, preview, footprint;
-        RectTransform safe, shopPanel;
-        Text goldLabel, elixirLabel, gemsLabel, guide, collectLabel, shopInfo, placementInfo;
-        Button buyButton, confirmButton, collectButton;
+        [SerializeField] GameObject hud, shop, placementBar, preview, footprint;
+        [SerializeField] RectTransform safe, shopPanel;
+        [SerializeField] Text goldLabel, elixirLabel, gemsLabel, guide, collectLabel, placementInfo;
+        [SerializeField] Button confirmButton, collectButton;
+        [SerializeField] List<Button> shopButtons = new List<Button>();
+        [SerializeField] List<Text> shopDetails = new List<Text>();
+        readonly List<Button> producerButtons = new List<Button>();
+        readonly List<int> producerIndices = new List<int>();
+        string placingKind;
         Material previewMaterial;
         int cellX, cellZ;
-        bool dragging, visible;
+        bool dragging, visible, shuttingDown;
         float nextTick, nextSave, messageUntil;
         readonly List<RaycastResult> hits = new List<RaycastResult>();
         EventSystem raycastSystem;
         PointerEventData pointer;
 
-        void OnEnable() { EnhancedTouchSupport.Enable(); }
+        void OnEnable() { shuttingDown=false;EnhancedTouchSupport.Enable(); }
 
         void Start()
         {
@@ -44,18 +50,31 @@ namespace Kingdoms.UI
                 var events = new GameObject("Village EventSystem", typeof(EventSystem), typeof(InputSystemUIInputModule));
                 events.transform.SetParent(transform, false);
             }
-            BuildUI();
+            if (hud == null) BuildEditableInterface();
+            else BindEditableInterface();
+            HideEditorScreens();
+            BindWalls();
+            bool freshVillage=!PlayerPrefs.HasKey(VillageSave.Key);
             if (!VillageSave.TryLoad(out var loaded, out string error))
             {
                 guide.text = error;
                 hud.SetActive(true);
                 return;
             }
+            if(freshVillage && editorVillage!=null)
+            {
+                var p=townHallPrefab.transform.position;
+                loaded.buildings[0].x=Mathf.RoundToInt(p.x-2);
+                loaded.buildings[0].z=Mathf.RoundToInt(p.z-2);
+                AddStarterWalls(loaded);
+                if(!loaded.IsValid()){Debug.LogWarning("Starter Town Hall is outside the build area; using the default location.");loaded=VillageState.Create(VillageState.Now);}
+            }
             State = loaded;
             world = new GameObject("Village Buildings").transform;
             world.SetParent(transform, false);
             foreach (var building in State.buildings) Spawn(building);
-            CreateForest();
+            if(transform.Find("Village Woodland")==null) CreateForest();
+            if(editorVillage!=null) editorVillage.SetActive(false);
             nextSave = Time.unscaledTime + 30f;
             RefreshHUD();
             hud.SetActive(PlayerProfile.HasPlayerName);
@@ -69,7 +88,7 @@ namespace Kingdoms.UI
                 Rect area = Screen.safeArea;
                 safe.anchorMin = new Vector2(area.xMin / Mathf.Max(1,Screen.width), area.yMin / Mathf.Max(1,Screen.height));
                 safe.anchorMax = new Vector2(area.xMax / Mathf.Max(1,Screen.width), area.yMax / Mathf.Max(1,Screen.height));
-                if (shopPanel != null) shopPanel.localScale = Vector3.one * Mathf.Min(1f, Mathf.Min(safe.rect.width / 860f, safe.rect.height / 650f));
+                RefreshLayouts();
             }
             if (State == null) return;
             bool shouldShow = PlayerProfile.HasPlayerName;
@@ -86,12 +105,14 @@ namespace Kingdoms.UI
                 SaveProgress();
             }
             if (visible && IsPlacing) HandlePlacementInput();
+            else if (visible && !shop.activeSelf && !DetailsOpen && !ProfileOpen) HandleBuildingSelection();
         }
 
         public void OpenShop()
         {
             if (State == null || !PlayerProfile.HasPlayerName || IsPlacing) return;
             shop.SetActive(true);
+            DeselectBuilding();
             cameraController.InputBlocked = true;
             RefreshHUD();
         }
@@ -104,16 +125,26 @@ namespace Kingdoms.UI
 
         public void BeginMinePlacement()
         {
+            BeginPlacement("GoldMine");
+        }
+
+        public void BeginPlacement(string kind)
+        {
             if (State == null || !PlayerProfile.HasPlayerName || IsPlacing) return;
-            if (State.elixir < VillageState.MineCost || State.MineCount >= VillageState.MineLimit) return;
+            if (!State.CanBuy(kind, out string reason)) { ShowMessage(reason); return; }
+            var prefab = PrefabFor(kind);
+            if (prefab == null) { ShowMessage("This building is unavailable. Please restart the game."); return; }
+            placingKind = kind;
+            movingIndex=-1;DeselectBuilding();
             shop.SetActive(false);
-            preview = Instantiate(goldMinePrefab, world);
-            preview.name = "Gold Mine Preview";
+            preview = Instantiate(prefab, world);
+            preview.name = BuildingCatalog.Find(kind).Name + " Preview";
             foreach (var collider in preview.GetComponentsInChildren<Collider>()) collider.enabled = false;
             footprint = GameObject.CreatePrimitive(PrimitiveType.Plane);
             footprint.name = "Placement Footprint";
             footprint.transform.SetParent(world, false);
-            footprint.transform.localScale = new Vector3(.3f,1f,.3f);
+            float footprintScale = BuildingCatalog.Find(kind).Size / 10f;
+            footprint.transform.localScale = new Vector3(footprintScale,1f,footprintScale);
             Destroy(footprint.GetComponent<Collider>());
             previewMaterial = new Material(footprintMaterial);
             footprint.GetComponent<Renderer>().sharedMaterial = previewMaterial;
@@ -122,24 +153,32 @@ namespace Kingdoms.UI
             cameraController.InputBlocked = true;
             dragging = false;
             int x = 5, z = -1;
-            if (!State.CanPlaceMine(x,z,out _))
-                for (int zz=-10;zz<=10;zz+=4)
+            if (!State.CanPlace(kind,x,z,out _))
+            {
+                float closest = float.MaxValue;
+                for (int zz=-22;zz<=19;zz++)
                 {
-                    bool found = false;
-                    for (int xx=4;xx<=16;xx+=4)
-                        if (State.CanPlaceMine(xx,zz,out _)) { x=xx;z=zz;found=true;break; }
-                    if (found) break;
+                    for (int xx=-22;xx<=19;xx++)
+                    {
+                        if (!State.CanPlace(kind,xx,zz,out _)) continue;
+                        float distance = (new Vector2(xx+1.5f,zz+1.5f)-new Vector2(cameraController.focus.x,cameraController.focus.z)).sqrMagnitude;
+                        if(distance<closest) { closest=distance;x=xx;z=zz; }
+                    }
                 }
+            }
             SetPreviewCell(x,z);
+            RefreshHUD();
         }
 
         public void SetPreviewCell(int x, int z)
         {
             if (!IsPlacing) return;
             cellX=x;cellZ=z;
-            preview.transform.position = new Vector3(x+1.5f,0,z+1.5f);
-            footprint.transform.position = new Vector3(x+1.5f,.035f,z+1.5f);
-            bool valid = State.CanPlaceMine(x,z,out string reason);
+            float half = BuildingCatalog.Find(placingKind).Size * .5f;
+            preview.transform.position = new Vector3(x+half,0,z+half);
+            footprint.transform.position = new Vector3(x+half,.035f,z+half);
+            string reason;
+            bool valid = movingIndex>=0 ? State.CanMove(movingIndex,x,z,out reason) : State.CanPlace(placingKind,x,z,out reason);
             Color color = valid ? new Color(.30f,.92f,.18f) : new Color(.94f,.13f,.10f);
             previewMaterial.SetColor("_BaseColor",color);
             previewMaterial.SetColor("_Color",color);
@@ -151,10 +190,13 @@ namespace Kingdoms.UI
         {
             if (!IsPlacing || !PlayerProfile.HasPlayerName) return;
             var candidate=State.Copy();
-            if (!candidate.TryPlaceMine(cellX,cellZ,VillageState.Now,out string message)) { placementInfo.text=message;return; }
+            string message;
+            bool success=movingIndex>=0 ? candidate.TryMove(movingIndex,cellX,cellZ,out message) : candidate.TryPlace(placingKind,cellX,cellZ,VillageState.Now,out message);
+            if (!success) { placementInfo.text=message;return; }
             if (!VillageSave.TryWrite(candidate,out string error)) { placementInfo.text=error;return; }
             State=candidate;
-            Spawn(State.buildings[State.buildings.Count-1]);
+            if(movingIndex>=0) buildingInstances[movingIndex].transform.position=new Vector3(cellX+State.buildings[movingIndex].Size*.5f,0,cellZ+State.buildings[movingIndex].Size*.5f);
+            else Spawn(State.buildings[State.buildings.Count-1]);
             CancelPlacement();
             ShowMessage(message);
             RefreshHUD();
@@ -162,24 +204,43 @@ namespace Kingdoms.UI
 
         public void CancelPlacement()
         {
-            if (preview!=null) Destroy(preview);
-            if (footprint!=null) Destroy(footprint);
+            if (preview!=null) { preview.SetActive(false);Destroy(preview); }
+            if (footprint!=null) { footprint.SetActive(false);Destroy(footprint); }
             if (previewMaterial!=null) Destroy(previewMaterial);
             preview=null;footprint=null;previewMaterial=null;
+            placingKind=null;
+            if(movingIndex>=0 && movingIndex<buildingInstances.Count && buildingInstances[movingIndex]!=null) buildingInstances[movingIndex].SetActive(true);
+            movingIndex=-1;
             dragging=false;
             if (placementBar!=null) placementBar.SetActive(false);
             if(cameraController!=null) cameraController.InputBlocked=false;
+            if (State != null && !shuttingDown) RefreshHUD();
         }
 
         public void Collect()
         {
             if(State==null || !PlayerProfile.HasPlayerName || IsPlacing) return;
             var candidate=State.Copy();
-            int amount=candidate.CollectGold(VillageState.Now);
-            if(amount==0) { ShowMessage(State.gold>=VillageState.ResourceCapacity ? "Your gold storage is full." : "Your mines are still producing gold.");return; }
+            int gold=candidate.Collect(ResourceKind.Gold,VillageState.Now);
+            int elixir=candidate.Collect(ResourceKind.Elixir,VillageState.Now);
+            if(gold+elixir==0) { ShowMessage("Nothing to collect. Check production and storage capacity.");return; }
             if(!VillageSave.TryWrite(candidate,out string error)) { ShowMessage(error);return; }
             State=candidate;
-            ShowMessage("Collected "+amount+" gold!");
+            ShowMessage("Collected "+gold+" gold and "+elixir+" elixir!");
+            RefreshHUD();
+        }
+
+        public void CollectBuilding(int index)
+        {
+            if (State == null || !PlayerProfile.HasPlayerName || IsPlacing || shop.activeSelf || index < 0 || index >= State.buildings.Count) return;
+            var candidate = State.Copy();
+            var building = candidate.buildings[index];
+            var definition = BuildingCatalog.Find(building.kind);
+            int amount = candidate.Collect(definition.Resource, VillageState.Now, building);
+            if (amount == 0) { ShowMessage("Nothing to collect. Check production and storage capacity."); return; }
+            if (!VillageSave.TryWrite(candidate, out string error)) { ShowMessage(error); return; }
+            State = candidate;
+            ShowMessage("Collected " + amount + " " + definition.Resource.ToString().ToLowerInvariant() + "!");
             RefreshHUD();
         }
 
@@ -210,7 +271,8 @@ namespace Kingdoms.UI
             if(plane.Raycast(ray,out float distance))
             {
                 var p=ray.GetPoint(distance);
-                SetPreviewCell(Mathf.FloorToInt(p.x-1f),Mathf.FloorToInt(p.z-1f));
+                float half=BuildingCatalog.Find(placingKind).Size*.5f;
+                SetPreviewCell(Mathf.RoundToInt(p.x-half),Mathf.RoundToInt(p.z-half));
             }
         }
 
@@ -226,9 +288,52 @@ namespace Kingdoms.UI
 
         void Spawn(PlacedBuilding data)
         {
-            var prefab=data.kind=="TownHall" ? townHallPrefab : goldMinePrefab;
+            var prefab=PrefabFor(data.kind);
             var instance=Instantiate(prefab,new Vector3(data.x+data.Size*.5f,0,data.z+data.Size*.5f),Quaternion.identity,world);
             instance.name=data.kind+" ("+data.x+", "+data.z+")";
+            buildingInstances.Add(instance);
+            var definition = BuildingCatalog.Find(data.kind);
+            if (definition.ProductionPerSecond > 0)
+            {
+                int index = State.buildings.IndexOf(data);
+                var button = Instantiate(collectionBadgeTemplate,hud.transform);
+                button.name="Collect "+data.kind+" "+index;
+                button.gameObject.SetActive(true);
+                button.onClick.AddListener(() => CollectBuilding(index));
+                producerButtons.Add(button); producerIndices.Add(index);
+                // Keep world collection badges below the HUD and modal overlays.
+                button.transform.SetAsFirstSibling();
+            }
+        }
+
+        GameObject PrefabFor(string kind)
+        {
+            switch (kind)
+            {
+                case "Wall": return wallPrefab;
+                case "TownHall": return townHallPrefab;
+                case "GoldMine": return goldMinePrefab;
+                case "ElixirCollector": return elixirCollectorPrefab;
+                case "GoldStorage": return goldStoragePrefab;
+                case "ElixirStorage": return elixirStoragePrefab;
+                default: return null;
+            }
+        }
+
+        void LateUpdate()
+        {
+            if (State == null) return;
+            var canvas = hud.GetComponent<Canvas>();
+            Camera uiCamera = canvas.renderMode == RenderMode.ScreenSpaceOverlay ? null : canvas.worldCamera;
+            for (int i = 0; i < producerButtons.Count; i++)
+            {
+                var b = State.buildings[producerIndices[i]];
+                Vector3 screen = viewCamera.WorldToScreenPoint(new Vector3(b.x+b.Size*.5f, 3.2f, b.z+b.Size*.5f));
+                var button = producerButtons[i];
+                button.gameObject.SetActive(!IsPlacing && !shop.activeSelf && !DetailsOpen && !ProfileOpen && selectedIndex<0 && screen.z > 0 && viewCamera.pixelRect.Contains(screen));
+                RectTransformUtility.ScreenPointToLocalPointInRectangle((RectTransform)hud.transform, screen, uiCamera, out Vector2 position);
+                ((RectTransform)button.transform).anchoredPosition = position;
+            }
         }
 
         void CreateForest()
@@ -249,22 +354,41 @@ namespace Kingdoms.UI
         void RefreshHUD()
         {
             if(State==null) return;
-            goldLabel.text=State.gold.ToString("N0")+" / 10,000";
-            elixirLabel.text=State.elixir.ToString("N0")+" / 10,000";
+            goldLabel.text=State.gold.ToString("N0");
+            elixirLabel.text=State.elixir.ToString("N0");
             gemsLabel.text=State.gems.ToString("N0");
-            collectLabel.text="COLLECT  "+State.CollectableGold;
-            collectButton.interactable=State.CollectableGold>0 && State.gold<VillageState.ResourceCapacity && !IsPlacing;
-            buyButton.interactable=State.elixir>=VillageState.MineCost && State.MineCount<VillageState.MineLimit;
-            shopInfo.text="60 gold / minute\nStores up to 500 gold\n3 x 3 village cells\n\nBuilt: "+State.MineCount+" / 3";
+            RefreshInteractionUI();
+            RefreshReferenceUI();
+            UpdateResourceBars();
+            RefreshWallsHUD();
+            collectLabel.text="COLLECT ALL\n"+State.CollectableGold+" gold / "+State.CollectableElixir+" elixir";
+            collectButton.interactable=!IsPlacing && ((State.CollectableGold>0 && State.gold<State.GoldCapacity) || (State.CollectableElixir>0 && State.elixir<State.ElixirCapacity));
+            for (int i=0;i<shopButtons.Count;i++)
+            {
+                var d=BuildingCatalog.Shop[i];
+                bool canBuy=State.CanBuy(d.Id,out string reason);
+                shopButtons[i].interactable=canBuy;
+                shopDetails[i].text=d.Description+"\n"+d.Size+" x "+d.Size+" cells | Built "+State.Count(d.Id)+" / "+State.BuildingLimit(d.Id)+"\n"+(canBuy ? "Town Hall "+State.TownHallLevel : reason);
+            }
+            for (int i=0;i<producerButtons.Count;i++)
+            {
+                var b=State.buildings[producerIndices[i]];
+                var d=BuildingCatalog.Find(b.kind);
+                int stored=d.Resource==ResourceKind.Gold ? b.storedGold : b.storedElixir;
+                bool full=State.Balance(d.Resource)>=State.Capacity(d.Resource);
+                producerButtons[i].GetComponentInChildren<Text>().text=b.upgradeFinishes>0 ? "UPGRADING\n"+Duration(b.upgradeFinishes-VillageState.Now) : stored+" / "+(d.ProductionCapacity*b.level)+" "+d.Resource.ToString().ToLowerInvariant()+"\n"+(full ? "STORAGE FULL" : stored>=d.ProductionCapacity*b.level ? "FULL - COLLECT" : stored>0 ? "TAP TO COLLECT" : "PRODUCING");
+                producerButtons[i].interactable=stored>0 && !full && !IsPlacing;
+                if (shop.activeSelf || IsPlacing) producerButtons[i].gameObject.SetActive(false);
+            }
             if(Time.unscaledTime>=messageUntil)
-                guide.text=IsPlacing ? "Tap or drag on the ground to position your mine." : State.MineCount==0 ? "Chief "+PlayerProfile.PlayerName+", open SHOP to build your first Gold Mine." : !State.collectedFirstGold ? "Your mine is working. Tap COLLECT when gold is ready." : "Your village is growing. Drag to explore; pinch or scroll to zoom.";
+                guide.text=IsPlacing ? "Tap or drag on the ground to position your building." : State.Count("ElixirCollector")==0 ? "Build an Elixir Collector with gold to keep your village growing." : State.MineCount==0 ? "Open SHOP to build a Gold Mine with elixir." : "Collect resources. Build storage to increase capacity.";
         }
 
         void ShowMessage(string message) { guide.text=message;messageUntil=Time.unscaledTime+5f; }
-        void SaveProgress() { if(State!=null) { State.Accrue(VillageState.Now);VillageSave.TryWrite(State,out _); } }
+        void SaveProgress() { if(State!=null) { State.Accrue(VillageState.Now);if(!VillageSave.TryWrite(State,out string error)) ShowMessage(error); } }
         void OnApplicationPause(bool paused) { if(paused) SaveProgress(); }
         void OnApplicationQuit() { SaveProgress(); }
-        void OnDisable() { EnhancedTouchSupport.Disable();CancelPlacement(); }
+        void OnDisable() { shuttingDown=true;EnhancedTouchSupport.Disable();CancelPlacement(); }
 
         void BuildUI()
         {
@@ -274,16 +398,16 @@ namespace Kingdoms.UI
             hud.GetComponent<Canvas>().sortingOrder=100;
             var scaler=hud.GetComponent<CanvasScaler>();scaler.uiScaleMode=CanvasScaler.ScaleMode.ScaleWithScreenSize;scaler.referenceResolution=new Vector2(1920,1080);scaler.matchWidthOrHeight=.5f;
             safe=Box("Safe Area",hud.transform,Vector2.zero,Vector2.one);
-            var resources=Box("Resources",safe,new Vector2(1,1),new Vector2(1,1),new Vector2(350,218),new Vector2(-200,-133));
+            var resources=Box("Resources",safe,new Vector2(1,1),new Vector2(1,1),new Vector2(290,200),new Vector2(-165,-115));
             goldLabel=Resource("GOLD",resources,new Color(.95f,.70f,.16f),.69f,1f);
             elixirLabel=Resource("ELIXIR",resources,new Color(.78f,.33f,.86f),.345f,.655f);
             gemsLabel=Resource("GEMS",resources,new Color(.36f,.86f,.29f),0,.31f);
-            var town=Panel("Town Hall Level",safe,new Vector2(.5f,1),new Vector2(.5f,1),new Color(.16f,.20f,.11f,.92f),new Vector2(235,52),new Vector2(0,-48));
-            Label("Level",town.transform,"TOWN HALL 1",28,Color.white);
-            var guidePanel=Panel("Guide",safe,new Vector2(.21f,0),new Vector2(.79f,0),new Color(.11f,.15f,.075f,.92f),new Vector2(0,64),new Vector2(0,147));
+            var guidePanel=Panel("Guide",safe,new Vector2(.21f,0),new Vector2(.79f,0),new Color(.11f,.15f,.075f,.92f),new Vector2(0,64),new Vector2(0,38));
             guide=Label("Tutorial Guide",guidePanel.transform,"Preparing your village...",26,Color.white);
-            collectButton=Button("Collect Gold",safe,"COLLECT  0",new Vector2(0,0),new Vector2(0,0),new Color(.78f,.50f,.10f),new Vector2(280,95),new Vector2(165,70));collectLabel=collectButton.GetComponentInChildren<Text>();collectButton.onClick.AddListener(Collect);
-            var shopButton=Button("Shop",safe,"SHOP",new Vector2(1,0),new Vector2(1,0),new Color(.42f,.67f,.16f),new Vector2(235,105),new Vector2(-145,74));shopButton.onClick.AddListener(OpenShop);
+            collectButton=Button("Collect Resources",safe,"COLLECT ALL",new Vector2(0,0),new Vector2(0,0),new Color(.78f,.50f,.10f),new Vector2(180,68),new Vector2(286,59));collectLabel=collectButton.GetComponentInChildren<Text>();collectLabel.resizeTextMaxSize=18;collectButton.onClick.AddListener(Collect);
+            var shopButton=Button("Shop",safe,"SHOP",new Vector2(1,0),new Vector2(1,0),new Color(.95f,.82f,.4f),new Vector2(150,134),new Vector2(-104,88));shopButton.onClick.AddListener(OpenShop);
+            Icon("Shop",shopButton.transform,new Vector2(.2f,.35f),new Vector2(.8f,.94f));
+            shopButton.GetComponentInChildren<Text>().rectTransform.anchorMax=new Vector2(1,.35f);
             placementBar=Box("Placement Controls",safe,new Vector2(.5f,0),new Vector2(.5f,0),new Vector2(790,108),new Vector2(0,69)).gameObject;
             Panel("Placement Background",placementBar.transform,Vector2.zero,Vector2.one,new Color(.14f,.12f,.09f,.97f));
             placementInfo=Label("Placement Status",placementBar.transform,"",22,Color.white,new Vector2(.03f,.53f),new Vector2(.97f,.97f));
@@ -292,26 +416,41 @@ namespace Kingdoms.UI
             placementBar.SetActive(false);
             shop=Box("Building Shop",safe,Vector2.zero,Vector2.one).gameObject;
             Panel("Shop Dimmer",shop.transform,Vector2.zero,Vector2.one,new Color(0,0,0,.57f));
-            shopPanel=Box("Shop Window",shop.transform,new Vector2(.5f,.5f),new Vector2(.5f,.5f),new Vector2(800,590));
+            shopPanel=Box("Shop Window",shop.transform,new Vector2(.5f,.5f),new Vector2(.5f,.5f),new Vector2(1180,750));
             Panel("Shop Frame",shopPanel,Vector2.zero,Vector2.one,new Color(.85f,.81f,.71f));
-            Label("Shop Title",shopPanel,"BUILD YOUR VILLAGE",52,new Color(.24f,.17f,.10f),new Vector2(.08f,.82f),new Vector2(.92f,.97f),true);
-            var card=Panel("Gold Mine Card",shopPanel,new Vector2(.06f,.23f),new Vector2(.94f,.81f),new Color(.95f,.93f,.86f));
-            var coin=Panel("Gold Coin",card.transform,new Vector2(.06f,.32f),new Vector2(.33f,.85f),new Color(.97f,.70f,.15f));coin.radius=100;
-            Label("Coin Mark",coin.transform,"G",94,new Color(1,.94f,.54f),title:true);
-            Label("Mine Name",card.transform,"GOLD MINE",43,new Color(.25f,.17f,.10f),new Vector2(.38f,.68f),new Vector2(.96f,.95f),true);
-            shopInfo=Label("Mine Details",card.transform,"",25,new Color(.34f,.29f,.22f),new Vector2(.40f,.08f),new Vector2(.96f,.69f));
-            buyButton=Button("Buy Gold Mine",shopPanel,"BUILD - 150 ELIXIR",new Vector2(.27f,.07f),new Vector2(.90f,.20f),new Color(.38f,.67f,.14f));buyButton.onClick.AddListener(BeginMinePlacement);
-            var close=Button("Close Shop",shopPanel,"BACK",new Vector2(.06f,.07f),new Vector2(.24f,.20f),new Color(.57f,.48f,.35f));close.onClick.AddListener(CloseShop);
+            Label("Shop Title",shopPanel,"RESOURCES",52,new Color(.24f,.17f,.10f),new Vector2(.08f,.85f),new Vector2(.92f,.97f),true);
+            for (int i=0;i<BuildingCatalog.Shop.Count;i++)
+            {
+                var d=BuildingCatalog.Shop[i];
+                float left=i%2==0 ? .04f : .52f;
+                float bottom=i<2 ? .49f : .15f;
+                var card=Panel(d.Name+" Card",shopPanel,new Vector2(left,bottom),new Vector2(left+.44f,bottom+.32f),new Color(.95f,.93f,.86f));
+                Label("Building Name",card.transform,d.Name.ToUpperInvariant(),28,new Color(.25f,.17f,.10f),new Vector2(.02f,.75f),new Vector2(.98f,.98f),true);
+                var previewRect=Box("Building Preview",card.transform,new Vector2(.02f,.27f),new Vector2(.4f,.77f));
+                var imageRect=Box("Model Image",previewRect,Vector2.zero,Vector2.one);
+                var previewImage=imageRect.gameObject.AddComponent<RawImage>();previewImage.texture=Resources.Load<Texture2D>("BuildingIcons/"+d.Id);previewImage.raycastTarget=false;
+                var aspect=imageRect.gameObject.AddComponent<AspectRatioFitter>();aspect.aspectMode=AspectRatioFitter.AspectMode.FitInParent;aspect.aspectRatio=1;
+                if(previewImage.texture==null)previewImage.enabled=false;
+                shopDetails.Add(Label("Details",card.transform,"",22,new Color(.34f,.29f,.22f),new Vector2(.4f,.26f),new Vector2(.98f,.75f)));
+                var buy=Button("Buy "+d.Id,card.transform,"BUILD - "+d.CostText.ToUpperInvariant(),new Vector2(.04f,.025f),new Vector2(.96f,.245f),new Color(.38f,.67f,.14f));
+                buy.GetComponentInChildren<Text>().resizeTextMaxSize=22;
+                buy.onClick.AddListener(()=>BeginPlacement(d.Id));shopButtons.Add(buy);
+            }
+            var close=Button("Close Shop",shopPanel,"BACK",new Vector2(.36f,.025f),new Vector2(.64f,.12f),new Color(.57f,.48f,.35f));close.onClick.AddListener(CloseShop);
             shop.SetActive(false);
         }
 
         Text Resource(string title,Transform parent,Color accent,float bottom,float top)
         {
-            var panel=Panel(title,parent,new Vector2(0,bottom),new Vector2(1,top),new Color(.14f,.12f,.09f,.94f));
-            Label(title+" Label",panel.transform,title,18,accent,new Vector2(.08f,.59f),new Vector2(.92f,.94f));
-            return Label(title+" Value",panel.transform,"0",30,Color.white,new Vector2(.06f,.04f),new Vector2(.94f,.62f));
-        }
-        RectTransform Box(string name,Transform parent,Vector2 min,Vector2 max,Vector2 size=default,Vector2 position=default)
+            var panel=Box(title,parent,new Vector2(0,bottom),new Vector2(1,top));
+            var track=Panel("Resource Track",panel,new Vector2(.02f,.2f),new Vector2(.92f,.82f),new Color(.07f,.085f,.07f,.92f));
+            var fill=Panel("Resource Fill",track.transform,Vector2.zero,Vector2.one,new Color(accent.r*.65f,accent.g*.65f,accent.b*.65f,.85f));
+            fill.raycastTarget=false;resourceFills.Add(fill.rectTransform);
+            var value=Label(title+" Value",panel,"0",25,Color.white,new Vector2(.05f,.2f),new Vector2(.78f,.82f));
+            var outline=value.gameObject.AddComponent<Outline>();outline.effectDistance=new Vector2(1.5f,-1.5f);outline.effectColor=Color.black;
+            Icon(title=="GOLD" ? "Gold" : title=="ELIXIR" ? "Elixir" : "Gems",panel,new Vector2(.79f,.04f),new Vector2(.99f,.98f));
+            return value;
+        }        RectTransform Box(string name,Transform parent,Vector2 min,Vector2 max,Vector2 size=default,Vector2 position=default)
         {
             var go=new GameObject(name,typeof(RectTransform));go.layer=5;
             var rect=(RectTransform)go.transform;rect.SetParent(parent,false);rect.anchorMin=min;rect.anchorMax=max;rect.sizeDelta=size;rect.anchoredPosition=position;return rect;
@@ -324,11 +463,12 @@ namespace Kingdoms.UI
         Text Label(string name,Transform parent,string value,int size,Color color,Vector2? min=null,Vector2? max=null,bool title=false)
         {
             var rect=Box(name,parent,min??new Vector2(.035f,.04f),max??new Vector2(.965f,.96f));
-            var text=rect.gameObject.AddComponent<Text>();text.font=title?titleFont:bodyFont;text.fontSize=size;text.resizeTextForBestFit=true;text.resizeTextMinSize=12;text.resizeTextMaxSize=size;text.alignment=TextAnchor.MiddleCenter;text.color=color;text.text=value;text.supportRichText=false;text.raycastTarget=false;return text;
+            var text=rect.gameObject.AddComponent<Text>();text.font=bodyFont;text.fontSize=size;text.resizeTextForBestFit=true;text.resizeTextMinSize=12;text.resizeTextMaxSize=size;text.alignment=TextAnchor.MiddleCenter;text.color=color;text.text=value;text.supportRichText=false;text.raycastTarget=false;return text;
         }
         Button Button(string name,Transform parent,string title,Vector2 min,Vector2 max,Color color,Vector2 size=default,Vector2 position=default)
         {
             var panel=Panel(name,parent,min,max,color,size,position);var button=panel.gameObject.AddComponent<Button>();button.targetGraphic=panel;
+            var edge=panel.gameObject.AddComponent<Outline>();edge.effectColor=new Color(.1f,.065f,.035f,.9f);edge.effectDistance=new Vector2(2,-3);
             var label=Label("Label",panel.transform,title,36,Color.white,title:true);var outline=label.gameObject.AddComponent<Outline>();outline.effectColor=new Color(.12f,.10f,.06f);outline.effectDistance=new Vector2(1.5f,-1.5f);return button;
         }
     }

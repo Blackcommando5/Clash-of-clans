@@ -1,0 +1,6 @@
+REFERENCE UI VALIDATION — 15 September 2026
+Initial implementation: PASS, 66 state assertions plus existing runtime checks and new profile open/name/tab/close/shop-navigation checks.
+Final source: compiles without C# errors in isolated Unity.
+Final runtime rerun: INCOMPLETE — Play mode validation timeout; UnityEditor.Search startup exception also recorded.
+Two visual fixes after initial pass: suppress old nameplate; constrain profile portraits within their own containers.
+Corrected screenshots and Android validation remain outstanding.

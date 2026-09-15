@@ -13,11 +13,11 @@ namespace Kingdoms.UI
         public Font bodyFont;
         public Behaviour cameraController;
 
-        GameObject canvasObject, modal;
-        RectTransform safe, dialog;
-        InputField input;
-        Text heading, explanation, error, buttonLabel, chosenName;
-        Button primaryButton, editButton;
+        [SerializeField] GameObject canvasObject, modal;
+        [SerializeField] RectTransform safe, dialog;
+        [SerializeField] InputField input;
+        [SerializeField] Text heading, explanation, error, buttonLabel, chosenName;
+        [SerializeField] Button primaryButton, editButton;
         bool confirming, ownsCameraLock, cameraWasEnabled;
         string pendingName;
         EventSystem ownedEventSystem;
@@ -29,9 +29,32 @@ namespace Kingdoms.UI
         {
             if (titleFont == null) titleFont = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
             if (bodyFont == null) bodyFont = titleFont;
-            CreateCanvas();
+            if(canvasObject==null)CreateCanvas();
+            else
+            {
+                primaryButton.onClick.AddListener(Continue);
+                editButton.onClick.AddListener(EditName);
+                input.onValueChanged.AddListener(ValidateInput);
+                modal.SetActive(false);dialog.gameObject.SetActive(false);
+            }
             if (PlayerProfile.HasPlayerName) ShowPlayerName();
             else ShowNameDialog();
+        }
+
+        public void BuildEditableDialog()
+        {
+            if(canvasObject!=null)return;
+            if(titleFont==null)titleFont=Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            if(bodyFont==null)bodyFont=titleFont;
+            var controller=cameraController;cameraController=null;
+            CreateCanvas();ShowNameDialog();cameraController=controller;
+            modal.SetActive(false);dialog.gameObject.SetActive(false);
+        }
+
+        public void PreviewEditorDialog(bool show)
+        {
+            if(modal!=null)modal.SetActive(show);
+            if(dialog!=null)dialog.gameObject.SetActive(show);
         }
 
         void CreateCanvas()
@@ -61,6 +84,13 @@ namespace Kingdoms.UI
                 var events = new GameObject("Onboarding EventSystem", typeof(EventSystem), typeof(InputSystemUIInputModule));
                 events.transform.SetParent(canvasObject.transform, false);
                 ownedEventSystem = events.GetComponent<EventSystem>();
+            }
+            if(modal!=null)
+            {
+                modal.SetActive(true);dialog.gameObject.SetActive(true);
+                ValidateInput(input.text);UpdateLayout();
+                if(!Application.isMobilePlatform)StartCoroutine(FocusInput());
+                return;
             }
             modal = Rect("Name Dialog", canvasObject.transform, Vector2.zero, Vector2.one).gameObject;
             var shade = Panel("Village Dimmer", modal.transform, new Color(0,0,0,.52f), new Color(0,0,0,.52f), Vector2.zero, Vector2.one, 0);
@@ -114,7 +144,7 @@ namespace Kingdoms.UI
             safe.SetAsLastSibling();
             ValidateInput("");
             UpdateLayout();
-            if (!Application.isMobilePlatform) StartCoroutine(FocusInput());
+            if (Application.isPlaying && !Application.isMobilePlatform) StartCoroutine(FocusInput());
         }
 
         IEnumerator FocusInput() { yield return null; if (input != null && !confirming) input.ActivateInputField(); }
@@ -173,6 +203,7 @@ namespace Kingdoms.UI
 
         void ShowPlayerName()
         {
+            if (FindFirstObjectByType<VillageGameplay>() != null) return;
             var badge = Panel("Chief Nameplate", safe, new Color(.19f,.24f,.13f,.9f), new Color(.10f,.14f,.08f,.9f), new Vector2(0,1), new Vector2(0,1), 13);
             badge.rectTransform.pivot = new Vector2(0,1);
             badge.rectTransform.sizeDelta = new Vector2(310,95);

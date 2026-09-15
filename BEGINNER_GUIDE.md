@@ -2,6 +2,8 @@
 
 Updated: 10 September 2026.
 
+> Update, 15 September 2026: this guide describes the original prototype. The new [resource milestone](RESOURCE_MILESTONE.md) adds collectors, storage buildings, a four-building shop, both-resource collection, and version 2 village saves. Use that document for the current economy and save behavior.
+
 Project: `E:\Project\Games\Kingdoms`
 
 This guide explains the work completed so far and how you can reproduce it manually. You do not need previous Unity experience. Work through one lesson at a time, test it, and then continue.

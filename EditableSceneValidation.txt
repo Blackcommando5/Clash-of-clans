@@ -1,0 +1,1 @@
+PASS: editable scene serialization and custom layout persistence; onboarding; profile opening/tab switching/closing without UI recreation; camera locks; shop placement/cancellation. Android device test not run.
