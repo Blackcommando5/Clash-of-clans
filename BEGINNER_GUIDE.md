@@ -729,3 +729,10 @@ Scouting has no countdown: simulation ticks, production of combat events and dep
 Retry and challenge changes return to scouting; Watch Replay immediately plays the recorded battle without repeating scouting time. This preparation phase is UI state, not part of the recorded combat timeline or village save. The camera remains fixed during scouting; defense selection and range overlays are not included yet.
 
 Validation waits across real Play Mode frames to check the tick stays zero, rejects deployment/surrender while scouting, starts at tick zero, locks challenges before deployment, and verifies retries and both existing replay flows. See [scouting preview](PracticePreviews/practice-ready.png) and [PracticeBattleValidation.txt](PracticeBattleValidation.txt). The guide, preview and code are updated together; APK and physical-phone testing remain outstanding.
+
+
+### Current roadmap and next milestones
+
+The [phase plan and status table](GAME_DEVELOPMENT_PHASES.md#current-phase-status--23-september-2026) now distinguish completed local work from partial and future phases. Phase 2 resource production/storage is complete within its local scope. Phases 0?1, 3?7 and 15 are partial; online/social/release/expansion phases are not complete. Scouting, replay and stars are practice features, not a complete campaign or multiplayer game.
+
+Next priorities are: validate the latest mobile build, add an owned army and preparation/capacity rules, support multiple troop types and ground deployment, load authored enemy snapshots, and award campaign rewards exactly once. That creates the complete build ? prepare ? attack ? earn ? upgrade loop. Accounts, PvP and clans follow that foundation. See the [next implementation plan](GAME_DEVELOPMENT_PHASES.md#5-next-implementation-plan) for acceptance gates. This roadmap update changes documentation only; it does not add gameplay or claim new runtime tests.

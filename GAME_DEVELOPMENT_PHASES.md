@@ -1,6 +1,6 @@
 # Kingdoms — Complete Game Development Phases
 
-Prepared: 15 September 2026.
+Prepared: 15 September 2026. Status reviewed: 23 September 2026.
 
 Purpose: turn the existing Unity village prototype into a complete mobile strategy game with persistent online villages, attacks, clans, wars, and long-term progression.
 
@@ -11,6 +11,44 @@ Earlier implementation: [resource milestone](RESOURCE_MILESTONE.md) added elixir
 Newer update: [Home Village progression](HOME_VILLAGE_PROGRESS.md) adds selection/moving, two builders, upgrade jobs, three initial levels, Town Hall-dependent resource limits, and confirmed upgrade cancellation with a storage-capped 50% refund. [Walls](WALLS_PROGRESS.md) support individual placement and movement. Phase 3 and Phase 4 remain partial: continuous wall drawing, multi-selection, saved layouts, and full construction jobs are not complete. Reference-game balancing and physical-phone validation remain unverified.
 
 This is a development plan. Unchecked work is not implemented. Phase numbers describe dependency order, not weeks or promised delivery dates. Retain Kingdoms branding and create its production assets.
+
+## Current phase status ? 23 September 2026
+
+We have a playable local village and a tested practice-combat slice. We do not yet have the complete train ? attack ? earn ? upgrade loop, online multiplayer, or a phone-validated release. ?Complete locally? below means the scoped implementation and recorded Editor checks are present, not production readiness. A phase stays partial when any of its acceptance requirements remain missing. No overall completion percentage is assigned because phases differ greatly in size.
+
+| Phase | Status | Implemented | Still needed |
+| --- | --- | --- | --- |
+| 0. Reliable baseline | Partial | Git history, pinned Unity/packages, scenes, Editor validation evidence | Rebuild latest APK; fresh-install/returning-save phone tests; performance measurements; final identity/asset audit |
+| 1. Architecture and data | Partial | Shared building catalog, separate state/progression rules, partial UI files, v3 saves and migrations | Stable village-instance IDs, authored level/content data, clock/repository/command interfaces, revisions and command IDs |
+| 2. Resources and storage | Complete locally | Gold/elixir production and collection, storage capacities, Town Hall limits, offline behavior and save validation | Device regression testing and later server authority; these remain cross-phase release requirements |
+| 3. Village layout editing | Partial | Select, inspect, move/cancel, occupancy checks, individual walls | Continuous wall drawing, multi-selection, removable obstacles, saved layouts and interrupted-layout recovery |
+| 4. Builders and upgrades | Partial | Two builders, queue, timed upgrades, prerequisites, offline completion, capped cancellation refunds, initial level rules | Timed new construction, broader unlocks and level art, complete defense behavior during upgrades, optional notifications |
+| 5. Battle simulation | Partial | Cannon/tower fire, raiders, HP/damage, grid routing and wall breach, fixed ticks, timed commands and matching local replay hashes | Immutable arbitrary village snapshots, general-layout navigation, traps/target categories, persisted/versioned replays, server verification |
+| 6. Army preparation | Early partial | Eight practice raiders, lane deployment, army limit enforcement | Barracks/camps, owned army and capacity, readiness rules, troop selection, ground deployment zones, ranged/tank troops, research |
+| 7. Complete attack loop | Partial | Two practice enclosure variants, untimed scouting, explicit start, timer, surrender, stars/results, retry/return and replay | Authored campaign villages, reward settlement exactly once, saved campaign progress, guided/resumable tutorial |
+| 8. Accounts and backend | Not started | No implemented online service | Authentication/recovery, server economy, database, transactions, backups and monitoring |
+| 9. Asynchronous PvP | Not started | Local practice is not PvP | Opponent snapshots, battle tickets, server replay validation, atomic loot settlement, attack/defense history |
+| 10. Ranked progression | Not started | ? | Matchmaking, trophies, leagues, leaderboards, seasons and fairness checks |
+| 11. Clans and social | Not started | ? | Clan membership/roles, chat/moderation, donations and friendly challenges |
+| 12. Clan Wars | Not started | ? | Rosters, war scheduling, frozen layouts, attack allowances and rewards |
+| 13. Clan leagues/events | Not started | ? | League rounds, standings, cooperative tasks and reliable reward claims |
+| 14. Advanced armies | Not started | ? | Heroes, spells, equipment, pets, siege units and reproducible abilities |
+| 15. Art/audio/usability | Partial | Welcome art, village/building models, reference-inspired HUD/shop, touch controls and safe-area handling | Production art/level variants, unit animations, projectiles/effects, audio/settings, accessibility/localization and phone profiling |
+| 16. Live operations/store | Not started | ? | Events, billing verification, inbox, admin/support tools, account deletion/export and economy monitoring |
+| 17. Release qualification | Not started | Editor checks only; no release qualification | Online end-to-end/security/load tests, recovery rehearsals, closed beta, signed releases and rollout |
+| 18. Second village | Not started | ? | Separate economy, layouts, troops, mode rules and validated battles |
+| 19. Shared clan territory | Not started | ? | Clan districts, contributions, raid reservations, persistent damage and rewards |
+| 20. Ongoing content | Future/ongoing phase | ? | Versioned content pipeline, balancing evidence, replay compatibility and release maintenance |
+
+### Evidence and limits
+
+Current evidence: [resource milestone](RESOURCE_MILESTONE.md), [home progression](HOME_VILLAGE_PROGRESS.md), [defense validation](DefenseVillageValidation.txt), [builder queue validation](BuilderQueueValidation.txt), [upgrade cancellation validation](UpgradeCancellationValidation.txt), and [practice validation](PracticeBattleValidation.txt). Practice tests cover both challenges, scouting/start, scoring, surrender, replay determinism and preservation of the home save. Existing screenshots show actual Editor renders. The latest features have not been rebuilt into an APK or tested on a physical phone. Reference-style menus and placeholder options are not evidence that their corresponding systems are implemented.
+
+### Milestone status
+
+- **A ? Sustainable village:** playable locally; the full 0?4 acceptance gate remains partial.
+- **B ? Offline battle slice:** practice combat works; an owned army, campaign opponents and rewards are missing.
+- **C?F ? Online, social, release and expansion:** not reached.
 
 ## 1. Original starting point (before the resource milestone)
 
@@ -52,7 +90,7 @@ Phase 8 architecture decisions begin during Phase 1. Build a local implementatio
 
 Dependencies: existing project.
 
-- [ ] Preserve the current playable version in version control and record its Unity/package versions.
+- [x] Preserve the current playable version in version control and record its Unity/package versions.
 - [ ] Run welcome → naming → placement → collection → restart on Editor and an Android phone.
 - [ ] Record device model, OS, FPS, memory, launch time, and observed defects.
 - [ ] Inventory assets and distinguish production files, examples, caches, and backups.
@@ -67,7 +105,8 @@ Dependencies: 0.
 
 - [ ] Introduce stable IDs for buildings, units, levels, resources, and content versions.
 - [ ] Define building/level/resource data in ScriptableObjects or authored tables, exportable to the server.
-- [ ] Split VillageGameplay into UI, placement, world presentation, and game-command responsibilities.
+- [x] Split village presentation and interaction code into partial source files.
+- [ ] Finish separating those responsibilities into independent services; partial files alone do not complete this architecture.
 - [ ] Separate economy/placement rules from MonoBehaviours and scene objects.
 - [ ] Introduce IGameClock, IVillageRepository, and a command service with local implementations.
 - [x] Add save versions and migrations from Kingdoms.Village.v1; preserve failed migrations for recovery.
@@ -97,7 +136,8 @@ Dependencies: 2.
 
 - [x] Tap/select a building; show its name, level, stats, and relevant actions.
 - [x] Move existing buildings with preview, cancel, and occupancy validation.
-- [ ] Add wall placement, continuous wall drawing, and multi-selection tools.
+- [x] Add individual wall placement and movement.
+- [ ] Add continuous wall drawing and multi-selection tools.
 - [ ] Add removable obstacles with configured costs and rewards.
 - [ ] Support saved layouts and validate that every owned required building is placed once.
 - [ ] Keep the last valid layout when editing is cancelled or interrupted.
@@ -108,10 +148,12 @@ Done when: a village can be rearranged without losing buildings, creating duplic
 
 Dependencies: 2–3.
 
-- [ ] Add builder ownership, available/busy state, and construction jobs.
+- [x] Add two fixed builders with available/busy state and upgrade jobs.
+- [ ] Add builder ownership progression and timed new-building construction jobs.
 - [x] Implement upgrade prerequisites, costs, durations, level transitions, and cancellation policy.
 - [ ] Define whether upgrading buildings defend or produce; reflect the rule in every mode.
-- [ ] Add finish timestamps, completion on return, and notifications as an optional setting.
+- [x] Add upgrade finish timestamps and completion on return.
+- [ ] Add optional completion notifications.
 - [ ] Author an initial three-level Town Hall progression with new unlocks and art states.
 - [x] Add a builder queue view and explain blocked upgrades.
 
@@ -128,8 +170,10 @@ Dependencies: 1, 3; coordinate with 4.
 - [ ] Add melee/ranged targeting, grid pathfinding, wall breaking, and unreachable-target handling.
 - [ ] Add initial cannon, ranged tower, wall, and trap definitions.
 - [ ] Use fixed simulation ticks, seeded randomness, and stable target ordering.
-- [ ] Keep authoritative combat calculations independent of Unity physics and visual frame rate.
-- [ ] Record timed commands and state hashes for replay and later server validation.
+- [x] Keep local practice combat calculations independent of Unity physics and visual frame rate.
+- [ ] Establish server authority for online combat.
+- [x] Record timed practice commands and compare final state hashes during in-memory replay.
+- [ ] Persist/version replay records and validate battles on the server.
 
 Done when: identical snapshot, rules version, seed, and commands reproduce the same battle outcome in repeat runs.
 
@@ -150,10 +194,11 @@ Done when: a legal army can be prepared and deployed, and its roster/capacity ca
 Dependencies: 4–6.
 
 - [ ] Author several AI villages and a guided first attack.
-- [ ] Implement scouting, battle start, countdown, surrender, destruction percentage, and scoring rules.
-  - Practice now includes surrender with results and three independent stars (Town Hall, 50%, 100%), with army and elapsed-time statistics. Untimed scouting and an explicit Start Attack action now precede combat; the full campaign attack flow remains outstanding.
+- [x] Implement practice scouting, explicit battle start, timer, surrender, destruction percentage and three-star scoring.
+- [ ] Integrate those controls with campaign opponents and army preparation.
 - [ ] Calculate loot, victory rewards, defeat outcomes, and first-completion rewards.
-- [ ] Add results UI, retry/return flow, and replay playback.
+- [x] Add practice results UI, retry/return flow and in-memory replay playback.
+- [ ] Integrate reward claims and persistent battle history with the full attack loop.
 - [ ] Teach building, collection, upgrading, and deployment through resumable tutorial steps.
 
 Done when: a new player can finish an AI attack, claim its reward once, and spend the reward on village progression.
@@ -352,17 +397,27 @@ The client requests actions; it never supplies an authoritative new balance, fin
 
 A small deployment may start as one modular service, one database, and a worker. Split services only when measured operational needs justify it. Hosting/provider selection and cost estimates remain a Phase 8 deliverable.
 
-## 5. First implementation sprint
+## 5. Next implementation plan
 
-Start with Phase 0 and the foundations required for Phase 2:
+Prioritize finishing the offline game loop before adding more practice-only controls or social screens. The order below is a recommendation, not a promised schedule.
 
-1. Re-test the current Android build and preserve the baseline.
-2. Introduce building definitions and migrate the current save schema.
-3. Extract resource calculations and clock access from presentation code.
-4. Add an Elixir Collector bought with gold.
-5. Add collection for both currencies and derive shop text from definitions.
-6. Verify purchase, insufficient funds, overlap, collection overflow, pause, and reload.
-7. Add storage buildings, then building selection and upgrades.
+| Order | Work package | Phases | Acceptance gate |
+| --- | --- | --- | --- |
+| 1 | Rebuild and test the current mobile baseline | 0, 15 | Fresh install and returning save complete village ? scouting ? battle ? replay ? return on a target phone; record device/FPS/memory and fix blocking issues |
+| 2 | Owned army foundation | 1, 6 | Data-defined troops, barracks/camp capacity, readiness rules and saved army survive restart; invalid/over-capacity rosters are rejected |
+| 3 | Troop choice and deployment | 5, 6 | Add a ranged troop and tank alongside melee; select troops and deploy into validated ground zones; commands replay identically |
+| 4 | Snapshot-based campaign battles | 5, 7 | Load several authored immutable enemy layouts instead of a hardcoded encounter; navigate different layouts and complete battles without modifying the home village |
+| 5 | Rewards and campaign progression | 4, 7 | Victory/defeat rules and first-clear rewards are explicit; claims settle once even after restart; earned resources can fund a village upgrade |
+| 6 | Finish village progression and onboarding | 3, 4, 7 | Construction jobs, wall/layout tools and a resumable tutorial support the entire build ? prepare ? attack ? reward ? upgrade loop |
+| 7 | Offline mobile milestone review | 0?7, 15 | Run the complete loop on target phones, fix input/performance/save defects, and publish an updated test build and guide |
+| 8 | Accounts and server authority | 8 | Choose hosting/budget, build authentication and authoritative transactional village commands, verify recovery and multi-device behavior |
+| 9 | PvP and ranked alpha | 9?10 | Two accounts attack saved villages; server verifies results and settles loot once; then add ratings and seasons |
+| 10 | Social, advanced content and release | 11?17 | Build clans/wars/events and advanced armies, then complete production art/audio, operations and release gates |
+| 11 | Optional expansion modes | 18?20 | Start only after the core service is stable and maintainable |
+
+**Next code milestone:** owned army data and capacity/readiness rules, with a simple preparation screen. Agree the Kingdoms readiness design before implementing timers or consumable army costs; historical reference-game rules are not assumed. In parallel with planning, the current build needs the Phase 0 phone validation gate. Backend providers, hosting spend and production releases remain future decisions.
+
+Every development increment must update `BEGINNER_GUIDE.md`, record relevant validation evidence, and use a meaningful commit. Local commits remain valid progress even if remote authentication prevents a push; do not describe an unpushed commit as published.
 
 Do not mark multiplayer complete when login or cloud saving alone works. The first multiplayer completion gate is Phase 9's verified attack and single settlement between two accounts.
 
