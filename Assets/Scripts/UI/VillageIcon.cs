@@ -46,6 +46,41 @@ namespace Kingdoms.UI
                 Quad(vh,r,.25f,.71f,.4f,.92f,new Color(1,.76f,.12f));
                 Polygon(vh,r,new[]{new Vector2(.6f,.7f),new Vector2(.47f,.85f),new Vector2(.64f,.98f),new Vector2(.82f,.84f)},new Color(.43f,.95f,.23f));
             }
+            else if(kind=="Info" || kind=="Tasks" || kind=="Stats" || kind=="Social" || kind=="Settings" || kind=="Move")
+            {
+                if(kind=="Settings")
+                {
+                    for(int i=0;i<8;i++){float a=i*Mathf.PI/4;float x=.5f+Mathf.Cos(a)*.31f,y=.5f+Mathf.Sin(a)*.31f;Quad(vh,r,x-.1f,y-.1f,x+.1f,y+.1f,new Color(.94f,.94f,.87f));}
+                    Disc(vh,r,.5f,.5f,.34f,.34f,Color.white);Disc(vh,r,.5f,.5f,.13f,.13f,new Color(.4f,.43f,.38f));
+                }
+                else if(kind=="Stats")
+                { for(int i=0;i<3;i++)Quad(vh,r,.12f+i*.27f,.12f,.33f+i*.27f,.48f+i*.2f,Color.white); }
+                else if(kind=="Tasks")
+                { Quad(vh,r,.15f,.08f,.85f,.9f,new Color(.97f,.96f,.82f));Quad(vh,r,.32f,.78f,.68f,.98f,new Color(.6f,.37f,.16f));for(int i=0;i<3;i++)Quad(vh,r,.25f,.22f+i*.17f,.74f,.27f+i*.17f,new Color(.4f,.47f,.46f)); }
+                else if(kind=="Social")
+                { Polygon(vh,r,new[]{new Vector2(.13f,.88f),new Vector2(.87f,.88f),new Vector2(.82f,.31f),new Vector2(.5f,.05f),new Vector2(.18f,.31f)},new Color(1,.82f,.24f));Quad(vh,r,.42f,.2f,.76f,.76f,new Color(.72f,.22f,.13f));Disc(vh,r,.68f,.46f,.27f,.2f,Color.white);for(int i=0;i<3;i++)Disc(vh,r,.55f+i*.12f,.46f,.035f,.035f,Color.black); }
+                else if(kind=="Move")
+                { Quad(vh,r,.43f,.12f,.57f,.88f,Color.white);Quad(vh,r,.12f,.43f,.88f,.57f,Color.white);Polygon(vh,r,new[]{new Vector2(.28f,.75f),new Vector2(.5f,.98f),new Vector2(.72f,.75f)},Color.white);Polygon(vh,r,new[]{new Vector2(.75f,.28f),new Vector2(.98f,.5f),new Vector2(.75f,.72f)},Color.white); }
+                else { Quad(vh,r,.12f,.22f,.88f,.94f,new Color(.16f,.56f,.8f));Polygon(vh,r,new[]{new Vector2(.35f,.25f),new Vector2(.5f,.04f),new Vector2(.65f,.25f)},new Color(.16f,.56f,.8f));Quad(vh,r,.45f,.35f,.56f,.65f,Color.white);Disc(vh,r,.5f,.77f,.07f,.07f,Color.white); }
+            }
+            else if(kind!="Gold")
+            {
+                // Neutral catalogue illustrations for systems that are not playable yet.
+                Color stone=new Color(.58f,.59f,.57f),wood=new Color(.38f,.3f,.2f),metal=new Color(.23f,.25f,.25f);
+                Polygon(vh,r,new[]{new Vector2(.02f,.25f),new Vector2(.5f,.06f),new Vector2(.98f,.25f),new Vector2(.5f,.47f)},new Color(.4f,.51f,.28f));
+                if(kind.Contains("Bomb") || kind=="SeekingAirMine")
+                { Disc(vh,r,.5f,.43f,.23f,.26f,metal);Quad(vh,r,.47f,.65f,.53f,.83f,wood);Disc(vh,r,.4f,.53f,.065f,.075f,stone); }
+                else if(kind=="Cannon" || kind=="Mortar")
+                { Quad(vh,r,.24f,.23f,.76f,.4f,wood);Polygon(vh,r,new[]{new Vector2(.32f,.34f),new Vector2(.49f,.34f),new Vector2(.82f,.72f),new Vector2(.6f,.91f),new Vector2(.41f,.75f)},metal);Disc(vh,r,.69f,.8f,.14f,.1f,stone);Disc(vh,r,.69f,.8f,.09f,.065f,Color.black); }
+                else if(kind=="Wall")
+                { Quad(vh,r,.3f,.23f,.69f,.66f,stone);Quad(vh,r,.23f,.61f,.76f,.73f,new Color(.73f,.73f,.65f));for(int i=0;i<3;i++)Quad(vh,r,.24f+i*.2f,.7f,.36f+i*.2f,.82f,stone); }
+                else if(kind=="ArcherTower" || kind=="AirDefense")
+                { Quad(vh,r,.24f,.22f,.34f,.76f,wood);Quad(vh,r,.65f,.22f,.75f,.76f,wood);Quad(vh,r,.15f,.68f,.85f,.78f,stone);Quad(vh,r,.3f,.79f,.71f,.91f,wood); }
+                else if(kind=="ArmyCamp" || kind=="SpringTrap")
+                { for(int i=0;i<5;i++)Disc(vh,r,.22f+i*.14f,.3f+Mathf.Sin(i*2f)*.07f,.09f,.06f,stone);Polygon(vh,r,new[]{new Vector2(.32f,.34f),new Vector2(.5f,.76f),new Vector2(.65f,.32f)},new Color(.84f,.51f,.22f)); }
+                else
+                { Quad(vh,r,.24f,.27f,.77f,.63f,wood);Polygon(vh,r,new[]{new Vector2(.12f,.57f),new Vector2(.52f,.91f),new Vector2(.9f,.58f)},stone);Quad(vh,r,.43f,.26f,.61f,.52f,metal); }
+            }
             else
             {
                 Disc(vh,r,.5f,.48f,.43f,.44f,new Color(.57f,.3f,.04f));

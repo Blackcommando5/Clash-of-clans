@@ -21,6 +21,10 @@ namespace Kingdoms.UI
         Material selectionMaterial;
         Vector2 pressPosition;
         bool selecting;
+        bool confirmingUpgradeCancellation;
+        bool viewingBuilderQueue;
+        readonly List<Button> builderRows=new List<Button>();
+        readonly List<int> builderJobIndices=new List<int>();
         public bool DetailsOpen => detailModal!=null && detailModal.activeSelf;
         public int SelectedBuildingIndex => selectedIndex;
 
@@ -75,7 +79,21 @@ namespace Kingdoms.UI
             var b=State.buildings[index];
             selectionFootprint.SetActive(true);selectionFootprint.transform.position=new Vector3(b.x+b.Size*.5f,.028f,b.z+b.Size*.5f);
             selectionFootprint.transform.localScale=new Vector3((b.Size+.25f)/10f,1,(b.Size+.25f)/10f);
+            RefreshDefenseRange(b);
             RefreshHUD();
+        }
+
+        void RefreshDefenseRange(PlacedBuilding building)
+        {
+            var definition=BuildingCatalog.Find(building.kind);
+            var existing=selectionFootprint.transform.Find("Defense Range");
+            if(!definition.IsDefense){if(existing!=null)existing.gameObject.SetActive(false);return;}
+            var ring=existing!=null ? existing.GetComponent<LineRenderer>() : new GameObject("Defense Range",typeof(LineRenderer)).GetComponent<LineRenderer>();
+            ring.transform.SetParent(selectionFootprint.transform,false);ring.gameObject.SetActive(true);
+            ring.useWorldSpace=true;ring.loop=true;ring.positionCount=96;ring.widthMultiplier=.065f;ring.sharedMaterial=selectionMaterial;
+            ring.shadowCastingMode=UnityEngine.Rendering.ShadowCastingMode.Off;ring.receiveShadows=false;
+            for(int i=0;i<96;i++)
+            {float a=i*Mathf.PI*2/96;ring.SetPosition(i,new Vector3(building.x+building.Size*.5f+Mathf.Cos(a)*definition.Range,.055f,building.z+building.Size*.5f+Mathf.Sin(a)*definition.Range));}
         }
 
         public void DeselectBuilding()
@@ -100,17 +118,31 @@ namespace Kingdoms.UI
         public void OpenBuildingDetails()
         {
             if(selectedIndex<0 || IsPlacing)return;
+            SetBuilderQueueVisible(false);
+            confirmingUpgradeCancellation=false;
             detailModal.SetActive(true);cameraController.InputBlocked=true;RefreshHUD();
         }
 
         public void CloseBuildingDetails()
         {
+            SetBuilderQueueVisible(false);
+            confirmingUpgradeCancellation=false;
             detailModal.SetActive(false);cameraController.InputBlocked=false;RefreshHUD();
         }
 
         public void StartSelectedUpgrade()
         {
-            if(selectedIndex<0 || IsPlacing)return;
+            if(selectedIndex<0 || IsPlacing || !DetailsOpen || viewingBuilderQueue)return;
+            if(confirmingUpgradeCancellation || State.buildings[selectedIndex].upgradeFinishes>0)
+            {
+                if(!confirmingUpgradeCancellation)
+                { confirmingUpgradeCancellation=true;RefreshHUD();return; }
+                var cancelled=State.Copy();
+                if(!cancelled.TryCancelUpgrade(selectedIndex,VillageState.Now,out string cancellationMessage))
+                { confirmingUpgradeCancellation=false;ShowMessage(cancellationMessage);RefreshHUD();return; }
+                if(!VillageSave.TryWrite(cancelled,out string cancellationError)){ShowMessage(cancellationError);return;}
+                State=cancelled;ShowMessage(cancellationMessage);CloseBuildingDetails();RefreshHUD();return;
+            }
             var candidate=State.Copy();
             if(!candidate.TryStartUpgrade(selectedIndex,VillageState.Now,out string message)){ShowMessage(message);RefreshHUD();return;}
             if(!VillageSave.TryWrite(candidate,out string error)){ShowMessage(error);return;}
@@ -119,9 +151,60 @@ namespace Kingdoms.UI
 
         void OpenBuilders()
         {
-            if(State==null || IsPlacing)return;
-            for(int i=0;i<State.buildings.Count;i++)if(State.buildings[i].upgradeFinishes>0){SelectBuilding(i);OpenBuildingDetails();return;}
-            ShowMessage("Both builders are available. Select a building to upgrade it.");
+            if(State==null || IsPlacing || !PlayerProfile.HasPlayerName)return;
+            if(ProfileOpen)CloseProfile();
+            if(shop.activeSelf)CloseShop();
+            State.Accrue(VillageState.Now);
+            DeselectBuilding();confirmingUpgradeCancellation=false;
+            if(builderRows.Count==0)
+                for(int i=0;i<VillageState.BuilderCount;i++)
+                {
+                    int row=i;
+                    var button=Button("Builder Job "+i,detailPanel,"",new Vector2(.06f,.53f-i*.25f),new Vector2(.94f,.75f-i*.25f),new Color(.37f,.49f,.23f));
+                    button.GetComponentInChildren<Text>().resizeTextMaxSize=30;
+                    button.onClick.AddListener(()=>OpenBuilderJob(row));
+                    builderRows.Add(button);builderJobIndices.Add(-1);
+                }
+            SetBuilderQueueVisible(true);
+            detailModal.SetActive(true);cameraController.InputBlocked=true;RefreshHUD();
+        }
+
+        void SetBuilderQueueVisible(bool visible)
+        {
+            viewingBuilderQueue=visible;
+            foreach(var row in builderRows)row.gameObject.SetActive(visible);
+            if(upgradeAction!=null)upgradeAction.gameObject.SetActive(!visible);
+        }
+
+        void OpenBuilderJob(int row)
+        {
+            if(!viewingBuilderQueue || row<0 || row>=builderJobIndices.Count)return;
+            int index=builderJobIndices[row];
+            State.Accrue(VillageState.Now);
+            if(index<0 || index>=State.buildings.Count || State.buildings[index].upgradeFinishes==0)
+            { RefreshHUD();return; }
+            SelectBuilding(index);OpenBuildingDetails();
+        }
+
+        void RefreshBuilderQueue()
+        {
+            detailTitle.text="BUILDERS  "+(VillageState.BuilderCount-State.BusyBuilders)+" / "+VillageState.BuilderCount+" FREE";
+            detailStats.text="";
+            var jobs=new List<int>();
+            for(int i=0;i<State.buildings.Count;i++)if(State.buildings[i].upgradeFinishes>0)jobs.Add(i);
+            jobs.Sort((a,b)=>{int order=State.buildings[a].upgradeFinishes.CompareTo(State.buildings[b].upgradeFinishes);return order!=0 ? order : a.CompareTo(b);});
+            for(int i=0;i<builderRows.Count;i++)
+            {
+                int index=i<jobs.Count ? jobs[i] : -1;builderJobIndices[i]=index;
+                builderRows[i].interactable=index>=0;
+                string caption="BUILDER AVAILABLE\nSelect a building in your village to upgrade.";
+                if(index>=0)
+                {
+                    var b=State.buildings[index];
+                    caption=BuildingCatalog.Find(b.kind).Name+"  ("+b.x+", "+b.z+")  •  Level "+b.level+" → "+(b.level+1)+"\n"+Duration(b.upgradeFinishes-VillageState.Now)+" remaining  •  VIEW UPGRADE";
+                }
+                builderRows[i].GetComponentInChildren<Text>().text=caption;
+            }
         }
 
         void RefreshInteractionUI()
@@ -133,6 +216,7 @@ namespace Kingdoms.UI
             if(guide!=null)guide.transform.parent.gameObject.SetActive(selectedIndex<0 || IsPlacing || DetailsOpen);
             RefreshLayouts();
             for(int i=0;i<buildingInstances.Count;i++) UpdateBuildingVisual(i);
+            if(viewingBuilderQueue){RefreshBuilderQueue();return;}
             if(selectedIndex<0 || selectedIndex>=State.buildings.Count)return;
             var b=State.buildings[selectedIndex];var d=BuildingCatalog.Find(b.kind);
             selectedTitle.text=d.Name+" (Level "+b.level+")";
@@ -144,16 +228,18 @@ namespace Kingdoms.UI
                 upgradeCaption.text="UPGRADES COMING LATER";upgradeAction.interactable=false;return;
             }
             bool allowed=State.CanUpgrade(selectedIndex,out string reason);
+            if(d.IsDefense)stats="Hit points: "+(d.HitPoints*b.level)+"\nDamage / second: "+(d.DamagePerSecond*b.level)+"\nRange: "+d.Range+" cells\nTry practice combat from Attack.";
             if(b.upgradeFinishes>0)
             {
-                detailStats.text=stats+"\n\nUPGRADING TO LEVEL "+(b.level+1)+"\n"+Duration(b.upgradeFinishes-VillageState.Now)+" remaining\nProduction resumes when the upgrade finishes.";
-                upgradeCaption.text="BUILDER WORKING";upgradeAction.interactable=false;
+                detailStats.text=stats+"\n\nUPGRADING TO LEVEL "+(b.level+1)+"\n"+Duration(b.upgradeFinishes-VillageState.Now)+" remaining\n"+
+                    (confirmingUpgradeCancellation ? "Keep level "+b.level+" and free the builder?\nRefund: "+State.UpgradeCancellationRefund(selectedIndex).ToString("N0")+" "+VillageState.UpgradeResource(b).ToString().ToLowerInvariant()+"\n50% of cost; excess over storage is lost.\nClose this window to keep upgrading." : "Cancel for 50% back, limited by storage.");
+                upgradeCaption.text=confirmingUpgradeCancellation ? "CONFIRM CANCELLATION" : "CANCEL UPGRADE";upgradeAction.interactable=true;
             }
             else
             {
                 detailStats.text=stats+"\n\n"+(b.level>=3 ? "Maximum available level" : "Next level: "+(b.level+1)+"\nTime: "+Duration(VillageState.UpgradeSeconds(b))+"\n"+reason);
-                upgradeCaption.text=b.level>=3 ? "MAX LEVEL" : "UPGRADE\n"+VillageState.UpgradeCost(b).ToString("N0")+" "+VillageState.UpgradeResource(b).ToString().ToUpperInvariant();
-                upgradeAction.interactable=allowed;
+                upgradeCaption.text=confirmingUpgradeCancellation ? "UPGRADE COMPLETED" : b.level>=3 ? "MAX LEVEL" : "UPGRADE\n"+VillageState.UpgradeCost(b).ToString("N0")+" "+VillageState.UpgradeResource(b).ToString().ToUpperInvariant();
+                upgradeAction.interactable=allowed && !confirmingUpgradeCancellation;
             }
         }
 
@@ -218,8 +304,8 @@ namespace Kingdoms.UI
         {
             if(safe==null)return;
             if(State!=null)RefreshReferenceUI();
-            if(fitWindowsToScreen && shopPanel!=null)shopPanel.localScale=Vector3.one*Mathf.Min(1f,Mathf.Min(safe.rect.width/1250f,safe.rect.height/800f));
-            if(fitWindowsToScreen && detailPanel!=null)detailPanel.localScale=Vector3.one*Mathf.Min(1f,Mathf.Min(safe.rect.width/920f,safe.rect.height/710f));
+            if(referenceShopRoot==null && fitWindowsToScreen && shopPanel!=null)shopPanel.localScale=Vector3.one*Mathf.Min(1f,Mathf.Min(safe.rect.width/1250f,safe.rect.height/800f));
+            if(fitWindowsToScreen && detailPanel!=null)detailPanel.localScale=Vector3.one*Mathf.Min(1f,Mathf.Min(safe.rect.width/(referenceShopRoot==null ? 920f : 1260f),safe.rect.height/(referenceShopRoot==null ? 710f : 790f)));
         }
 
         void UpdateResourceBars()
@@ -230,6 +316,6 @@ namespace Kingdoms.UI
             resourceFills[2].anchorMax=new Vector2(1,1);
         }
 
-        void OnDestroy(){if(selectionMaterial!=null)Destroy(selectionMaterial);}
+        void OnDestroy(){if(selectionMaterial!=null)Destroy(selectionMaterial);ReleaseReferenceScenery();foreach(var material in practiceMaterials)if(material!=null)Destroy(material);}
     }
 }

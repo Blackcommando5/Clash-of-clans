@@ -62,6 +62,7 @@ namespace Kingdoms.UI
 
         public void OpenProfile(int tab=0)
         {
+            if(tab==5){OpenPracticeBattle();return;}
             if(State==null || !PlayerProfile.HasPlayerName || IsPlacing)return;
             CloseShop();CloseBuildingDetails();DeselectBuilding();
 

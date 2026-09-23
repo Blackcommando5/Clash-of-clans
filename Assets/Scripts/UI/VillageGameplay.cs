@@ -14,6 +14,7 @@ namespace Kingdoms.UI
     {
         public GameObject townHallPrefab, goldMinePrefab, pinePrefab;
         public GameObject elixirCollectorPrefab, goldStoragePrefab, elixirStoragePrefab;
+        public GameObject cannonPrefab, archerTowerPrefab;
         public Material footprintMaterial;
         public Font titleFont, bodyFont;
         public Camera viewCamera;
@@ -54,6 +55,8 @@ namespace Kingdoms.UI
             else BindEditableInterface();
             HideEditorScreens();
             BindWalls();
+            BuildScreenshotReferenceInterface();
+            BindScreenshotReferenceInterface();
             bool freshVillage=!PlayerPrefs.HasKey(VillageSave.Key);
             if (!VillageSave.TryLoad(out var loaded, out string error))
             {
@@ -74,6 +77,7 @@ namespace Kingdoms.UI
             world.SetParent(transform, false);
             foreach (var building in State.buildings) Spawn(building);
             if(transform.Find("Village Woodland")==null) CreateForest();
+            BuildReferenceScenery();
             if(editorVillage!=null) editorVillage.SetActive(false);
             nextSave = Time.unscaledTime + 30f;
             RefreshHUD();
@@ -83,6 +87,7 @@ namespace Kingdoms.UI
 
         void Update()
         {
+            if(PracticeOpen){TickPracticeBattle();return;}
             if (safe != null)
             {
                 Rect area = Screen.safeArea;
@@ -111,6 +116,8 @@ namespace Kingdoms.UI
         public void OpenShop()
         {
             if (State == null || !PlayerProfile.HasPlayerName || IsPlacing) return;
+            CloseBuildingDetails();
+            if(ProfileOpen)CloseProfile();
             shop.SetActive(true);
             DeselectBuilding();
             cameraController.InputBlocked = true;
@@ -311,6 +318,8 @@ namespace Kingdoms.UI
             switch (kind)
             {
                 case "Wall": return wallPrefab;
+                case "Cannon": return cannonPrefab;
+                case "ArcherTower": return archerTowerPrefab;
                 case "TownHall": return townHallPrefab;
                 case "GoldMine": return goldMinePrefab;
                 case "ElixirCollector": return elixirCollectorPrefab;
@@ -322,6 +331,7 @@ namespace Kingdoms.UI
 
         void LateUpdate()
         {
+            if(PracticeOpen){RefreshPracticeBattle();return;}
             if (State == null) return;
             var canvas = hud.GetComponent<Canvas>();
             Camera uiCamera = canvas.renderMode == RenderMode.ScreenSpaceOverlay ? null : canvas.worldCamera;
@@ -382,11 +392,12 @@ namespace Kingdoms.UI
             }
             if(Time.unscaledTime>=messageUntil)
                 guide.text=IsPlacing ? "Tap or drag on the ground to position your building." : State.Count("ElixirCollector")==0 ? "Build an Elixir Collector with gold to keep your village growing." : State.MineCount==0 ? "Open SHOP to build a Gold Mine with elixir." : "Collect resources. Build storage to increase capacity.";
+            RefreshScreenshotReference();
         }
 
         void ShowMessage(string message) { guide.text=message;messageUntil=Time.unscaledTime+5f; }
         void SaveProgress() { if(State!=null) { State.Accrue(VillageState.Now);if(!VillageSave.TryWrite(State,out string error)) ShowMessage(error); } }
-        void OnApplicationPause(bool paused) { if(paused) SaveProgress(); }
+        void OnApplicationPause(bool paused) { practicePaused=paused;if(paused) SaveProgress(); }
         void OnApplicationQuit() { SaveProgress(); }
         void OnDisable() { shuttingDown=true;EnhancedTouchSupport.Disable();CancelPlacement(); }
 

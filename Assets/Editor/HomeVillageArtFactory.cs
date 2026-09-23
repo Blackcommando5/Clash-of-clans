@@ -76,6 +76,11 @@ public static class HomeVillageArtFactory
         string path="Assets/Resources/BuildingIcons/"+name+".png";
         var root=new GameObject("Icon Render Rig");root.transform.position=new Vector3(1000,0,1000);
         var model=Object.Instantiate(prefab,root.transform);model.transform.localPosition=Vector3.zero;
+        // Alpha-blended glass would replace the render target alpha over the opaque liquid.
+        // Keep the vessel contents readable in transparent UI portraits.
+        foreach(var renderer in model.GetComponentsInChildren<Renderer>())
+            if(renderer.sharedMaterial!=null && renderer.sharedMaterial.HasProperty("_Surface") && renderer.sharedMaterial.GetFloat("_Surface")>0)
+                renderer.enabled=false;
         foreach(var t in model.GetComponentsInChildren<Transform>())t.gameObject.layer=30;
         var cameraObject=new GameObject("Icon Camera");cameraObject.transform.SetParent(root.transform,false);
         var camera=cameraObject.AddComponent<Camera>();camera.orthographic=true;camera.orthographicSize=2.5f;

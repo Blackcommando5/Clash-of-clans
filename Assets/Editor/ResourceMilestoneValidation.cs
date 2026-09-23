@@ -92,6 +92,43 @@ public static class ResourceMilestoneValidation
         Check(!VillageState.TryDeserialize(legacy.Replace("\"version\":1","\"version\":99"),out _),"Unknown version rejected");
     }
 
+    public static void RunCancellation()
+    {
+        if(!Application.dataPath.Replace('\\','/').EndsWith("/.utmp/ResourceValidation/Assets") ||
+            PlayerSettings.companyName!="KingdomsResourceValidation" || PlayerSettings.productName!="ResourceMilestoneTests")
+            throw new InvalidOperationException("Use the isolated ResourceValidation project and test save identity.");
+        try
+        {
+            ProgressionChecks();
+            var s=VillageState.Create(1000);s.elixir=10000;
+            Check(s.TryPlace("GoldMine",5,5,1000,out _),"Cancellation mine setup");
+            s.Accrue(1010);
+            Check(s.TryStartUpgrade(1,1010,out _),"Cancellation upgrade setup");
+            int paidBalance=s.elixir;
+            Check(s.TryCancelUpgrade(1,1020,out _) && s.elixir==paidBalance+150 && s.BusyBuilders==0,"Half refund and builder release");
+            Check(s.buildings[1].level==1 && s.buildings[1].upgradeStarted==0 && s.CollectableGold==10,"Cancellation retains level and pre-upgrade production");
+            Check(!s.TryCancelUpgrade(1,1020,out _) && s.elixir==paidBalance+150,"Duplicate cancellation cannot refund twice");
+            s.Accrue(1030);Check(s.CollectableGold==20,"Production resumes only after cancellation");
+            Check(VillageState.TryDeserialize(JsonUtility.ToJson(s),out var restored) && restored.BusyBuilders==0 && restored.elixir==s.elixir,"Cancelled upgrade round trip");
+            Check(restored.TryStartUpgrade(1,1030,out _),"Released builder can restart upgrade");
+            Check(VillageState.TryDeserialize(JsonUtility.ToJson(restored),out restored),"Active job round trip");
+            restored.elixir=9990;
+            Check(restored.UpgradeCancellationRefund(1)==10 && restored.TryCancelUpgrade(1,1040,out _) && restored.elixir==10000 && restored.IsValid(),"Refund capped at storage after reload");
+            Check(restored.TryStartUpgrade(1,1040,out _),"Completion boundary setup");
+            int before=restored.elixir;
+            Check(!restored.TryCancelUpgrade(1,1070,out _) && restored.buildings[1].level==2 && restored.elixir==before,"Completion at exact deadline wins over cancellation");
+            Check(!restored.TryCancelUpgrade(-1,1070,out _) && !restored.TryCancelUpgrade(99,1070,out _),"Invalid cancellation indexes");
+            var hall=VillageState.Create(1000);
+            Check(hall.TryStartUpgrade(0,1000,out _) && hall.TryCancelUpgrade(0,1010,out _) && hall.gold==500 && hall.TownHallLevel==1,"Town Hall gold refund");
+            hall.gold=1000;Check(hall.TryStartUpgrade(0,1010,out _),"Backward clock setup");
+            hall.gold=hall.GoldCapacity;
+            Check(hall.TryCancelUpgrade(0,1005,out _) && hall.gold==hall.GoldCapacity && hall.lastProduction==1010 && hall.IsValid(),"Full storage and backward clock cancellation");
+            File.WriteAllText(Path.Combine(Root,"UpgradeCancellationValidation.txt"),"PASS: "+assertions+" progression and cancellation assertions. Unity "+Application.unityVersion+".\n");
+            EditorApplication.Exit(0);
+        }
+        catch(Exception e) { Debug.LogException(e);EditorApplication.Exit(1); }
+    }
+
     static void ProgressionChecks()
     {
         var s=VillageState.Create(1000);s.gold=10000;s.elixir=10000;

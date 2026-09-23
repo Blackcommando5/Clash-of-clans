@@ -145,8 +145,8 @@ namespace Kingdoms
         {
             if (version != 3 || buildings == null || buildings.Count < 1 ||
                 gold < 0 || elixir < 0 || gems < 0 || lastProduction < 0) return false;
-            int maximumBuildings = 1 + BuildingLimit("Wall");
-            foreach (var definition in BuildingCatalog.Shop) maximumBuildings += BuildingLimit(definition.Id);
+            int maximumBuildings = 1;
+            foreach (var definition in BuildingCatalog.Purchasable) maximumBuildings += BuildingLimit(definition.Id);
             if (buildings.Count > maximumBuildings) return false;
             int halls = 0;
             for (int i = 0; i < buildings.Count; i++)

@@ -46,6 +46,27 @@ namespace Kingdoms
             reason=BuildingCatalog.Find(b.kind).Name+" upgrade started.";return true;
         }
 
+        // Cancellation returns half the current tier's cost, limited by free storage.
+        public int UpgradeCancellationRefund(int index)
+        {
+            if(index<0 || index>=buildings.Count || buildings[index].upgradeFinishes<=0) return 0;
+            var b=buildings[index];var resource=UpgradeResource(b);
+            return Math.Min(UpgradeCost(b)/2,Math.Max(0,Capacity(resource)-Balance(resource)));
+        }
+
+        public bool TryCancelUpgrade(int index,long now,out string reason)
+        {
+            Accrue(now);
+            if(index<0 || index>=buildings.Count || buildings[index].upgradeFinishes<=0)
+            { reason="There is no active upgrade to cancel.";return false; }
+            var b=buildings[index];var resource=UpgradeResource(b);
+            int refund=UpgradeCancellationRefund(index);
+            if(resource==ResourceKind.Gold) gold+=refund;else elixir+=refund;
+            b.upgradeStarted=0;b.upgradeFinishes=0;
+            reason="Upgrade cancelled. Returned "+refund.ToString("N0")+" "+resource.ToString().ToLowerInvariant()+".";
+            return true;
+        }
+
         public bool CanMove(int index,int x,int z,out string reason)
         {
             if(index<0 || index>=buildings.Count) { reason="Select a building.";return false; }

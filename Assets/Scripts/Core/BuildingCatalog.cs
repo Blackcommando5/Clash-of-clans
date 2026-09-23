@@ -9,18 +9,22 @@ namespace Kingdoms
         public readonly string Id, Name;
         public readonly int Size, Cost, Limit, ProductionPerSecond, ProductionCapacity, StorageBonus;
         public readonly ResourceKind CostResource, Resource;
+        public readonly int HitPoints, DamagePerSecond;
+        public readonly float Range;
+        public bool IsDefense => HitPoints > 0;
 
         public BuildingDefinition(string id, string name, int size, int cost, ResourceKind costResource,
             int limit, ResourceKind resource = ResourceKind.None, int productionPerSecond = 0,
-            int productionCapacity = 0, int storageBonus = 0)
+            int productionCapacity = 0, int storageBonus = 0, int hitPoints = 0, int damagePerSecond = 0, float range = 0)
         {
             Id = id; Name = name; Size = size; Cost = cost; CostResource = costResource;
             Limit = limit; Resource = resource; ProductionPerSecond = productionPerSecond;
             ProductionCapacity = productionCapacity; StorageBonus = storageBonus;
+            HitPoints=hitPoints;DamagePerSecond=damagePerSecond;Range=range;
         }
 
         public string CostText => Cost.ToString("N0") + " " + CostResource.ToString().ToLowerInvariant();
-        public string Description => ProductionPerSecond > 0
+        public string Description => IsDefense ? "Damage: "+DamagePerSecond+" / second\nRange: "+Range+" cells" : ProductionPerSecond > 0
             ? (ProductionPerSecond * 60) + " " + Resource.ToString().ToLowerInvariant() + " / minute\nHolds " + ProductionCapacity.ToString("N0")
             : "+" + StorageBonus.ToString("N0") + " " + Resource.ToString().ToLowerInvariant() + " capacity";
     }
@@ -35,13 +39,16 @@ namespace Kingdoms
         public static readonly BuildingDefinition GoldStorage = new BuildingDefinition("GoldStorage", "Gold Storage", 3, 300, ResourceKind.Elixir, 2, ResourceKind.Gold, storageBonus: 5000);
         public static readonly BuildingDefinition ElixirStorage = new BuildingDefinition("ElixirStorage", "Elixir Storage", 3, 300, ResourceKind.Gold, 2, ResourceKind.Elixir, storageBonus: 5000);
         public static readonly BuildingDefinition Wall = new BuildingDefinition("Wall", "Wall", 1, 25, ResourceKind.Gold, 25);
+        public static readonly BuildingDefinition Cannon = new BuildingDefinition("Cannon", "Cannon", 3, 250, ResourceKind.Gold, 2, hitPoints: 420, damagePerSecond: 9, range: 9);
+        public static readonly BuildingDefinition ArcherTower = new BuildingDefinition("ArcherTower", "Archer Tower", 3, 1000, ResourceKind.Gold, 1, hitPoints: 380, damagePerSecond: 11, range: 10);
+        public static readonly IReadOnlyList<BuildingDefinition> Purchasable = System.Array.AsReadOnly(new[] { GoldMine, ElixirCollector, GoldStorage, ElixirStorage, Cannon, ArcherTower, Wall });
         public static readonly IReadOnlyList<BuildingDefinition> Shop = System.Array.AsReadOnly(new[] { GoldMine, ElixirCollector, GoldStorage, ElixirStorage });
 
         public static BuildingDefinition Find(string id)
         {
             if (id == TownHall.Id) return TownHall;
             if (id == Wall.Id) return Wall;
-            foreach (var definition in Shop) if (definition.Id == id) return definition;
+            foreach (var definition in Purchasable) if (definition.Id == id) return definition;
             return null;
         }
     }

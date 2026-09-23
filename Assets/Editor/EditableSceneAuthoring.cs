@@ -19,6 +19,12 @@ public sealed class VillageGameplayEditor : Editor
         if(Application.isPlaying)return;
         EditorGUILayout.Space();
         EditorGUILayout.LabelField("Edit scene screens",EditorStyles.boldLabel);
+        if(game.HasEditableInterface && GUILayout.Button("Apply screenshot reference interface"))
+        {
+            Undo.RegisterFullObjectHierarchyUndo(game.gameObject,"Apply screenshot reference interface");
+            game.BuildScreenshotReferenceInterface();
+            EditorUtility.SetDirty(game);EditorSceneManager.MarkSceneDirty(game.gameObject.scene);
+        }
         if(!game.HasEditableInterface && GUILayout.Button("Create editable interface"))
         {
             Undo.RegisterFullObjectHierarchyUndo(game.gameObject,"Create village interface");

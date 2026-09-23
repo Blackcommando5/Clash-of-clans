@@ -1,0 +1,165 @@
+using System;
+using System.Collections.Generic;
+
+namespace Kingdoms
+{
+    public enum PracticeOutcome { Running, Victory, Defeat, Surrendered, Timeout }
+
+    // Integer positions (100 units/cell), fixed 100 ms ticks, stable list/ID ordering.
+    // This encounter owns all combat state and never receives a VillageState.
+    public sealed class PracticeBattle
+    {
+        public const int TickMilliseconds=100, ArmySize=8, TimeLimitTicks=1800;
+        public sealed class Entity
+        {
+            public int Id, X, Z, HitPoints, MaxHitPoints, Damage, Range, HalfSize, NextAttack;
+            public string Kind;
+            public bool Alive=>HitPoints>0;
+        }
+        public struct Strike { public int From,To; public Strike(int from,int to){From=from;To=to;} }
+        readonly List<Entity> buildings=new List<Entity>();
+        readonly List<Entity> raiders=new List<Entity>();
+        readonly List<Strike> strikes=new List<Strike>();
+        public IReadOnlyList<Entity> Buildings=>buildings;
+        public IReadOnlyList<Entity> Raiders=>raiders;
+        public IReadOnlyList<Strike> Strikes=>strikes;
+        public int Tick {get;private set;}
+        public int Remaining=>ArmySize-raiders.Count;
+        public PracticeOutcome Outcome {get;private set;}=PracticeOutcome.Running;
+        public int Destruction=>buildings.FindAll(b=>b.Kind!="Wall" && !b.Alive).Count*100/3;
+        const int GridSize=73, GridStep=50, GridOffset=1800;
+        sealed class Route { public Entity Target; public readonly Queue<int> Cells=new Queue<int>(); }
+        readonly Dictionary<int,Route> routes=new Dictionary<int,Route>();
+
+        public PracticeBattle(bool sealedEnclosure=false)
+        {
+            buildings.Add(new Entity{Id=0,Kind="TownHall",X=0,Z=300,HitPoints=600,MaxHitPoints=600,HalfSize=200});
+            AddDefense(BuildingCatalog.Cannon,1,-450,-100);
+            AddDefense(BuildingCatalog.ArcherTower,2,450,-100);
+            for(int x=-300;x<=300;x+=100)
+            {
+                AddWall(x,650);
+                if(x!=0 || sealedEnclosure)AddWall(x,-50);
+            }
+            for(int z=50;z<650;z+=100){AddWall(-300,z);AddWall(300,z);}
+        }
+        void AddWall(int x,int z)=>buildings.Add(new Entity{Id=10+buildings.Count,Kind="Wall",X=x,Z=z,HalfSize=50,HitPoints=80,MaxHitPoints=80});
+        void AddDefense(BuildingDefinition definition,int id,int x,int z)
+        {
+            buildings.Add(new Entity{Id=id,Kind=definition.Id,X=x,Z=z,HalfSize=definition.Size*50,
+                HitPoints=definition.HitPoints,MaxHitPoints=definition.HitPoints,Damage=definition.DamagePerSecond,Range=(int)(definition.Range*100)});
+        }
+        public bool Deploy(int lane)
+        {
+            if(Outcome!=PracticeOutcome.Running || Remaining==0 || lane<0 || lane>2)return false;
+            int x=(lane-1)*650;
+            raiders.Add(new Entity{Id=100+raiders.Count,Kind="Raider",X=x+(raiders.Count%3-1)*35,Z=-1350,
+                HitPoints=90,MaxHitPoints=90,Damage=20,Range=85});
+            return true;
+        }
+        static long DistanceSquared(Entity a,Entity b)
+        {long x=a.X-b.X,z=a.Z-b.Z;return x*x+z*z;}
+        static long EdgeDistanceSquared(Entity a,Entity b)
+        {long x=Math.Max(0,Math.Abs(a.X-b.X)-b.HalfSize),z=Math.Max(0,Math.Abs(a.Z-b.Z)-b.HalfSize);return x*x+z*z;}
+        Entity Closest(Entity source,List<Entity> candidates,bool edge)
+        {
+            Entity nearest=null;long best=long.MaxValue;
+            foreach(var entity in candidates)
+            {
+                if(!entity.Alive)continue;
+                long distance=edge ? EdgeDistanceSquared(source,entity) : DistanceSquared(source,entity);
+                if(distance<best){nearest=entity;best=distance;}
+            }
+            return nearest;
+        }
+        void Attack(Entity attacker,Entity target)
+        {
+            if(Tick<attacker.NextAttack)return;
+            target.HitPoints=Math.Max(0,target.HitPoints-attacker.Damage);
+            if(!target.Alive)routes.Clear();
+            attacker.NextAttack=Tick+10;strikes.Add(new Strike(attacker.Id,target.Id));
+        }
+        static int Cell(int x,int z)=>((z+GridOffset)/GridStep)*GridSize+(x+GridOffset)/GridStep;
+        static int CellX(int cell)=>(cell%GridSize)*GridStep-GridOffset;
+        static int CellZ(int cell)=>(cell/GridSize)*GridStep-GridOffset;
+        bool Blocked(int x,int z,Entity except=null)
+        {
+            foreach(var b in buildings)
+                if(b.Alive && b!=except && Math.Abs(x-b.X)<b.HalfSize+15 && Math.Abs(z-b.Z)<b.HalfSize+15)return true;
+            return false;
+        }
+        bool CanHit(Entity from,Entity target)
+        {
+            if(EdgeDistanceSquared(from,target)>(long)from.Range*from.Range)return false;
+            int x=Math.Max(target.X-target.HalfSize,Math.Min(target.X+target.HalfSize,from.X));
+            int z=Math.Max(target.Z-target.HalfSize,Math.Min(target.Z+target.HalfSize,from.Z));
+            for(int i=0;i<=10;i++)if(Blocked(from.X+(x-from.X)*i/10,from.Z+(z-from.Z)*i/10,target))return false;
+            return true;
+        }
+        Route FindRoute(Entity raider,bool walls)
+        {
+            int start=Cell(raider.X+GridStep/2,raider.Z+GridStep/2);
+            var previous=new int[GridSize*GridSize];for(int i=0;i<previous.Length;i++)previous[i]=-1;
+            var pending=new Queue<int>();pending.Enqueue(start);previous[start]=start;
+            var probe=new Entity{Range=raider.Range};
+            // Cardinal neighbours prevent corner cutting; ordering makes equal routes repeatable.
+            int[] dx={0,-1,1,0},dz={1,0,0,-1};
+            while(pending.Count>0)
+            {
+                int cell=pending.Dequeue();probe.X=CellX(cell);probe.Z=CellZ(cell);
+                foreach(var b in buildings)
+                {
+                    if(!b.Alive || (b.Kind=="Wall")!=walls || !CanHit(probe,b))continue;
+                    var route=new Route{Target=b};var reverse=new Stack<int>();
+                    for(int c=cell;c!=start;c=previous[c])reverse.Push(c);
+                    route.Cells.Enqueue(start);while(reverse.Count>0)route.Cells.Enqueue(reverse.Pop());return route;
+                }
+                for(int i=0;i<4;i++)
+                {
+                    int x=cell%GridSize+dx[i],z=cell/GridSize+dz[i];
+                    if(x<0 || x>=GridSize || z<0 || z>=GridSize)continue;
+                    int next=z*GridSize+x;
+                    if(previous[next]!=-1 || Blocked(CellX(next),CellZ(next)))continue;
+                    previous[next]=cell;pending.Enqueue(next);
+                }
+            }
+            return null;
+        }
+        void MoveOrAttack(Entity raider)
+        {
+            if(!routes.TryGetValue(raider.Id,out var route))
+            {
+                route=FindRoute(raider,false) ?? FindRoute(raider,true);
+                if(route==null)return;
+                routes[raider.Id]=route;
+            }
+            if(CanHit(raider,route.Target)){Attack(raider,route.Target);return;}
+            if(route.Cells.Count==0){routes.Remove(raider.Id);return;}
+            int cell=route.Cells.Peek(),dx=CellX(cell)-raider.X,dz=CellZ(cell)-raider.Z;
+            int distance=Math.Max(1,(int)Math.Ceiling(Math.Sqrt((long)dx*dx+(long)dz*dz)));
+            int step=Math.Min(28,distance);
+            raider.X+=dx*step/distance;raider.Z+=dz*step/distance;
+            if(raider.X==CellX(cell) && raider.Z==CellZ(cell))route.Cells.Dequeue();
+        }
+        public void Step()
+        {
+            strikes.Clear();if(Outcome!=PracticeOutcome.Running)return;
+            Tick++;
+            foreach(var defense in buildings)
+            {
+                if(!defense.Alive || defense.Damage==0)continue;
+                var target=Closest(defense,raiders,false);
+                if(target!=null && DistanceSquared(defense,target)<=(long)defense.Range*defense.Range)Attack(defense,target);
+            }
+            foreach(var raider in raiders)
+            {
+                if(!raider.Alive)continue;
+                MoveOrAttack(raider);
+            }
+            if(buildings.TrueForAll(b=>b.Kind=="Wall" || !b.Alive))Outcome=PracticeOutcome.Victory;
+            else if(Remaining==0 && raiders.TrueForAll(r=>!r.Alive))Outcome=PracticeOutcome.Defeat;
+            else if(Tick>=TimeLimitTicks)Outcome=PracticeOutcome.Timeout;
+        }
+        public void Surrender(){if(Outcome==PracticeOutcome.Running)Outcome=PracticeOutcome.Surrendered;strikes.Clear();}
+    }
+}

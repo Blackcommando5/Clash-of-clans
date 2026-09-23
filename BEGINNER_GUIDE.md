@@ -1,14 +1,14 @@
 # Kingdoms: a beginner's guide to rebuilding and understanding the game
 
-Updated: 10 September 2026.
+Updated: 23 September 2026.
 
-> Update, 15 September 2026: this guide describes the original prototype. The new [resource milestone](RESOURCE_MILESTONE.md) adds collectors, storage buildings, a four-building shop, both-resource collection, and version 2 village saves. Use that document for the current economy and save behavior.
+> Keep this guide current with every development update. Sections 1, 11, 12 and 14 describe the current game. The manual ground, camera, welcome and primitive-model lessons explain the original foundations; inspect the current scenes for the latest artwork and Inspector values.
 
 Project: `E:\Project\Games\Kingdoms`
 
 This guide explains the work completed so far and how you can reproduce it manually. You do not need previous Unity experience. Work through one lesson at a time, test it, and then continue.
 
-The project is a Clash of Clans-inspired village prototype with its own Kingdoms title and starter assets. It is not the complete Clash of Clans game. Our current playable loop is: enter the village, choose a name, build a Gold Mine, collect gold, and return to your saved village.
+The project is a Clash of Clans-inspired village prototype with its own Kingdoms title and starter assets. It is not the complete Clash of Clans game. The current loop is: enter the village, choose a name, build and collect resources, move and upgrade buildings, manage two builders, and try an isolated practice battle.
 
 ## Contents
 
@@ -39,14 +39,17 @@ The project is a Clash of Clans-inspired village prototype with its own Kingdoms
 | Welcome screen | Kingdoms artwork, title, loading progress, tips and fade into the village |
 | New player | Name input, validation, confirmation and saved Chief nameplate |
 | Village | Starter Town Hall and surrounding trees |
-| HUD | Gold, elixir and gem counters, guide message, Shop and Collect buttons |
-| Shop | Buy and place up to three Gold Mines |
-| Placement | Grid snapping, valid/invalid preview, overlap and boundary checks, cancellation |
-| Economy | Gold production and collection with storage limits |
-| Persistence | Name, buildings, resources and production progress saved locally |
+| HUD and shop | Resource bars, builder queue, categorized full-screen shop and model portraits |
+| Buildings | Gold Mine, Elixir Collector, both storage types, Cannon, Archer Tower and individual walls |
+| Placement | Grid snapping, overlap/boundary checks, preview cancellation and moving existing buildings |
+| Economy | Gold and elixir production, collection, storage limits and offline accrual |
+| Progression | Two builders, timed upgrades through level 3, Town Hall limits, confirmed cancellation with a storage-capped 50% refund |
+| Defenses | Purchase, move, inspect range and upgrade; home defenses remain idle |
+| Practice battle | Eight raiders, three enemy buildings, walls, entrance routing, wall breach logic, results, retry and return |
+| Persistence | Local version 3 village saves; migrations from versions 1 and 2 |
 | Mobile setup | Welcome scene first, village second, landscape orientation, Android IL2CPP/ARM64 settings |
 
-Not implemented yet: Elixir Collectors, building upgrades, construction timers, troops, combat, matchmaking, multiplayer, online accounts, purchases, or a server economy. Showing a gem counter does not mean a gem shop exists.
+Not implemented yet: army training, battle rewards, arbitrary enemy villages, unit separation, matchmaking, multiplayer, online accounts, purchases or a server economy. The fixed practice battlefield is separate from your home village. Gem counters and reference-style buttons do not imply that all reference-game features exist.
 
 The Android configuration exists, but an Android build and physical-phone testing have not been completed as part of this work.
 
@@ -180,7 +183,7 @@ A list stores multiple records; `foreach` visits them one at a time. A method is
 
 An `IEnumerator` method with `yield return` can spread work over frames. The welcome screen uses this pattern so loading and fading can progress while the screen continues drawing.
 
-**Practice:** Find `MineCost` in `VillageState.cs`. Before editing it, find every place the shop displays the cost. Some descriptions are written as text; changing the number alone will not update those descriptions automatically.
+**Practice:** Find the Gold Mine definition in `BuildingCatalog.cs`. Before editing it, find every place the shop displays the cost. Some descriptions are written as text; changing the number alone will not update those descriptions automatically.
 
 ## 6. Create the ground
 
@@ -445,137 +448,48 @@ Create a final material called `Placement`, using **Universal Render Pipeline/Un
 
 ## 11. Understand resources, placement and saving
 
-Open `VillageState.cs`. A building's data is deliberately simpler than its 3D model:
+Start with [BuildingCatalog.cs](Assets/Scripts/Core/BuildingCatalog.cs). Each definition supplies a building's ID, footprint, price, resource type and base stats. [VillageState.cs](Assets/Scripts/Core/VillageState.cs) holds the saved village; [VillageProgression.cs](Assets/Scripts/Core/VillageProgression.cs) adds levels, builder jobs, limits and cancellation. These partial class files form one class and must stay together.
 
-```csharp
-public string kind;
-public int x, z, storedGold;
-```
+A new village starts with 1,000 gold, 500 elixir, 50 gems and a Town Hall. Existing saves retain their balances. Current purchase prices are:
 
-`kind` identifies TownHall or GoldMine. `x` and `z` identify the minimum corner of its rectangular grid footprint. `storedGold` records gold waiting inside a mine. The record does not store a GameObject; the game recreates the visual instance from the prefab when loading.
+| Building | Cost | Size | Town Hall 1 limit |
+| --- | --- | --- | --- |
+| Gold Mine | 150 elixir | 3 x 3 | 3 |
+| Elixir Collector | 150 gold | 3 x 3 | 3 |
+| Gold Storage | 300 elixir | 3 x 3 | 2 |
+| Elixir Storage | 300 gold | 3 x 3 | 2 |
+| Cannon | 250 gold | 3 x 3 | 2 |
+| Archer Tower | 1,000 gold | 3 x 3 | 1 |
+| Wall | 25 gold | 1 x 1 | 25 |
 
-### Starting values
+Purchases complete immediately. Upgrades take time and occupy one of two builders. Producers generate 60 resources per minute per level and hold 500 per level. Each storage adds 5,000 capacity per level to the Town Hall's 10,000 base capacity for that resource. A producer stops producing during an upgrade; its already stored resources remain collectable. See [Home Village progression](HOME_VILLAGE_PROGRESS.md) for upgrade prices, durations and Town Hall requirements.
 
-| Rule | Current value |
-| --- | --- |
-| Gold | 1,000 |
-| Elixir | 500 |
-| Gems | 50 |
-| Town Hall corner | `(-2, -2)` |
-| Town Hall size | 4 x 4 |
-| Mine price | 150 elixir |
-| Mine size | 3 x 3 |
-| Mine count limit | 3 |
-| Mine production | 1 gold per second: 60 per minute |
-| Each mine's storage | 500 gold |
-| Village gold capacity | 10,000 |
+Building coordinates describe the lower corner of the footprint. Its model is drawn at `(x + size / 2, 0, z + size / 2)`. Placement and movement reject overlaps and cells outside the 44 x 44 build area. Cancelling a placement does not charge you; cancelling a move restores the previous position.
 
-These are our prototype's balance values. They are not a claim about Clash of Clans' current economy.
+Saving uses JSON in PlayerPrefs under `Kingdoms.Village.v1`; the key name stays the same even though the payload version is 3. Old valid saves migrate. Invalid data is preserved for investigation. Mutating UI actions validate a copy and save it before accepting the changed state. Do not reset your save just to see a new feature.
 
-### Grid position versus model position
+**Practice:** Buy an Elixir Collector, collect its output, and restart Play Mode. Confirm that both its location and your resources return. Then start an affordable upgrade, open the builder queue, and inspect the job. Choose Cancel Upgrade and read the confirmation: the refund is half the cost, limited by free storage. Closing the confirmation keeps the job running.
 
-The Town Hall starts at corner `(-2, -2)`, but its model center is `(0, 0)` on X/Z:
+## 12. Connect the village, HUD, shop and practice battle
 
-```text
-center X = corner X + size / 2
-center Z = corner Z + size / 2
-```
+Open `Assets/Scenes/Main Scene.unity` to inspect the village. Use [SCENE_EDITING_GUIDE.md](SCENE_EDITING_GUIDE.md) for editable scene objects. Do not add a second gameplay component or regenerate the scene just to change a label. Many game controls are authored in the scene, while dialogs and the practice battlefield are created at runtime. Play Mode edits to generated objects do not persist.
 
-A 3 x 3 mine at corner `(5, -1)` is drawn at world `(6.5, 0, 0.5)`. Keeping the prefab pivot centered is what makes this conversion work.
+The main component is [VillageGameplay.cs](Assets/Scripts/UI/VillageGameplay.cs). Its partial files share the same class: `VillageEditableUI` wires authored UI, `VillageInteractions` handles selection and progression actions, `VillageScreenshotReference` adapts the reference-style shop and dialogs, and `VillageReferenceScenery` supplies surroundings. Keep all the partial files when copying code into a learning project. Current model assets are in `Assets/Prefabs/ScreenshotReference`; the earlier primitive-model lesson is an exercise, not a replacement for these assets.
 
-### Placement rules
+### Try the current controls
 
-`CanPlaceMine` checks the mine limit, available elixir, the village boundary, and other footprints. The mine's corner must be at least -22 and no more than 19 on each ground axis, because a size-3 building must end at or before +22.
+1. Start from WelcomeScene and enter or confirm your name if prompted.
+2. Open Shop, select a supported resource or defense building, choose a clear grid location, and confirm placement.
+3. Tap a building without dragging. Choose Move or Info / Upgrade. Select a defense to see its range circle.
+4. Tap the builder indicator to inspect both builder slots and active jobs. Select a job to open its details.
+5. Tap Attack! to open Practice Battle. Deploy Left, Center or Right spends one of eight practice raiders per tap.
+6. Watch raiders avoid footprints and approach the enclosed Town Hall through its entrance. If all remaining buildings are sealed off, the simulation can target and break a wall; the sealed layout is currently a validation scenario.
+7. Destroy all three buildings to win. Walls do not count toward destruction percentage. Losing all eight deployed raiders is defeat; the timer ends the battle after three minutes. You may return home early.
+8. After a result, choose Retry to reset the encounter or Return Home to restore your village and camera.
 
-Two footprints overlap when they overlap on **both** X and Z. The code uses strict comparisons, so adjacent buildings may touch along an edge without overlapping.
+[PracticeBattle.cs](Assets/Scripts/Core/PracticeBattle.cs) runs combat in integer positions at 100 ms ticks, independently of Unity rendering. It uses a half-cell navigation grid, stable route ordering and route rebuilding when a structure is destroyed. [VillagePracticeBattle.cs](Assets/Scripts/UI/VillagePracticeBattle.cs) creates models, buttons, health bars and firing traces. Eight raiders may overlap; unit separation is not implemented.
 
-```text
-Preview: move a temporary model, but spend nothing
-Confirm: copy state -> validate -> deduct cost -> add record -> save
-Save succeeds: adopt new state and spawn the permanent model
-Cancel: remove preview, leaving resources and saved buildings unchanged
-```
-
-Using a candidate copy means an unsuccessful purchase does not immediately mutate the live village. Calling Confirm again after success does nothing because the preview has already been removed.
-
-### Production and collection
-
-`Accrue(now)` compares the current timestamp with `lastProduction`. Each existing mine receives the elapsed seconds as gold, up to its capacity. Before adding a new mine, the old village is accrued first, so the new mine does not receive gold for time before it existed.
-
-Example: a mine containing 480 gold receives 60 seconds of production. It ends at 500, not 540. If the village has 9,990 gold and the mine contains 100, collection transfers only 10. The remaining 90 stays in the mine.
-
-The timestamp uses the device's UTC clock. This supports offline progress for a local prototype. A clock moved backward does not award negative gold; production waits until the stored timestamp is passed. An online competitive economy would need a server-authoritative design.
-
-### Saving
-
-`VillageSave` converts the state to JSON with `JsonUtility` and stores it in PlayerPrefs under `Kingdoms.Village.v1`. Purchases and collections save immediately. Background progress saves every 30 seconds and on pause/quit.
-
-On load, `IsValid()` checks the version, resources, building kinds, positions, counts and overlaps. Invalid saved data is preserved and an error is displayed. The code does not silently erase the player's village to hide the problem.
-
-**Practice on paper:** Starting from 500 elixir, calculate the balance after one, two and three mines. Answers: 350, 200 and 50. Calculate the stored gold after 90 seconds for one empty mine: 90.
-
-## 12. Connect the village, HUD and shop
-
-### Manual scene setup
-
-1. Open Main Scene and create an empty root named `Village Gameplay`.
-2. Leave its position and rotation at zero and scale at one.
-3. Add `VillageGameplay`.
-4. Assign every field below by dragging assets or scene objects into the Inspector.
-
-| Field | Assign |
-| --- | --- |
-| Town Hall Prefab | TownHall prefab asset |
-| Gold Mine Prefab | GoldMine prefab asset |
-| Pine Prefab | PineTree prefab asset |
-| Footprint Material | Placement material |
-| Title Font | Bangers.ttf |
-| Body Font | Roboto-Bold.ttf |
-| View Camera | Main Camera's Camera component |
-| Camera Controller | Main Camera's VillageCameraController component |
-
-Do not attach VillageGameplay to Main Camera. Buildings and trees are created beneath its transform; using a stationary world root keeps them from following camera motion.
-
-Your manually saved scene should have the ground, Directional Light, Main Camera with camera/onboarding components, and the Village Gameplay root. Do not also place a permanent Town Hall manually: VillageGameplay creates the saved state's Town Hall during Start.
-
-### Where are the HUD objects?
-
-`BuildUI()` creates them when you press Play. Expand Village Gameplay during Play Mode to inspect the Village HUD, safe-area container, counters, guide, buttons, placement controls and Building Shop.
-
-The HUD canvas sorts at 100; the player identity canvas sorts at 300. The higher sorting order lets name entry appear above village controls. A safe-area container adjusts anchors around usable screen space.
-
-The resources are anchored top-right. The Chief nameplate is top-left. Shop is bottom-right and Collect bottom-left. Placement controls appear near the bottom center. The shop uses a dimmer behind a centered panel.
-
-`Button.onClick.AddListener(...)` connects the generated buttons directly in code:
-
-| Control | Method |
-| --- | --- |
-| Shop | `OpenShop` |
-| Back | `CloseShop` |
-| Buy Gold Mine | `BeginMinePlacement` |
-| Build | `ConfirmPlacement` |
-| Cancel | `CancelPlacement` |
-| Collect | `Collect` |
-
-You do not need to add the same button handlers again through Inspector events for the existing generated UI.
-
-### Follow a click through the code
-
-1. Shop opens its panel and blocks camera gestures.
-2. Buy creates a temporary mine and colored ground footprint.
-3. Pointer movement is projected onto the ground and converted to integer grid coordinates.
-4. `SetPreviewCell` moves the model, asks VillageState whether the cell is valid, updates color/text, and enables or disables Build.
-5. Confirm performs the saved transaction and creates the permanent mine.
-6. Cancel removes temporary objects and unlocks the camera.
-7. `RefreshHUD` updates resource labels and guidance.
-
-The camera remains fixed during placement, so dragging positions the mine. Outside placement, dragging moves the camera. Touch gestures and UI hits are checked so pressing a button does not also move the preview beneath it.
-
-`DefaultExecutionOrder(50)` on VillageGameplay makes its Start setup run before onboarding's order 100. This lets the village provide the EventSystem that both systems share.
-
-**Check:** Build a mine, cancel a second preview, collect gold, stop, and play again. The confirmed mine should return; the cancelled one should not.
-
-**Practice:** Change the shop panel's title or a color in `BuildUI()`, then restart Play Mode. This teaches why editing a runtime object in the Inspector does not permanently change the generated UI.
+Practice has no costs, loot, trophies or saved army. Its state never receives your home VillageState. Pausing the application freezes practice; closing the application discards it. Home economy processing resumes when you return. See [PRACTICE_BATTLE_PROGRESS.md](PRACTICE_BATTLE_PROGRESS.md) for detailed rules and limitations.
 
 ## 13. Prepare the mobile scenes
 
@@ -613,7 +527,11 @@ Use these as checkpoints after each lesson, rather than waiting until everything
 | Build first mine | One mine placed; elixir falls from 500 to 350 |
 | Wait about 60 seconds | About 60 gold produced in that mine |
 | Collect | Village gold increases; mine storage decreases |
-| Build three mines | Fourth mine unavailable |
+| Build three mines at Town Hall 1 | Fourth mine unavailable until the Town Hall limit increases |
+| Upgrade and open builder queue | Job, target level and remaining time appear |
+| Confirm upgrade cancellation | Current level retained; builder freed; storage-capped half refund |
+| Open Attack and deploy | Separate practice battle; defenses fire and raiders route through the entrance |
+| Finish, retry and return | Encounter resets; home village state is preserved |
 | Stop and play again | Confirmed buildings and resources reload |
 | Change landscape aspect ratio | UI remains usable and camera remains bounded |
 | Pause/relaunch on phone | Saved village returns; capped offline progress applies |
@@ -682,8 +600,8 @@ These checks do not replace a complete launch-to-village run on the target phone
 | Elixir change does not take effect | Existing save overrides new starting defaults |
 | UI edit disappears | Edit was made to a generated object during Play Mode; change its creation code instead |
 | Camera zoom default edit does not take effect | Scene's serialized Inspector value overrides the code initializer |
-| Can't buy a fourth mine | Current prototype limit is three |
-| Can't buy another mine | Budget may be below 150 elixir; elixir production is not implemented |
+| Can't buy a fourth mine | Town Hall 1 allows three; inspect your current Town Hall level |
+| Can't buy another mine | Check elixir balance, Town Hall limit and available placement space |
 | Village save error | Data was rejected and preserved; investigate before choosing to reset a learning save |
 
 When debugging, write down: what you expected, what actually happened, the first Console error, and the last change you made. This is more useful than changing several settings at once.
@@ -716,7 +634,7 @@ One thing I still do not understand:
 What I will try next:
 ```
 
-The next planned feature is an Elixir Collector, then building selection/upgrades, followed by a guided first battle. Before extending the economy, consider turning building-specific costs, sizes and production rules into reusable definitions; the current code intentionally supports only the starter Town Hall and Gold Mine.
+Collectors, selection, upgrades and the first practice battle are now implemented. Further work includes trained armies, more opponents, battle rewards, unit separation and device testing. Use [GAME_DEVELOPMENT_PHASES.md](GAME_DEVELOPMENT_PHASES.md) to choose the next unfinished milestone.
 
 ## 17. Record of the AI-assisted work
 
@@ -756,3 +674,12 @@ Existing backup folders in the game project preserve files before earlier change
 [CameraSetup.md](CameraSetup.md), [WelcomeUI.md](WelcomeUI.md), [PlayerNaming.md](PlayerNaming.md), and [VillageGameplay.md](VillageGameplay.md) describe individual development steps. Some statements in the first two refer to an earlier stage: the grid now has gameplay placement rules, and SampleScene is no longer enabled in the build list. Use this guide's current scene table and the actual project settings when rebuilding.
 
 For tomorrow's development session, reopen the project and this guide, read your learning notes, and start with the next unfinished checkpoint. The source files remain the complete implementation you can compare against while recreating each part manually.
+
+
+### 23 September 2026 development update
+
+Added the screenshot-inspired HUD, shop, resource models and scenery; builder queue and upgrade cancellation; Cannon and Archer Tower progression; and isolated practice combat with wall routing and breach logic. See [SCREENSHOT_REFERENCE_MATCH.md](SCREENSHOT_REFERENCE_MATCH.md) and [DEFENSE_VILLAGE_PROGRESS.md](DEFENSE_VILLAGE_PROGRESS.md). The supplied images are visual references; this remains a partial Kingdoms implementation.
+
+Validation evidence: [builder queue](BuilderQueueValidation.txt), [upgrade cancellation](UpgradeCancellationValidation.txt), [reference UI](ScreenshotReferenceValidation.txt), [defenses](DefenseVillageValidation.txt), and [practice battle](PracticeBattleValidation.txt). Practice checks passed entrance preference, sealed-wall breach, route rebuilding, footprint avoidance, deterministic combat, terminal outcomes, retry/return controls and exact home-state/save preservation. [Current battle preview](PracticePreviews/practice-combat.png).
+
+These checks used the isolated `.utmp/ResourceValidation` Unity project and its separate PlayerPrefs identity. Do not run validation entry points against your real village or change their identity guards to force them to run. No APK was rebuilt for these additions; phone performance and the full mobile flow remain unverified.
