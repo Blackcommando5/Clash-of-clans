@@ -11,7 +11,8 @@ namespace Kingdoms.UI
         GameObject practiceWorld,practiceCanvas;
         RectTransform practiceSafe;
         Text practiceStatus,practiceInstructions;
-        Button practiceRetry,practiceWatch;
+        Button practiceRetry,practiceWatch,practiceChallenge;
+        bool practiceSealedChallenge;
         readonly List<Button> practiceDeployButtons=new List<Button>();
         readonly Dictionary<int,GameObject> practiceModels=new Dictionary<int,GameObject>();
         readonly Dictionary<int,Text> practiceHealth=new Dictionary<int,Text>();
@@ -50,7 +51,11 @@ namespace Kingdoms.UI
             practiceRetry=Button("Retry Practice",practiceSafe,"RETRY",new Vector2(.81f,.03f),new Vector2(.98f,.12f),new Color(.45f,.64f,.24f));practiceRetry.onClick.AddListener(ResetPracticeBattle);
             practiceWatch=Button("Watch Practice Replay",practiceSafe,"WATCH REPLAY",new Vector2(.83f,.89f),new Vector2(.985f,.975f),new Color(.22f,.45f,.65f));
             ReferenceText(practiceWatch.GetComponentInChildren<Text>(),21,Color.white);practiceWatch.onClick.AddListener(WatchPracticeReplay);
+            practiceChallenge=Button("Switch Practice Challenge",practiceSafe,"",new Vector2(.015f,.89f),new Vector2(.17f,.975f),new Color(.48f,.35f,.19f));
+            ReferenceText(practiceChallenge.GetComponentInChildren<Text>(),20,Color.white);
+            practiceChallenge.onClick.AddListener(()=>SelectPracticeChallenge(!practiceSealedChallenge));
             raiderCloth=PracticeMaterial("Raider tunic",new Color(.1f,.55f,.8f));raiderSkin=PracticeMaterial("Raider skin",new Color(.9f,.65f,.4f));shotMaterial=PracticeMaterial("Practice shots",new Color(1,.8f,.16f),true);
+            practiceSealedChallenge=false;
             ResetPracticeBattle();
         }
 
@@ -61,6 +66,11 @@ namespace Kingdoms.UI
 
         public void ResetPracticeBattle()
         {StartPracticeBattle(null);}
+        public bool SelectPracticeChallenge(bool sealedWalls)
+        {
+            if(practiceBattle==null || (practiceBattle.Outcome==PracticeOutcome.Running && (WatchingPracticeReplay || practiceBattle.Remaining<PracticeBattle.ArmySize)))return false;
+            practiceSealedChallenge=sealedWalls;StartPracticeBattle(null);return true;
+        }
         public void WatchPracticeReplay()
         {
             if(practiceBattle==null || practiceBattle.Outcome==PracticeOutcome.Running)return;
@@ -73,14 +83,17 @@ namespace Kingdoms.UI
             foreach(var label in practiceHealth.Values){label.gameObject.SetActive(false);Destroy(label.gameObject);}
             practiceModels.Clear();practiceHealth.Clear();practiceShots.Clear();practiceAccumulator=0;practicePaused=false;
             practiceReplay=recording==null ? null : new PracticeReplay(recording);
-            practiceBattle=practiceReplay==null ? new PracticeBattle() : practiceReplay.Battle;
+            practiceBattle=practiceReplay==null ? new PracticeBattle(practiceSealedChallenge) : practiceReplay.Battle;
+            practiceSealedChallenge=practiceBattle.SealedEnclosure;
             practiceWorld=new GameObject("Practice Battlefield");practiceWorld.transform.SetParent(transform,false);
             foreach(var building in practiceBattle.Buildings)
             {
                 var model=Instantiate(PrefabFor(building.Kind),practiceWorld.transform);model.name="Practice "+building.Kind;model.SetActive(true);
                 model.transform.position=PracticePosition(building);practiceModels.Add(building.Id,model);AddPracticeHealth(building);
             }
-            practiceInstructions.text="Raiders use openings or break sealed walls. Destroy all three buildings to win.";
+            practiceInstructions.text=practiceSealedChallenge
+                ? "WALL BREACH: Break through the sealed enclosure and destroy all three buildings."
+                : "OPEN GATE: Raiders use the entrance. Switch challenges before deploying, or destroy all three buildings.";
             if(WatchingPracticeReplay)practiceInstructions.text="Watching your recorded attack. Deployments play automatically.";
             foreach(var raider in practiceBattle.Raiders)CreatePracticeRaider(raider);
             foreach(var wall in practiceWorld.GetComponentsInChildren<WallSegment>())wall.RefreshConnections();
@@ -148,6 +161,8 @@ namespace Kingdoms.UI
             foreach(var button in practiceDeployButtons)button.interactable=running && !WatchingPracticeReplay && practiceBattle.Remaining>0;
             practiceRetry.interactable=!running;
             practiceWatch.interactable=!running;
+            practiceChallenge.interactable=!running || (!WatchingPracticeReplay && practiceBattle.Remaining==PracticeBattle.ArmySize);
+            practiceChallenge.GetComponentInChildren<Text>().text=practiceSealedChallenge ? "TRY OPEN GATE" : "TRY WALL BREACH";
             if(!running)practiceInstructions.text=WatchingPracticeReplay
                 ? (PracticeReplayMatches ? "Replay complete. Result matches the original attack." : "Replay mismatch detected. Retry to start a new practice attack.")
                 : "Practice complete. Watch Replay, retry, or return home. No resources were spent or awarded.";

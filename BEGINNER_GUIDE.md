@@ -483,7 +483,7 @@ The main component is [VillageGameplay.cs](Assets/Scripts/UI/VillageGameplay.cs)
 3. Tap a building without dragging. Choose Move or Info / Upgrade. Select a defense to see its range circle.
 4. Tap the builder indicator to inspect both builder slots and active jobs. Select a job to open its details.
 5. Tap Attack! to open Practice Battle. Deploy Left, Center or Right spends one of eight practice raiders per tap.
-6. Watch raiders avoid footprints and approach the enclosed Town Hall through its entrance. If all remaining buildings are sealed off, the simulation can target and break a wall; the sealed layout is currently a validation scenario.
+6. Watch raiders avoid footprints and approach the enclosed Town Hall through its entrance. If all remaining buildings are sealed off, the simulation can target and break a wall; choose Try Wall Breach before deploying to play the sealed layout.
 7. Destroy all three buildings to win. Walls do not count toward destruction percentage. Losing all eight deployed raiders is defeat; the timer ends the battle after three minutes. You may return home early.
 8. After a result, choose Watch Replay to watch the same attack again. Deployments play automatically and deployment buttons are disabled. The result reports whether playback matches the original. Choose Retry to start a new playable encounter or Return Home to restore your village and camera.
 
@@ -692,3 +692,12 @@ The results screen now offers **Watch Replay**. Each accepted deployment records
 **Try it:** Deploy two raiders, wait a few seconds, deploy the others, and finish the attack. Watch Replay and observe the same delay between deployments. Manual deployment is disabled during playback. Retry leaves replay mode and restores eight playable raiders. Return Home also works during playback.
 
 Recordings stay in memory for the current encounter. Retry, returning home or closing the application discards access to that replay. There is no replay export, saved replay browser, speed control or compatibility with older combat rules. This is local fixed-layout playback, not server verification. Validation checks every tick for open and sealed layouts, timed surrender, timeout, mismatch detection, UI controls and home-save preservation. See [PracticeBattleValidation.txt](PracticeBattleValidation.txt) and [replay preview](PracticePreviews/practice-replay.png). No APK rebuild or physical-phone replay test was performed.
+
+
+### Selectable practice challenges
+
+Attack opens **Open Gate**, where raiders use the entrance in the Town Hall enclosure. Before deploying, choose **Try Wall Breach** at the upper left to close that entrance. The same eight-raider army must now destroy a wall to reach the Town Hall. Neither challenge charges resources or grants rewards.
+
+You can change challenges before the first deployment or after a result. Switching starts a fresh encounter and replaces the previous replay. The switch is disabled during an active attack and during replay playback. **Retry** keeps the current challenge; **Watch Replay** reconstructs the same enclosure. Returning home and opening Attack again defaults to Open Gate. Challenge selection is not saved.
+
+Validation covers selecting both layouts, rejecting mid-attack changes, winning the sealed challenge with wall destruction, replaying both layouts, keeping the selected challenge on retry, and preserving the home save. See [challenge preview](PracticePreviews/practice-wall-challenge.png) and [validation report](PracticeBattleValidation.txt). No APK rebuild or phone testing was performed.

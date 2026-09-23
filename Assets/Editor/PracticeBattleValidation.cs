@@ -115,7 +115,7 @@ public static class PracticeBattleValidation
         if(!SessionState.GetBool(Pending,false))return;
         try
         {
-            Check((DateTime.UtcNow-new DateTime(long.Parse(SessionState.GetString("PracticeBattle.Start","0")))).TotalSeconds<120,"Play mode timeout");
+            Check((DateTime.UtcNow-new DateTime(long.Parse(SessionState.GetString("PracticeBattle.Start","0")))).TotalSeconds<180,"Play mode timeout");
             if(!EditorApplication.isPlaying || EditorApplication.isCompiling)return;
             var game=UnityEngine.Object.FindFirstObjectByType<VillageGameplay>();if(game==null || game.State==null)return;
             int step=SessionState.GetInt("PracticeBattle.Step",0);
@@ -124,9 +124,12 @@ public static class PracticeBattleValidation
                 if(GameObject.Find("Attack Menu")==null)return;
                 SessionState.SetString("PracticeBattle.Home",JsonUtility.ToJson(game.State));SessionState.SetString("PracticeBattle.Save",PlayerPrefs.GetString(VillageSave.Key));
                 Click("Attack Menu");Check(game.PracticeOpen && game.cameraController.InputBlocked && GameObject.Find("Shop")==null,"Attack opens isolated practice controls");
+                Click("Switch Practice Challenge");Check(game.CurrentPracticeBattle.SealedEnclosure,"Select sealed challenge before deployment");
+                Click("Switch Practice Challenge");Check(!game.CurrentPracticeBattle.SealedEnclosure,"Return to open challenge before deployment");
                 Capture("practice-ready.png");
                 for(int i=0;i<8;i++)Click("Deploy Raider "+(i%3));
                 Check(game.CurrentPracticeBattle.Raiders.Count==8 && !GameObject.Find("Deploy Raider 0").GetComponent<Button>().interactable,"Deployment buttons exhaust army");
+                Check(!game.SelectPracticeChallenge(true) && !game.CurrentPracticeBattle.SealedEnclosure,"Active attack rejects challenge switching");
                 SessionState.SetInt("PracticeBattle.Step",1);return;
             }
             if(step==1)
@@ -153,12 +156,32 @@ public static class PracticeBattleValidation
             {
                 if(game.CurrentPracticeBattle.Outcome==PracticeOutcome.Running)return;
                 Check(game.PracticeReplayMatches,"UI replay matches original battle");
+                Click("Switch Practice Challenge");Check(!game.WatchingPracticeReplay && game.CurrentPracticeBattle.SealedEnclosure && game.CurrentPracticeBattle.Remaining==8,"Switch from replay results to wall challenge");
+                Capture("practice-wall-challenge.png");
+                for(int i=0;i<8;i++)Click("Deploy Raider "+(i%3));
+                SessionState.SetInt("PracticeBattle.Step",5);return;
+            }
+            if(step==5)
+            {
+                if(game.CurrentPracticeBattle.Outcome==PracticeOutcome.Running)return;
+                Check(game.CurrentPracticeBattle.Outcome==PracticeOutcome.Victory,"Sealed challenge can be won with eight raiders");
+                bool breached=false;foreach(var b in game.CurrentPracticeBattle.Buildings)if(b.Kind=="Wall" && !b.Alive)breached=true;
+                Check(breached,"Playable sealed challenge requires wall destruction");
+                Capture("practice-wall-results.png");Click("Watch Practice Replay");
+                Check(game.CurrentPracticeBattle.SealedEnclosure && !game.SelectPracticeChallenge(false),"Replay preserves challenge and blocks switching");
+                SessionState.SetInt("PracticeBattle.Step",6);return;
+            }
+            if(step==6)
+            {
+                if(game.CurrentPracticeBattle.Outcome==PracticeOutcome.Running)return;
+                Check(game.PracticeReplayMatches,"Sealed challenge replay matches");
                 Check(JsonUtility.ToJson(game.State)==SessionState.GetString("PracticeBattle.Home","") && PlayerPrefs.GetString(VillageSave.Key)==SessionState.GetString("PracticeBattle.Save",""),"Replay preserves home state and save");
                 Click("Retry Practice");Check(game.PracticeOpen && !game.WatchingPracticeReplay && game.CurrentPracticeBattle.Remaining==8 && game.CurrentPracticeBattle.Tick==0,"Retry resets practice only");
+                Check(game.CurrentPracticeBattle.SealedEnclosure,"Retry retains selected challenge");
                 Click("Return From Practice");Check(!game.PracticeOpen && !game.cameraController.InputBlocked && GameObject.Find("Shop")!=null,"Return restores village and camera");
                 Check(JsonUtility.ToJson(game.State)==SessionState.GetString("PracticeBattle.Home",""),"Returning does not change village state");
                 Click("Attack Menu");Click("Deploy Raider 0");Click("Return From Practice");Check(!game.PracticeOpen,"Early return abandons encounter safely");
-                Finish("PASS: per-tick replay equality for open/sealed layouts; timed commands; surrender/timeout replay; state mismatch detection; replay UI and deployment lock; replay save preservation; entrance routing; sealed-wall breach and replanning; footprint collision checks; walls excluded from victory score; fixed-tick repeatability; deployment limits; defense range/damage/cooldown; both sides attack; victory/defeat/timeout/surrender; terminal-state guard; real-time Attack/deploy/results/retry/return UI; exact home-state and save preservation. Unity "+Application.unityVersion+". No rewards, multiplayer or phone validation.",0);
+                Finish("PASS: challenge selection and active-attack guard; sealed challenge victory and wall destruction; challenge-aware retry/replay; per-tick replay equality for open/sealed layouts; timed commands; surrender/timeout replay; state mismatch detection; replay UI and deployment lock; replay save preservation; entrance routing; sealed-wall breach and replanning; footprint collision checks; walls excluded from victory score; fixed-tick repeatability; deployment limits; defense range/damage/cooldown; both sides attack; victory/defeat/timeout/surrender; terminal-state guard; real-time Attack/deploy/results/retry/return UI; exact home-state and save preservation. Unity "+Application.unityVersion+". No rewards, multiplayer or phone validation.",0);
             }
         }
         catch(Exception e){Debug.LogException(e);Finish("FAIL: "+e,1);}

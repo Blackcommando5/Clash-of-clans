@@ -37,6 +37,7 @@ namespace Kingdoms
             }
         }
         readonly bool sealedEnclosure;
+        public bool SealedEnclosure=>sealedEnclosure;
         readonly List<Deployment> deployments=new List<Deployment>();
         readonly List<Entity> buildings=new List<Entity>();
         readonly List<Entity> raiders=new List<Entity>();

@@ -19,7 +19,7 @@ Practice has no purchase costs, loot, trophies, progression rewards or saved arm
 
 `PracticeBattleValidation.Run` is restricted to the isolated Unity test project. It checks entrance preference, a sealed-enclosure breach and replanning, live-footprint collision avoidance, wall-independent victory scoring, repeatable tick states, deployment bounds/caps, range, damage, cooldowns, both sides attacking, all terminal outcomes, real-time deployment and victory, results/retry/return UI, and exact preservation of the home state and saved JSON during the encounter. Evidence is in `PracticeBattleValidation.txt` and `PracticePreviews`.
 
-This is an offline combat slice, not the completed battle system. Navigation currently supports the fixed practice encounter, with a sealed variant exercised by validation; it is not an arbitrary-village pathfinding system. Remaining work includes unit separation, arbitrary village snapshots, defense levels in battle, troops/army training, manual ground deployment, animations/projectiles, campaign opponents, rewards, persisted/exportable replay records, authoritative online battles, and physical-phone performance testing. No APK was rebuilt.
+This is an offline combat slice, not the completed battle system. Navigation currently supports the fixed practice encounter, with an open entrance and a selectable sealed variant; it is not an arbitrary-village pathfinding system. Remaining work includes unit separation, arbitrary village snapshots, defense levels in battle, troops/army training, manual ground deployment, animations/projectiles, campaign opponents, rewards, persisted/exportable replay records, authoritative online battles, and physical-phone performance testing. No APK was rebuilt.
 
 Implementation: `Assets/Scripts/Core/PracticeBattle.cs` contains simulation rules without Unity dependencies. `Assets/Scripts/UI/VillagePracticeBattle.cs` owns the temporary models, controls and presentation. The existing Attack action routes to this mode.
 
@@ -29,3 +29,10 @@ Implementation: `Assets/Scripts/Core/PracticeBattle.cs` contains simulation rule
 Completed encounters now offer Watch Replay. Accepted deployments record their tick and lane; a read-only recording copies these commands, enclosure choice, end tick, outcome and final state hash. Rules version 1 applies to this fixed practice layout. `PracticeReplay` reconstructs the battle, applies tick-zero and delayed commands in original order, and reproduces timed surrender when present. Playback disables manual deployment and compares its final numeric state hash with the original. Retry starts a fresh live encounter; Return Home closes either mode.
 
 The recording lasts only for the current encounter in memory. There is no disk format, cross-version migration, export, replay gallery or speed control. Hashes detect differences but are not security proofs or server authority. Tests compare every tick of delayed-command runs in both enclosure layouts, plus surrender, timeout, mismatch detection and the rendered replay/retry flow. Evidence includes `PracticePreviews/practice-replay.png`.
+
+
+## Selectable challenges
+
+Attack defaults to Open Gate. The upper-left Try Wall Breach / Try Open Gate button switches the fixed enclosure before deployment or after a result. Once a raider is deployed, switching is locked until the result; active replay also locks it. Wall Breach seals the entrance and requires a wall to be destroyed to reach the Town Hall. Army, defense stats and victory rules remain the same. Retry retains the selection and replay records it. Returning home discards it. Both challenges are free practice without progression rewards.
+
+Play-mode validation now completes both challenges, checks wall destruction in the sealed layout, verifies both replays and retry behavior, and confirms the home state and saved JSON remain intact.
