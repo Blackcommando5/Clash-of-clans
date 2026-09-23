@@ -119,7 +119,7 @@ Done when: spend → builder assignment → waiting → completion → stronger 
 
 ### Phase 5 — Defense and battle simulation foundation
 
-23 September update: a [practice battle](PRACTICE_BATTLE_PROGRESS.md) now runs fixed integer ticks with Cannon/Archer Tower targeting, eight melee raiders, HP/damage, destruction, results, and retry/return. Raiders navigate around footprints, use a wall entrance, and breach sealed walls in the validation variant. Its state is isolated from the home village. The full phase remains partial: arbitrary snapshots, general village navigation, replay records and online validation are outstanding.
+23 September update: a [practice battle](PRACTICE_BATTLE_PROGRESS.md) now runs fixed integer ticks with Cannon/Archer Tower targeting, eight melee raiders, HP/damage, destruction, results, and retry/return. Raiders navigate around footprints, use a wall entrance, and breach sealed walls in the validation variant. Its state is isolated from the home village. The full phase remains partial: arbitrary snapshots, general village navigation, persisted replay records and online validation are outstanding. Watch Replay now reconstructs the current practice attack from timed deployment commands and checks its final state hash; validation compares every tick. Replay export and cross-version support remain outstanding.
 
 Dependencies: 1, 3; coordinate with 4.
 

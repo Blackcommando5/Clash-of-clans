@@ -45,7 +45,7 @@ The project is a Clash of Clans-inspired village prototype with its own Kingdoms
 | Economy | Gold and elixir production, collection, storage limits and offline accrual |
 | Progression | Two builders, timed upgrades through level 3, Town Hall limits, confirmed cancellation with a storage-capped 50% refund |
 | Defenses | Purchase, move, inspect range and upgrade; home defenses remain idle |
-| Practice battle | Eight raiders, three enemy buildings, walls, entrance routing, wall breach logic, results, retry and return |
+| Practice battle | Eight raiders, three enemy buildings, walls, entrance routing, wall breach logic, results, watch replay, retry and return |
 | Persistence | Local version 3 village saves; migrations from versions 1 and 2 |
 | Mobile setup | Welcome scene first, village second, landscape orientation, Android IL2CPP/ARM64 settings |
 
@@ -485,7 +485,7 @@ The main component is [VillageGameplay.cs](Assets/Scripts/UI/VillageGameplay.cs)
 5. Tap Attack! to open Practice Battle. Deploy Left, Center or Right spends one of eight practice raiders per tap.
 6. Watch raiders avoid footprints and approach the enclosed Town Hall through its entrance. If all remaining buildings are sealed off, the simulation can target and break a wall; the sealed layout is currently a validation scenario.
 7. Destroy all three buildings to win. Walls do not count toward destruction percentage. Losing all eight deployed raiders is defeat; the timer ends the battle after three minutes. You may return home early.
-8. After a result, choose Retry to reset the encounter or Return Home to restore your village and camera.
+8. After a result, choose Watch Replay to watch the same attack again. Deployments play automatically and deployment buttons are disabled. The result reports whether playback matches the original. Choose Retry to start a new playable encounter or Return Home to restore your village and camera.
 
 [PracticeBattle.cs](Assets/Scripts/Core/PracticeBattle.cs) runs combat in integer positions at 100 ms ticks, independently of Unity rendering. It uses a half-cell navigation grid, stable route ordering and route rebuilding when a structure is destroyed. [VillagePracticeBattle.cs](Assets/Scripts/UI/VillagePracticeBattle.cs) creates models, buttons, health bars and firing traces. Eight raiders may overlap; unit separation is not implemented.
 
@@ -683,3 +683,12 @@ Added the screenshot-inspired HUD, shop, resource models and scenery; builder qu
 Validation evidence: [builder queue](BuilderQueueValidation.txt), [upgrade cancellation](UpgradeCancellationValidation.txt), [reference UI](ScreenshotReferenceValidation.txt), [defenses](DefenseVillageValidation.txt), and [practice battle](PracticeBattleValidation.txt). Practice checks passed entrance preference, sealed-wall breach, route rebuilding, footprint avoidance, deterministic combat, terminal outcomes, retry/return controls and exact home-state/save preservation. [Current battle preview](PracticePreviews/practice-combat.png).
 
 These checks used the isolated `.utmp/ResourceValidation` Unity project and its separate PlayerPrefs identity. Do not run validation entry points against your real village or change their identity guards to force them to run. No APK was rebuilt for these additions; phone performance and the full mobile flow remain unverified.
+
+
+### Practice battle replay update
+
+The results screen now offers **Watch Replay**. Each accepted deployment records its lane and simulation tick. `PracticeReplay` in [PracticeBattle.cs](Assets/Scripts/Core/PracticeBattle.cs) rebuilds the fixed encounter and applies these commands at the same ticks. A stable numeric state hash checks the final outcome, positions, health and attack timers against the recording. The recording includes its enclosure setting and uses rules version 1.
+
+**Try it:** Deploy two raiders, wait a few seconds, deploy the others, and finish the attack. Watch Replay and observe the same delay between deployments. Manual deployment is disabled during playback. Retry leaves replay mode and restores eight playable raiders. Return Home also works during playback.
+
+Recordings stay in memory for the current encounter. Retry, returning home or closing the application discards access to that replay. There is no replay export, saved replay browser, speed control or compatibility with older combat rules. This is local fixed-layout playback, not server verification. Validation checks every tick for open and sealed layouts, timed surrender, timeout, mismatch detection, UI controls and home-save preservation. See [PracticeBattleValidation.txt](PracticeBattleValidation.txt) and [replay preview](PracticePreviews/practice-replay.png). No APK rebuild or physical-phone replay test was performed.

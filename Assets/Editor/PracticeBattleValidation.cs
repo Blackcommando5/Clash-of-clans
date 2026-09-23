@@ -40,6 +40,7 @@ public static class PracticeBattleValidation
     static void StateChecks()
     {
         NavigationChecks(false);NavigationChecks(true);
+        ReplayChecks();
         var first=new PracticeBattle();var second=new PracticeBattle();
         Check(!first.Deploy(-1) && !first.Deploy(3) && first.Remaining==8,"Invalid deployment lanes");
         for(int i=0;i<8;i++){Check(first.Deploy(i%3) && second.Deploy(i%3),"Legal deployments");}
@@ -81,6 +82,32 @@ public static class PracticeBattleValidation
         Check(wallHit==sealedWalls,"Open entrance is preferred; sealed walls require a breach");
         Check(battle.Destruction==100,"Surviving walls do not prevent full destruction score");
     }
+    static void ReplayChecks()
+    {
+        foreach(bool sealedWalls in new[]{false,true})
+        {
+            var original=new PracticeBattle(sealedWalls);var hashes=new System.Collections.Generic.List<ulong>();
+            original.Deploy(0);original.Deploy(2);hashes.Add(original.StateHash());
+            while(original.Outcome==PracticeOutcome.Running)
+            {
+                original.Step();
+                if(original.Tick==20){original.Deploy(1);original.Deploy(1);}
+                if(original.Tick==45)for(int i=0;i<4;i++)original.Deploy(i%3);
+                hashes.Add(original.StateHash());
+            }
+            var record=original.Record();Check(record.Deployments.Count==8,"Only accepted deployments recorded");
+            var replay=new PracticeReplay(record);Check(replay.Battle.StateHash()==hashes[0],"Tick-zero replay commands");
+            while(!replay.Finished){replay.Step();Check(replay.Battle.StateHash()==hashes[replay.Battle.Tick],"Replay matches every original tick");}
+            Check(replay.Matches,"Replay final result and hash match");
+            var final=replay.Battle.StateHash();replay.Step();Check(final==replay.Battle.StateHash(),"Finished replay is stable");
+        }
+        var stopped=new PracticeBattle();stopped.Deploy(1);for(int i=0;i<13;i++)stopped.Step();stopped.Surrender();
+        var surrendered=new PracticeReplay(stopped.Record());while(!surrendered.Finished)surrendered.Step();Check(surrendered.Matches,"Replay timed surrender");
+        var idle=new PracticeBattle();for(int i=0;i<1800;i++)idle.Step();
+        var timeout=new PracticeReplay(idle.Record());while(!timeout.Finished)timeout.Step();Check(timeout.Matches,"Replay empty-army timeout");
+        var changed=new PracticeBattle();changed.Deploy(0);changed.Raiders[0].HitPoints=1;changed.Surrender();
+        Check(!new PracticeReplay(changed.Record()).Matches,"Hash detects unrecorded state modification");
+    }
     static void Capture(string name)
     {typeof(ResourceMilestoneValidation).GetMethod("Capture",BindingFlags.Static|BindingFlags.NonPublic).Invoke(null,new object[]{name,1600,702});}
     static void Tick()
@@ -113,11 +140,25 @@ public static class PracticeBattleValidation
                 if(game.CurrentPracticeBattle.Outcome==PracticeOutcome.Running)return;
                 Check(game.CurrentPracticeBattle.Outcome==PracticeOutcome.Victory,"Real-time practice victory");Capture("practice-results.png");
                 Check(JsonUtility.ToJson(game.State)==SessionState.GetString("PracticeBattle.Home","") && PlayerPrefs.GetString(VillageSave.Key)==SessionState.GetString("PracticeBattle.Save",""),"Battle cannot mutate home or saved economy");
-                Click("Retry Practice");Check(game.PracticeOpen && game.CurrentPracticeBattle.Remaining==8 && game.CurrentPracticeBattle.Tick==0,"Retry resets practice only");
+                Click("Watch Practice Replay");Check(game.WatchingPracticeReplay && !GameObject.Find("Deploy Raider 0").GetComponent<Button>().interactable,"Replay locks manual deployment");
+                int count=game.CurrentPracticeBattle.Raiders.Count;game.DeployPracticeRaider(1);Check(count==game.CurrentPracticeBattle.Raiders.Count,"Direct deployment rejected during replay");
+                SessionState.SetInt("PracticeBattle.Step",3);return;
+            }
+            if(step==3)
+            {
+                if(game.CurrentPracticeBattle.Tick<70)return;
+                Capture("practice-replay.png");SessionState.SetInt("PracticeBattle.Step",4);return;
+            }
+            if(step==4)
+            {
+                if(game.CurrentPracticeBattle.Outcome==PracticeOutcome.Running)return;
+                Check(game.PracticeReplayMatches,"UI replay matches original battle");
+                Check(JsonUtility.ToJson(game.State)==SessionState.GetString("PracticeBattle.Home","") && PlayerPrefs.GetString(VillageSave.Key)==SessionState.GetString("PracticeBattle.Save",""),"Replay preserves home state and save");
+                Click("Retry Practice");Check(game.PracticeOpen && !game.WatchingPracticeReplay && game.CurrentPracticeBattle.Remaining==8 && game.CurrentPracticeBattle.Tick==0,"Retry resets practice only");
                 Click("Return From Practice");Check(!game.PracticeOpen && !game.cameraController.InputBlocked && GameObject.Find("Shop")!=null,"Return restores village and camera");
                 Check(JsonUtility.ToJson(game.State)==SessionState.GetString("PracticeBattle.Home",""),"Returning does not change village state");
                 Click("Attack Menu");Click("Deploy Raider 0");Click("Return From Practice");Check(!game.PracticeOpen,"Early return abandons encounter safely");
-                Finish("PASS: entrance routing; sealed-wall breach and replanning; footprint collision checks; walls excluded from victory score; fixed-tick repeatability; deployment limits; defense range/damage/cooldown; both sides attack; victory/defeat/timeout/surrender; terminal-state guard; real-time Attack/deploy/results/retry/return UI; exact home-state and save preservation. Unity "+Application.unityVersion+". No rewards, multiplayer or phone validation.",0);
+                Finish("PASS: per-tick replay equality for open/sealed layouts; timed commands; surrender/timeout replay; state mismatch detection; replay UI and deployment lock; replay save preservation; entrance routing; sealed-wall breach and replanning; footprint collision checks; walls excluded from victory score; fixed-tick repeatability; deployment limits; defense range/damage/cooldown; both sides attack; victory/defeat/timeout/surrender; terminal-state guard; real-time Attack/deploy/results/retry/return UI; exact home-state and save preservation. Unity "+Application.unityVersion+". No rewards, multiplayer or phone validation.",0);
             }
         }
         catch(Exception e){Debug.LogException(e);Finish("FAIL: "+e,1);}

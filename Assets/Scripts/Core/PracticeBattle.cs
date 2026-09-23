@@ -17,6 +17,27 @@ namespace Kingdoms
             public bool Alive=>HitPoints>0;
         }
         public struct Strike { public int From,To; public Strike(int from,int to){From=from;To=to;} }
+        public readonly struct Deployment
+        {
+            public readonly int Tick,Lane;
+            public Deployment(int tick,int lane){Tick=tick;Lane=lane;}
+        }
+        public sealed class Recording
+        {
+            public const int RulesVersion=1;
+            public readonly bool SealedEnclosure;
+            public readonly int EndTick;
+            public readonly PracticeOutcome Outcome;
+            public readonly ulong FinalHash;
+            public readonly IReadOnlyList<Deployment> Deployments;
+            internal Recording(PracticeBattle battle)
+            {
+                SealedEnclosure=battle.sealedEnclosure;EndTick=battle.Tick;Outcome=battle.Outcome;
+                FinalHash=battle.StateHash();Deployments=Array.AsReadOnly(battle.deployments.ToArray());
+            }
+        }
+        readonly bool sealedEnclosure;
+        readonly List<Deployment> deployments=new List<Deployment>();
         readonly List<Entity> buildings=new List<Entity>();
         readonly List<Entity> raiders=new List<Entity>();
         readonly List<Strike> strikes=new List<Strike>();
@@ -33,6 +54,7 @@ namespace Kingdoms
 
         public PracticeBattle(bool sealedEnclosure=false)
         {
+            this.sealedEnclosure=sealedEnclosure;
             buildings.Add(new Entity{Id=0,Kind="TownHall",X=0,Z=300,HitPoints=600,MaxHitPoints=600,HalfSize=200});
             AddDefense(BuildingCatalog.Cannon,1,-450,-100);
             AddDefense(BuildingCatalog.ArcherTower,2,450,-100);
@@ -52,6 +74,7 @@ namespace Kingdoms
         public bool Deploy(int lane)
         {
             if(Outcome!=PracticeOutcome.Running || Remaining==0 || lane<0 || lane>2)return false;
+            deployments.Add(new Deployment(Tick,lane));
             int x=(lane-1)*650;
             raiders.Add(new Entity{Id=100+raiders.Count,Kind="Raider",X=x+(raiders.Count%3-1)*35,Z=-1350,
                 HitPoints=90,MaxHitPoints=90,Damage=20,Range=85});
@@ -161,5 +184,49 @@ namespace Kingdoms
             else if(Tick>=TimeLimitTicks)Outcome=PracticeOutcome.Timeout;
         }
         public void Surrender(){if(Outcome==PracticeOutcome.Running)Outcome=PracticeOutcome.Surrendered;strikes.Clear();}
+        public Recording Record()
+        {
+            if(Outcome==PracticeOutcome.Running)throw new InvalidOperationException("Finish the encounter before recording its result.");
+            return new Recording(this);
+        }
+        // Stable numeric FNV-1a hash; no runtime-dependent string hash codes.
+        public ulong StateHash()
+        {
+            ulong hash=14695981039346656037UL;
+            Action<int> add=value=>{unchecked{for(int i=0;i<4;i++){hash^=(byte)(value>>(i*8));hash*=1099511628211UL;}}};
+            add(Recording.RulesVersion);add(sealedEnclosure ? 1 : 0);add(Tick);add((int)Outcome);add(Remaining);
+            foreach(var list in new[]{buildings,raiders})
+            {
+                add(list.Count);
+                foreach(var e in list){add(e.Id);add(e.X);add(e.Z);add(e.HitPoints);add(e.MaxHitPoints);add(e.Damage);add(e.Range);add(e.HalfSize);add(e.NextAttack);}
+            }
+            return hash;
+        }
+    }
+
+    // Replays accepted commands at their original tick, independently of frame rate.
+    public sealed class PracticeReplay
+    {
+        readonly PracticeBattle.Recording recording;
+        int nextCommand;
+        public PracticeBattle Battle {get;}
+        public bool Finished=>Battle.Outcome!=PracticeOutcome.Running;
+        public bool Matches=>Finished && Battle.Tick==recording.EndTick && Battle.Outcome==recording.Outcome && Battle.StateHash()==recording.FinalHash;
+        public PracticeReplay(PracticeBattle.Recording recording)
+        {
+            this.recording=recording ?? throw new ArgumentNullException(nameof(recording));
+            Battle=new PracticeBattle(recording.SealedEnclosure);ApplyCommands();
+        }
+        void ApplyCommands()
+        {
+            while(nextCommand<recording.Deployments.Count && recording.Deployments[nextCommand].Tick==Battle.Tick)
+                Battle.Deploy(recording.Deployments[nextCommand++].Lane);
+            if(Battle.Tick==recording.EndTick && recording.Outcome==PracticeOutcome.Surrendered)Battle.Surrender();
+        }
+        public void Step()
+        {
+            if(Finished){Battle.Step();return;}
+            Battle.Step();ApplyCommands();
+        }
     }
 }
