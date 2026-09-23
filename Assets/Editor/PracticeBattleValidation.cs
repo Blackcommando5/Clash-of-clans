@@ -143,6 +143,17 @@ public static class PracticeBattleValidation
                 Click("Switch Practice Challenge");Check(game.CurrentPracticeBattle.SealedEnclosure,"Select sealed challenge before deployment");
                 Click("Switch Practice Challenge");Check(!game.CurrentPracticeBattle.SealedEnclosure,"Return to open challenge before deployment");
                 Capture("practice-ready.png");
+                game.DeployPracticeRaider(0);game.SurrenderPracticeBattle();
+                Check(game.ScoutingPractice && game.CurrentPracticeBattle.Raiders.Count==0 && game.CurrentPracticeBattle.Outcome==PracticeOutcome.Running,"Scouting rejects combat commands");
+                SessionState.SetString("PracticeBattle.ScoutStart",DateTime.UtcNow.Ticks.ToString());SessionState.SetInt("PracticeBattle.Step",9);return;
+            }
+            if(step==9)
+            {
+                if((DateTime.UtcNow-new DateTime(long.Parse(SessionState.GetString("PracticeBattle.ScoutStart","0")))).TotalSeconds<1)return;
+                Check(game.CurrentPracticeBattle.Tick==0,"Scouting does not advance simulation across frames");
+                Click("Begin Practice Attack");Check(!game.ScoutingPractice && game.CurrentPracticeBattle.Tick==0,"Start begins at tick zero");
+                Check(!game.SelectPracticeChallenge(true),"Starting attack locks challenge before deployment");
+                game.BeginPracticeAttack();Check(game.CurrentPracticeBattle.Tick==0,"Repeated start has no effect");
                 for(int i=0;i<8;i++)Click("Deploy Raider "+(i%3));
                 Check(game.CurrentPracticeBattle.Raiders.Count==8 && !GameObject.Find("Deploy Raider 0").GetComponent<Button>().interactable,"Deployment buttons exhaust army");
                 Check(!game.SelectPracticeChallenge(true) && !game.CurrentPracticeBattle.SealedEnclosure,"Active attack rejects challenge switching");
@@ -175,7 +186,7 @@ public static class PracticeBattleValidation
                 if(game.CurrentPracticeBattle.Outcome==PracticeOutcome.Running)return;
                 Check(game.PracticeReplayMatches,"UI replay matches original battle");
                 Click("Switch Practice Challenge");Check(!game.WatchingPracticeReplay && game.CurrentPracticeBattle.SealedEnclosure && game.CurrentPracticeBattle.Remaining==8,"Switch from replay results to wall challenge");
-                Capture("practice-wall-challenge.png");
+                Capture("practice-wall-challenge.png");Click("Begin Practice Attack");
                 for(int i=0;i<8;i++)Click("Deploy Raider "+(i%3));
                 SessionState.SetInt("PracticeBattle.Step",5);return;
             }
@@ -195,10 +206,10 @@ public static class PracticeBattleValidation
                 Check(game.PracticeReplayMatches,"Sealed challenge replay matches");
                 Check(JsonUtility.ToJson(game.State)==SessionState.GetString("PracticeBattle.Home","") && PlayerPrefs.GetString(VillageSave.Key)==SessionState.GetString("PracticeBattle.Save",""),"Replay preserves home state and save");
                 Click("Retry Practice");Check(game.PracticeOpen && !game.WatchingPracticeReplay && game.CurrentPracticeBattle.Remaining==8 && game.CurrentPracticeBattle.Tick==0,"Retry resets practice only");
-                Check(game.CurrentPracticeBattle.SealedEnclosure,"Retry retains selected challenge");
+                Check(game.CurrentPracticeBattle.SealedEnclosure && game.ScoutingPractice,"Retry retains selected challenge and returns to scouting");
                 Click("Return From Practice");Check(!game.PracticeOpen && !game.cameraController.InputBlocked && GameObject.Find("Shop")!=null,"Return restores village and camera");
                 Check(JsonUtility.ToJson(game.State)==SessionState.GetString("PracticeBattle.Home",""),"Returning does not change village state");
-                Click("Attack Menu");Click("Deploy Raider 0");SessionState.SetInt("PracticeBattle.Step",7);return;
+                Click("Attack Menu");Click("Begin Practice Attack");Click("Deploy Raider 0");SessionState.SetInt("PracticeBattle.Step",7);return;
             }
             if(step==7)
             {
@@ -211,9 +222,9 @@ public static class PracticeBattleValidation
             {
                 if(game.CurrentPracticeBattle.Outcome==PracticeOutcome.Running)return;
                 Check(game.PracticeReplayMatches && game.CurrentPracticeBattle.Outcome==PracticeOutcome.Surrendered,"Surrendered UI replay matches original");
-                Click("Retry Practice");Check(GameObject.Find("Practice Results")==null && GameObject.Find("Surrender Practice")!=null,"Retry hides results and restores surrender");
+                Click("Retry Practice");Check(GameObject.Find("Practice Results")==null && game.ScoutingPractice,"Retry hides results and restores scouting");Click("Begin Practice Attack");
                 Click("Deploy Raider 0");Click("Return From Practice");Check(!game.PracticeOpen,"Early return abandons encounter safely");
-                Finish("PASS: all star combinations and wall exclusion; survivor counts; victory results; surrender/results/replay/retry UI; replay surrender guard; challenge selection and active-attack guard; sealed challenge victory and wall destruction; challenge-aware retry/replay; per-tick replay equality for open/sealed layouts; timed commands; surrender/timeout replay; state mismatch detection; replay UI and deployment lock; replay save preservation; entrance routing; sealed-wall breach and replanning; footprint collision checks; walls excluded from victory score; fixed-tick repeatability; deployment limits; defense range/damage/cooldown; both sides attack; victory/defeat/timeout/surrender; terminal-state guard; real-time Attack/deploy/results/retry/return UI; exact home-state and save preservation. Unity "+Application.unityVersion+". No rewards, multiplayer or phone validation.",0);
+                Finish("PASS: untimed scouting across frames; scouting command guards; explicit start and challenge lock; retry returns to scouting; all star combinations and wall exclusion; survivor counts; victory results; surrender/results/replay/retry UI; replay surrender guard; challenge selection and active-attack guard; sealed challenge victory and wall destruction; challenge-aware retry/replay; per-tick replay equality for open/sealed layouts; timed commands; surrender/timeout replay; state mismatch detection; replay UI and deployment lock; replay save preservation; entrance routing; sealed-wall breach and replanning; footprint collision checks; walls excluded from victory score; fixed-tick repeatability; deployment limits; defense range/damage/cooldown; both sides attack; victory/defeat/timeout/surrender; terminal-state guard; real-time Attack/deploy/results/retry/return UI; exact home-state and save preservation. Unity "+Application.unityVersion+". No rewards, multiplayer or phone validation.",0);
             }
         }
         catch(Exception e){Debug.LogException(e);Finish("FAIL: "+e,1);}

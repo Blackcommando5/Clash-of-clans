@@ -119,7 +119,7 @@ Done when: spend → builder assignment → waiting → completion → stronger 
 
 ### Phase 5 — Defense and battle simulation foundation
 
-23 September update: a [practice battle](PRACTICE_BATTLE_PROGRESS.md) now runs fixed integer ticks with Cannon/Archer Tower targeting, eight melee raiders, HP/damage, destruction, results, and retry/return. Raiders navigate around footprints, use a wall entrance, and breach sealed walls in the selectable Wall Breach challenge. Open Gate and Wall Breach can be selected before deployment or after results, with challenge-aware retry and replay. Its state is isolated from the home village. The full phase remains partial: arbitrary snapshots, general village navigation, persisted replay records and online validation are outstanding. Watch Replay now reconstructs the current practice attack from timed deployment commands and checks its final state hash; validation compares every tick. Replay export and cross-version support remain outstanding.
+23 September update: a [practice battle](PRACTICE_BATTLE_PROGRESS.md) now runs fixed integer ticks with Cannon/Archer Tower targeting, eight melee raiders, HP/damage, destruction, results, and retry/return. Raiders navigate around footprints, use a wall entrance, and breach sealed walls in the selectable Wall Breach challenge. Open Gate and Wall Breach can be selected while scouting or after results, with challenge-aware retry and replay. Its state is isolated from the home village. The full phase remains partial: arbitrary snapshots, general village navigation, persisted replay records and online validation are outstanding. Watch Replay now reconstructs the current practice attack from timed deployment commands and checks its final state hash; validation compares every tick. Replay export and cross-version support remain outstanding.
 
 Dependencies: 1, 3; coordinate with 4.
 
@@ -151,7 +151,7 @@ Dependencies: 4–6.
 
 - [ ] Author several AI villages and a guided first attack.
 - [ ] Implement scouting, battle start, countdown, surrender, destruction percentage, and scoring rules.
-  - Practice now includes surrender with results and three independent stars (Town Hall, 50%, 100%), with army and elapsed-time statistics. Scouting and the complete attack flow remain outstanding.
+  - Practice now includes surrender with results and three independent stars (Town Hall, 50%, 100%), with army and elapsed-time statistics. Untimed scouting and an explicit Start Attack action now precede combat; the full campaign attack flow remains outstanding.
 - [ ] Calculate loot, victory rewards, defeat outcomes, and first-completion rewards.
 - [ ] Add results UI, retry/return flow, and replay playback.
 - [ ] Teach building, collection, upgrading, and deployment through resumable tutorial steps.

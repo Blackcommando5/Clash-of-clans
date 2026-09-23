@@ -482,8 +482,8 @@ The main component is [VillageGameplay.cs](Assets/Scripts/UI/VillageGameplay.cs)
 2. Open Shop, select a supported resource or defense building, choose a clear grid location, and confirm placement.
 3. Tap a building without dragging. Choose Move or Info / Upgrade. Select a defense to see its range circle.
 4. Tap the builder indicator to inspect both builder slots and active jobs. Select a job to open its details.
-5. Tap Attack! to open Practice Battle. Deploy Left, Center or Right spends one of eight practice raiders per tap.
-6. Watch raiders avoid footprints and approach the enclosed Town Hall through its entrance. If all remaining buildings are sealed off, the simulation can target and break a wall; choose Try Wall Breach before deploying to play the sealed layout.
+5. Tap Attack! to scout the practice battlefield. Inspect the defense summary, choose a challenge, then press Start Attack. Deploy Left, Center or Right spends one of eight practice raiders per tap.
+6. Watch raiders avoid footprints and approach the enclosed Town Hall through its entrance. If all remaining buildings are sealed off, the simulation can target and break a wall; choose Try Wall Breach while scouting to play the sealed layout.
 7. Destroy all three buildings to win. Walls do not count toward destruction percentage. Losing all eight deployed raiders is defeat; the timer ends the battle after three minutes. You may return home early.
 8. After a result, choose Watch Replay to watch the same attack again. Deployments play automatically and deployment buttons are disabled. The result reports whether playback matches the original. Choose Retry to start a new playable encounter or Return Home to restore your village and camera.
 
@@ -696,9 +696,9 @@ Recordings stay in memory for the current encounter. Retry, returning home or cl
 
 ### Selectable practice challenges
 
-Attack opens **Open Gate**, where raiders use the entrance in the Town Hall enclosure. Before deploying, choose **Try Wall Breach** at the upper left to close that entrance. The same eight-raider army must now destroy a wall to reach the Town Hall. Neither challenge charges resources or grants rewards.
+Attack opens **Open Gate**, where raiders use the entrance in the Town Hall enclosure. While scouting, choose **Try Wall Breach** at the upper left to close that entrance. The same eight-raider army must now destroy a wall to reach the Town Hall. Neither challenge charges resources or grants rewards.
 
-You can change challenges before the first deployment or after a result. Switching starts a fresh encounter and replaces the previous replay. The switch is disabled during an active attack and during replay playback. **Retry** keeps the current challenge; **Watch Replay** reconstructs the same enclosure. Returning home and opening Attack again defaults to Open Gate. Challenge selection is not saved.
+You can change challenges while scouting or after a result. Start Attack locks the challenge even before the first deployment. Switching starts a fresh encounter and replaces the previous replay. The switch is disabled during an active attack and during replay playback. **Retry** returns to scouting with the current challenge; **Watch Replay** reconstructs the same enclosure. Returning home and opening Attack again defaults to Open Gate. Challenge selection is not saved.
 
 Validation covers selecting both layouts, rejecting mid-attack changes, winning the sealed challenge with wall destruction, replaying both layouts, keeping the selected challenge on retry, and preserving the home save. See [challenge preview](PracticePreviews/practice-wall-challenge.png) and [validation report](PracticeBattleValidation.txt). No APK rebuild or phone testing was performed.
 
@@ -715,6 +715,17 @@ Practice results now show **stars out of three**, buildings destroyed, destructi
 
 With three buildings, half destruction requires two destroyed buildings. Destroying only the Town Hall earns one star; destroying both defenses also earns one star. Destroying the Town Hall plus one defense earns two; destroying all three earns three. Walls never count toward these objectives. Full destruction remains the condition for Victory; stars do not turn a surrendered or timed-out encounter into a victory.
 
-**Try it:** Open Attack, deploy a raider, wait briefly, then press **Surrender** at the lower left. Combat stops and the results panel appears. Choose Watch Replay to reproduce the attack up to that surrender, Retry to reset the selected challenge, or Return Home. Surrender is unavailable during replay and after results. Returning home directly still discards the encounter without showing its results.
+**Try it:** Open Attack, press Start Attack, deploy a raider, wait briefly, then press **Surrender** at the lower left. Combat stops and the results panel appears. Choose Watch Replay to reproduce the attack up to that surrender, Retry to reset the selected challenge, or Return Home. Surrender is unavailable during replay and after results. Returning home directly still discards the encounter without showing its results.
 
 The score is derived from combat state in [PracticeBattle.cs](Assets/Scripts/Core/PracticeBattle.cs); the results panel and surrender control live in [VillagePracticeBattle.cs](Assets/Scripts/UI/VillagePracticeBattle.cs). Validation covers all eight combinations of the three destroyed buildings, wall exclusion, survivors versus undeployed reserves, victory results, surrender/replay/retry controls, and the existing combat/save checks. See [surrender preview](PracticePreviews/practice-surrender.png) and [PracticeBattleValidation.txt](PracticeBattleValidation.txt). No APK was rebuilt or phone testing performed for this update.
+
+
+### Scout before starting an attack
+
+Opening Attack now enters **Scouting**. Inspect the battlefield and the bottom summary: Cannon and Archer Tower damage/range come from the combat entities, and the enclosure description explains whether raiders can use an entrance or must break through. You may switch Open Gate / Wall Breach or return home at no cost.
+
+Scouting has no countdown: simulation ticks, production of combat events and deployments remain stopped. Press **Start Attack** to begin the three-minute battle and reveal the deployment buttons. From that point, the timer runs even if you deploy nobody, and challenge switching is locked until results. Surrender becomes available once the attack starts.
+
+Retry and challenge changes return to scouting; Watch Replay immediately plays the recorded battle without repeating scouting time. This preparation phase is UI state, not part of the recorded combat timeline or village save. The camera remains fixed during scouting; defense selection and range overlays are not included yet.
+
+Validation waits across real Play Mode frames to check the tick stays zero, rejects deployment/surrender while scouting, starts at tick zero, locks challenges before deployment, and verifies retries and both existing replay flows. See [scouting preview](PracticePreviews/practice-ready.png) and [PracticeBattleValidation.txt](PracticeBattleValidation.txt). The guide, preview and code are updated together; APK and physical-phone testing remain outstanding.
