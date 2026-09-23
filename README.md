@@ -8,7 +8,7 @@ Latest development: [the supplied screenshot reference implementation](SCREENSHO
 
 ## Architecture
 
-Newest playable addition: [the practice battle](PRACTICE_BATTLE_PROGRESS.md). Tap Attack to deploy eight raiders against a walled practice Town Hall, Cannon and Archer Tower, then watch a replay, retry or return home. Choose Open Gate or Wall Breach before deployment. Raiders route through openings and break sealed walls; retry and replay retain the challenge. [Defense village progression](DEFENSE_VILLAGE_PROGRESS.md) supports purchases, upgrades and persistence. Full battles and multiplayer remain outstanding.
+Newest playable addition: [the practice battle](PRACTICE_BATTLE_PROGRESS.md). Tap Attack to deploy eight raiders against a walled practice Town Hall, Cannon and Archer Tower, then watch a replay, retry or return home. Choose Open Gate or Wall Breach before deployment. Raiders route through openings and break sealed walls; retry and replay retain the challenge. Results show three-star practice scoring, destruction and army statistics; Surrender ends an attack with replayable results. [Defense village progression](DEFENSE_VILLAGE_PROGRESS.md) supports purchases, upgrades and persistence. Full battles and multiplayer remain outstanding.
 Modular architecture built on Unity 6 and URP.
 
 ## Controls

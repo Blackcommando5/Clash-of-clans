@@ -48,7 +48,13 @@ namespace Kingdoms
         public int Tick {get;private set;}
         public int Remaining=>ArmySize-raiders.Count;
         public PracticeOutcome Outcome {get;private set;}=PracticeOutcome.Running;
-        public int Destruction=>buildings.FindAll(b=>b.Kind!="Wall" && !b.Alive).Count*100/3;
+        public int DestroyedBuildings=>buildings.FindAll(b=>b.Kind!="Wall" && !b.Alive).Count;
+        public int TotalBuildings=>buildings.FindAll(b=>b.Kind!="Wall").Count;
+        public int Destruction=>DestroyedBuildings*100/TotalBuildings;
+        public int Survivors=>raiders.FindAll(r=>r.Alive).Count;
+        // Practice score only: each independent objective earns one star, with no economy reward.
+        public int Stars=>(buildings.Exists(b=>b.Kind=="TownHall" && !b.Alive) ? 1 : 0)
+            +(DestroyedBuildings*2>=TotalBuildings ? 1 : 0)+(DestroyedBuildings==TotalBuildings ? 1 : 0);
         const int GridSize=73, GridStep=50, GridOffset=1800;
         sealed class Route { public Entity Target; public readonly Queue<int> Cells=new Queue<int>(); }
         readonly Dictionary<int,Route> routes=new Dictionary<int,Route>();

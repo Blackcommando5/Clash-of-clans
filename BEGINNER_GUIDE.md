@@ -45,7 +45,7 @@ The project is a Clash of Clans-inspired village prototype with its own Kingdoms
 | Economy | Gold and elixir production, collection, storage limits and offline accrual |
 | Progression | Two builders, timed upgrades through level 3, Town Hall limits, confirmed cancellation with a storage-capped 50% refund |
 | Defenses | Purchase, move, inspect range and upgrade; home defenses remain idle |
-| Practice battle | Eight raiders, three enemy buildings, walls, entrance routing, wall breach logic, results, watch replay, retry and return |
+| Practice battle | Eight raiders, three enemy buildings, walls, entrance routing, wall breach logic, star scoring, surrender, results, watch replay, retry and return |
 | Persistence | Local version 3 village saves; migrations from versions 1 and 2 |
 | Mobile setup | Welcome scene first, village second, landscape orientation, Android IL2CPP/ARM64 settings |
 
@@ -701,3 +701,20 @@ Attack opens **Open Gate**, where raiders use the entrance in the Town Hall encl
 You can change challenges before the first deployment or after a result. Switching starts a fresh encounter and replaces the previous replay. The switch is disabled during an active attack and during replay playback. **Retry** keeps the current challenge; **Watch Replay** reconstructs the same enclosure. Returning home and opening Attack again defaults to Open Gate. Challenge selection is not saved.
 
 Validation covers selecting both layouts, rejecting mid-attack changes, winning the sealed challenge with wall destruction, replaying both layouts, keeping the selected challenge on retry, and preserving the home save. See [challenge preview](PracticePreviews/practice-wall-challenge.png) and [validation report](PracticeBattleValidation.txt). No APK rebuild or phone testing was performed.
+
+
+### Battle results and surrender
+
+Practice results now show **stars out of three**, buildings destroyed, destruction percentage, deployed raiders, surviving deployed raiders, and elapsed simulation time. Stars are practice scores only; they do not grant loot, trophies or progression.
+
+| Objective | Stars earned |
+| --- | --- |
+| Destroy the Town Hall | 1 |
+| Destroy at least half of the non-wall buildings | 1 |
+| Destroy all non-wall buildings | 1 |
+
+With three buildings, half destruction requires two destroyed buildings. Destroying only the Town Hall earns one star; destroying both defenses also earns one star. Destroying the Town Hall plus one defense earns two; destroying all three earns three. Walls never count toward these objectives. Full destruction remains the condition for Victory; stars do not turn a surrendered or timed-out encounter into a victory.
+
+**Try it:** Open Attack, deploy a raider, wait briefly, then press **Surrender** at the lower left. Combat stops and the results panel appears. Choose Watch Replay to reproduce the attack up to that surrender, Retry to reset the selected challenge, or Return Home. Surrender is unavailable during replay and after results. Returning home directly still discards the encounter without showing its results.
+
+The score is derived from combat state in [PracticeBattle.cs](Assets/Scripts/Core/PracticeBattle.cs); the results panel and surrender control live in [VillagePracticeBattle.cs](Assets/Scripts/UI/VillagePracticeBattle.cs). Validation covers all eight combinations of the three destroyed buildings, wall exclusion, survivors versus undeployed reserves, victory results, surrender/replay/retry controls, and the existing combat/save checks. See [surrender preview](PracticePreviews/practice-surrender.png) and [PracticeBattleValidation.txt](PracticeBattleValidation.txt). No APK was rebuilt or phone testing performed for this update.

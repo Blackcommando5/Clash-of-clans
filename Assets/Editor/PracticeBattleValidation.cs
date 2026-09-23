@@ -41,6 +41,7 @@ public static class PracticeBattleValidation
     {
         NavigationChecks(false);NavigationChecks(true);
         ReplayChecks();
+        ScoreChecks();
         var first=new PracticeBattle();var second=new PracticeBattle();
         Check(!first.Deploy(-1) && !first.Deploy(3) && first.Remaining==8,"Invalid deployment lanes");
         for(int i=0;i<8;i++){Check(first.Deploy(i%3) && second.Deploy(i%3),"Legal deployments");}
@@ -52,7 +53,7 @@ public static class PracticeBattleValidation
             foreach(var strike in first.Strikes){if(strike.From<100)defenseHit=true;else raiderHit=true;}
         }
         Check(defenseHit && raiderHit,"Both sides attack");
-        Check(first.Outcome==PracticeOutcome.Victory && first.Destruction==100,"Practice encounter can be won");
+        Check(first.Outcome==PracticeOutcome.Victory && first.Destruction==100 && first.Stars==3,"Practice encounter can be won with three stars");
         string before=Snapshot(first);first.Step();first.Surrender();Check(Snapshot(first)==before && !first.Deploy(1),"Terminal battle cannot mutate");
         var idle=new PracticeBattle();for(int i=0;i<1800;i++)idle.Step();Check(idle.Outcome==PracticeOutcome.Timeout && idle.Destruction==0,"Undeployed army times out");
         var surrender=new PracticeBattle();surrender.Deploy(1);surrender.Surrender();Check(surrender.Outcome==PracticeOutcome.Surrendered && !surrender.Deploy(1),"Surrender closes commands");
@@ -81,6 +82,21 @@ public static class PracticeBattleValidation
         Check(battle.Outcome==PracticeOutcome.Victory && entered,"Route reaches enclosed hall and replans after breach");
         Check(wallHit==sealedWalls,"Open entrance is preferred; sealed walls require a breach");
         Check(battle.Destruction==100,"Surviving walls do not prevent full destruction score");
+    }
+    static void ScoreChecks()
+    {
+        int[] expected={0,1,0,2,0,2,1,3};
+        for(int mask=0;mask<8;mask++)
+        {
+            var battle=new PracticeBattle();
+            for(int i=0;i<3;i++)if((mask&(1<<i))!=0)battle.Buildings[i].HitPoints=0;
+            Check(battle.Stars==expected[mask],"Independent Town Hall, half-destruction and full-destruction stars");
+            foreach(var b in battle.Buildings)if(b.Kind=="Wall")b.HitPoints=0;
+            Check(battle.Stars==expected[mask],"Wall destruction does not award stars");
+            battle.Surrender();Check(battle.Stars==expected[mask],"Surrender retains earned score");
+        }
+        var army=new PracticeBattle();army.Deploy(0);army.Deploy(1);army.Raiders[0].HitPoints=0;
+        Check(army.Survivors==1 && army.Raiders.Count==2 && army.Remaining==6,"Results distinguish deployed, survivors and reserves");
     }
     static void ReplayChecks()
     {
@@ -142,9 +158,11 @@ public static class PracticeBattleValidation
             {
                 if(game.CurrentPracticeBattle.Outcome==PracticeOutcome.Running)return;
                 Check(game.CurrentPracticeBattle.Outcome==PracticeOutcome.Victory,"Real-time practice victory");Capture("practice-results.png");
+                Check(GameObject.Find("Practice Results Text").GetComponent<Text>().text.Contains("3 / 3 STARS"),"Victory results display stars");
                 Check(JsonUtility.ToJson(game.State)==SessionState.GetString("PracticeBattle.Home","") && PlayerPrefs.GetString(VillageSave.Key)==SessionState.GetString("PracticeBattle.Save",""),"Battle cannot mutate home or saved economy");
                 Click("Watch Practice Replay");Check(game.WatchingPracticeReplay && !GameObject.Find("Deploy Raider 0").GetComponent<Button>().interactable,"Replay locks manual deployment");
                 int count=game.CurrentPracticeBattle.Raiders.Count;game.DeployPracticeRaider(1);Check(count==game.CurrentPracticeBattle.Raiders.Count,"Direct deployment rejected during replay");
+                game.SurrenderPracticeBattle();Check(game.CurrentPracticeBattle.Outcome==PracticeOutcome.Running,"Surrender cannot interrupt replay");
                 SessionState.SetInt("PracticeBattle.Step",3);return;
             }
             if(step==3)
@@ -180,8 +198,22 @@ public static class PracticeBattleValidation
                 Check(game.CurrentPracticeBattle.SealedEnclosure,"Retry retains selected challenge");
                 Click("Return From Practice");Check(!game.PracticeOpen && !game.cameraController.InputBlocked && GameObject.Find("Shop")!=null,"Return restores village and camera");
                 Check(JsonUtility.ToJson(game.State)==SessionState.GetString("PracticeBattle.Home",""),"Returning does not change village state");
-                Click("Attack Menu");Click("Deploy Raider 0");Click("Return From Practice");Check(!game.PracticeOpen,"Early return abandons encounter safely");
-                Finish("PASS: challenge selection and active-attack guard; sealed challenge victory and wall destruction; challenge-aware retry/replay; per-tick replay equality for open/sealed layouts; timed commands; surrender/timeout replay; state mismatch detection; replay UI and deployment lock; replay save preservation; entrance routing; sealed-wall breach and replanning; footprint collision checks; walls excluded from victory score; fixed-tick repeatability; deployment limits; defense range/damage/cooldown; both sides attack; victory/defeat/timeout/surrender; terminal-state guard; real-time Attack/deploy/results/retry/return UI; exact home-state and save preservation. Unity "+Application.unityVersion+". No rewards, multiplayer or phone validation.",0);
+                Click("Attack Menu");Click("Deploy Raider 0");SessionState.SetInt("PracticeBattle.Step",7);return;
+            }
+            if(step==7)
+            {
+                if(game.CurrentPracticeBattle.Tick<15)return;
+                Click("Surrender Practice");Check(game.PracticeOpen && game.CurrentPracticeBattle.Outcome==PracticeOutcome.Surrendered,"Surrender opens results without leaving battle");
+                Check(GameObject.Find("Practice Results Text").GetComponent<Text>().text.Contains("1 deployed"),"Surrender results show deployed army");
+                Capture("practice-surrender.png");Click("Watch Practice Replay");SessionState.SetInt("PracticeBattle.Step",8);return;
+            }
+            if(step==8)
+            {
+                if(game.CurrentPracticeBattle.Outcome==PracticeOutcome.Running)return;
+                Check(game.PracticeReplayMatches && game.CurrentPracticeBattle.Outcome==PracticeOutcome.Surrendered,"Surrendered UI replay matches original");
+                Click("Retry Practice");Check(GameObject.Find("Practice Results")==null && GameObject.Find("Surrender Practice")!=null,"Retry hides results and restores surrender");
+                Click("Deploy Raider 0");Click("Return From Practice");Check(!game.PracticeOpen,"Early return abandons encounter safely");
+                Finish("PASS: all star combinations and wall exclusion; survivor counts; victory results; surrender/results/replay/retry UI; replay surrender guard; challenge selection and active-attack guard; sealed challenge victory and wall destruction; challenge-aware retry/replay; per-tick replay equality for open/sealed layouts; timed commands; surrender/timeout replay; state mismatch detection; replay UI and deployment lock; replay save preservation; entrance routing; sealed-wall breach and replanning; footprint collision checks; walls excluded from victory score; fixed-tick repeatability; deployment limits; defense range/damage/cooldown; both sides attack; victory/defeat/timeout/surrender; terminal-state guard; real-time Attack/deploy/results/retry/return UI; exact home-state and save preservation. Unity "+Application.unityVersion+". No rewards, multiplayer or phone validation.",0);
             }
         }
         catch(Exception e){Debug.LogException(e);Finish("FAIL: "+e,1);}

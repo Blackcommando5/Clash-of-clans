@@ -10,8 +10,9 @@ namespace Kingdoms.UI
         PracticeReplay practiceReplay;
         GameObject practiceWorld,practiceCanvas;
         RectTransform practiceSafe;
-        Text practiceStatus,practiceInstructions;
-        Button practiceRetry,practiceWatch,practiceChallenge;
+        Text practiceStatus,practiceInstructions,practiceResultsText;
+        GameObject practiceResults;
+        Button practiceRetry,practiceWatch,practiceChallenge,practiceSurrender;
         bool practiceSealedChallenge;
         readonly List<Button> practiceDeployButtons=new List<Button>();
         readonly Dictionary<int,GameObject> practiceModels=new Dictionary<int,GameObject>();
@@ -48,6 +49,10 @@ namespace Kingdoms.UI
                 ReferenceText(button.GetComponentInChildren<Text>(),23,Color.white);button.onClick.AddListener(()=>DeployPracticeRaider(lane));practiceDeployButtons.Add(button);
             }
             var back=Button("Return From Practice",practiceSafe,"RETURN HOME",new Vector2(.02f,.03f),new Vector2(.19f,.12f),new Color(.8f,.3f,.15f));ReferenceText(back.GetComponentInChildren<Text>(),23,Color.white);back.onClick.AddListener(ClosePracticeBattle);
+            practiceSurrender=Button("Surrender Practice",practiceSafe,"SURRENDER",new Vector2(.02f,.15f),new Vector2(.19f,.23f),new Color(.65f,.25f,.16f));
+            ReferenceText(practiceSurrender.GetComponentInChildren<Text>(),22,Color.white);practiceSurrender.onClick.AddListener(SurrenderPracticeBattle);
+            practiceResults=Panel("Practice Results",practiceSafe,new Vector2(.25f,.17f),new Vector2(.75f,.39f),new Color(.12f,.18f,.08f,.96f)).gameObject;
+            practiceResultsText=Label("Practice Results Text",practiceResults.transform,"",25,Color.white);ReferenceText(practiceResultsText,25,Color.white);
             practiceRetry=Button("Retry Practice",practiceSafe,"RETRY",new Vector2(.81f,.03f),new Vector2(.98f,.12f),new Color(.45f,.64f,.24f));practiceRetry.onClick.AddListener(ResetPracticeBattle);
             practiceWatch=Button("Watch Practice Replay",practiceSafe,"WATCH REPLAY",new Vector2(.83f,.89f),new Vector2(.985f,.975f),new Color(.22f,.45f,.65f));
             ReferenceText(practiceWatch.GetComponentInChildren<Text>(),21,Color.white);practiceWatch.onClick.AddListener(WatchPracticeReplay);
@@ -66,6 +71,11 @@ namespace Kingdoms.UI
 
         public void ResetPracticeBattle()
         {StartPracticeBattle(null);}
+        public void SurrenderPracticeBattle()
+        {
+            if(practiceBattle==null || WatchingPracticeReplay || practiceBattle.Outcome!=PracticeOutcome.Running)return;
+            practiceBattle.Surrender();RefreshPracticeBattle();
+        }
         public bool SelectPracticeChallenge(bool sealedWalls)
         {
             if(practiceBattle==null || (practiceBattle.Outcome==PracticeOutcome.Running && (WatchingPracticeReplay || practiceBattle.Remaining<PracticeBattle.ArmySize)))return false;
@@ -161,6 +171,15 @@ namespace Kingdoms.UI
             foreach(var button in practiceDeployButtons)button.interactable=running && !WatchingPracticeReplay && practiceBattle.Remaining>0;
             practiceRetry.interactable=!running;
             practiceWatch.interactable=!running;
+            practiceSurrender.gameObject.SetActive(running && !WatchingPracticeReplay);
+            practiceResults.SetActive(!running);
+            if(!running)
+            {
+                practiceResults.transform.SetAsLastSibling();
+                practiceResultsText.text=(practiceSealedChallenge ? "WALL BREACH" : "OPEN GATE")+"  |  "+practiceBattle.Stars+" / 3 STARS"
+                    +"\n"+practiceBattle.DestroyedBuildings+" / "+practiceBattle.TotalBuildings+" buildings destroyed  |  "+practiceBattle.Destruction+"%"
+                    +"\n"+practiceBattle.Raiders.Count+" deployed  |  "+practiceBattle.Survivors+" survived  |  "+Duration(practiceBattle.Tick/10)+" elapsed";
+            }
             practiceChallenge.interactable=!running || (!WatchingPracticeReplay && practiceBattle.Remaining==PracticeBattle.ArmySize);
             practiceChallenge.GetComponentInChildren<Text>().text=practiceSealedChallenge ? "TRY OPEN GATE" : "TRY WALL BREACH";
             if(!running)practiceInstructions.text=WatchingPracticeReplay

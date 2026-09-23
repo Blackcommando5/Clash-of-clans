@@ -36,3 +36,10 @@ The recording lasts only for the current encounter in memory. There is no disk f
 Attack defaults to Open Gate. The upper-left Try Wall Breach / Try Open Gate button switches the fixed enclosure before deployment or after a result. Once a raider is deployed, switching is locked until the result; active replay also locks it. Wall Breach seals the entrance and requires a wall to be destroyed to reach the Town Hall. Army, defense stats and victory rules remain the same. Retry retains the selection and replay records it. Returning home discards it. Both challenges are free practice without progression rewards.
 
 Play-mode validation now completes both challenges, checks wall destruction in the sealed layout, verifies both replays and retry behavior, and confirms the home state and saved JSON remain intact.
+
+
+## Scoring and surrender
+
+Results show 0?3 stars, destroyed/total non-wall buildings, destruction percentage, deployed count, surviving deployed count and elapsed simulation time. One independent star is awarded for the Town Hall, at least 50% non-wall destruction, and 100% destruction. For this three-building layout the halfway objective requires two destroyed buildings. Walls never contribute; undeployed reserves are not counted as survivors. Scores are informational and award no economy rewards. Only destroying all three buildings produces Victory.
+
+Surrender stops a live attack immediately and displays its current results while keeping the battlefield open for replay, retry or return. Its tick is preserved in the recording, so replay ends at the same moment with the same score. Replay ignores manual surrender. Return Home continues to abandon and close an encounter directly. Validation checks every building-destruction combination, wall exclusion, survivor counts and the real surrender/results/replay/retry UI.

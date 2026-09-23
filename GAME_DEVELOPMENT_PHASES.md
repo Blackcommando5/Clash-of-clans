@@ -151,6 +151,7 @@ Dependencies: 4–6.
 
 - [ ] Author several AI villages and a guided first attack.
 - [ ] Implement scouting, battle start, countdown, surrender, destruction percentage, and scoring rules.
+  - Practice now includes surrender with results and three independent stars (Town Hall, 50%, 100%), with army and elapsed-time statistics. Scouting and the complete attack flow remain outstanding.
 - [ ] Calculate loot, victory rewards, defeat outcomes, and first-completion rewards.
 - [ ] Add results UI, retry/return flow, and replay playback.
 - [ ] Teach building, collection, upgrading, and deployment through resumable tutorial steps.
