@@ -2,6 +2,8 @@
 
 Open **Assets/Scenes/Main Scene.unity** without entering Play mode.
 
+The September screenshot layout is now saved in Main Scene. Under **Building Shop > Reference Building Shop**, edit the four category tabs, five-column cards, header and resource footer. The previous shop remains inactive for reference. The Inspector's **Apply screenshot reference interface** button upgrades older scenes once. New resource models are editable prefabs under `Assets/Prefabs/ScreenshotReference`; the scene references those assets directly. Forest/shore decoration is generated on Play. See [the screenshot analysis and implementation notes](SCREENSHOT_REFERENCE_MATCH.md).
+
 Select the object containing **Village Gameplay**. Its Inspector now includes **Edit scene screens**:
 - Show Village HUD
 - Show Shop

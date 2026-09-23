@@ -1,0 +1,10 @@
+PASS: 38 progression and cancellation assertions. Unity 6000.3.13f1.
+Executed: 2026-09-23 in .utmp/ResourceValidation with a separate test identity.
+Entry point: ResourceMilestoneValidation.RunCancellation
+Coverage: existing progression rules; partial gold/elixir refunds; builder release/reuse;
+duplicate cancellation; producer pause/resume; active and cancelled save round trips;
+storage caps; completion deadline; invalid indexes; backward clock.
+Project scripts compiled successfully. git diff --check passed.
+Follow-up: confirmation/back-out/refund and scene reload passed in Play mode on 2026-09-23;
+see BuilderQueueValidation.txt. Screens inspected at 1600 x 900. Physical phone not tested.
+No Android APK was rebuilt for this change.

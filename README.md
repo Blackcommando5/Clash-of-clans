@@ -4,9 +4,11 @@ Kingdoms: A mobile village strategy game inspired by Clash of Clans, developed w
 
 Current work: [Home Village interface and progression](HOME_VILLAGE_PROGRESS.md) adds building selection/movement, two builders, timed upgrades, Town Hall tiers, resource bars, model previews, and a detailed Town Hall. The full game and multiplayer are not complete.
 
-Latest development: [resource milestone](RESOURCE_MILESTONE.md) adds Elixir Collectors, Gold/Elixir Storage, individual collection, Collect All, and migration of existing villages. See [the phase checklist](GAME_DEVELOPMENT_PHASES.md) for completed and remaining work.
+Latest development: [the supplied screenshot reference implementation](SCREENSHOT_REFERENCE_MATCH.md) adds a full-screen categorized shop, compact HUD, builder suggestions, two-column upgrade dialog, new resource models, and village scenery. [The builder queue and upgrade cancellation](HOME_VILLAGE_PROGRESS.md) retain working progression. See [the phase checklist](GAME_DEVELOPMENT_PHASES.md) for completed and remaining work.
 
 ## Architecture
+
+Newest playable addition: [the practice battle](PRACTICE_BATTLE_PROGRESS.md). Tap Attack to deploy eight raiders against a walled practice Town Hall, Cannon and Archer Tower, then retry or return home. Raiders route through openings and can breach sealed walls. [Defense village progression](DEFENSE_VILLAGE_PROGRESS.md) supports purchases, upgrades and persistence. Full battles and multiplayer remain outstanding.
 Modular architecture built on Unity 6 and URP.
 
 ## Controls

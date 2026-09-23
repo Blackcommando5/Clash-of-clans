@@ -8,7 +8,7 @@ Companion document: [Clash of Clans system and phase reference](CLASH_OF_CLANS_R
 
 Earlier implementation: [resource milestone](RESOURCE_MILESTONE.md) added elixir production, both storage buildings, four-card shop, individual/collect-all actions, and v1 save migration. Multiplayer has not started.
 
-Newer update: [Home Village progression](HOME_VILLAGE_PROGRESS.md) adds selection/moving, two builders, upgrade jobs, three initial levels, and Town Hall-dependent resource limits. Phase 3 and Phase 4 remain partial: walls, layouts, full construction jobs, and cancellation are not complete. Reference-game balancing and physical-phone validation remain unverified.
+Newer update: [Home Village progression](HOME_VILLAGE_PROGRESS.md) adds selection/moving, two builders, upgrade jobs, three initial levels, Town Hall-dependent resource limits, and confirmed upgrade cancellation with a storage-capped 50% refund. [Walls](WALLS_PROGRESS.md) support individual placement and movement. Phase 3 and Phase 4 remain partial: continuous wall drawing, multi-selection, saved layouts, and full construction jobs are not complete. Reference-game balancing and physical-phone validation remain unverified.
 
 This is a development plan. Unchecked work is not implemented. Phase numbers describe dependency order, not weeks or promised delivery dates. Retain Kingdoms branding and create its production assets.
 
@@ -109,15 +109,17 @@ Done when: a village can be rearranged without losing buildings, creating duplic
 Dependencies: 2–3.
 
 - [ ] Add builder ownership, available/busy state, and construction jobs.
-- [ ] Implement upgrade prerequisites, costs, durations, level transitions, and cancellation policy.
+- [x] Implement upgrade prerequisites, costs, durations, level transitions, and cancellation policy.
 - [ ] Define whether upgrading buildings defend or produce; reflect the rule in every mode.
 - [ ] Add finish timestamps, completion on return, and notifications as an optional setting.
 - [ ] Author an initial three-level Town Hall progression with new unlocks and art states.
-- [ ] Add a builder queue view and explain blocked upgrades.
+- [x] Add a builder queue view and explain blocked upgrades.
 
 Done when: spend → builder assignment → waiting → completion → stronger building works across restarts and cannot complete twice.
 
 ### Phase 5 — Defense and battle simulation foundation
+
+23 September update: a [practice battle](PRACTICE_BATTLE_PROGRESS.md) now runs fixed integer ticks with Cannon/Archer Tower targeting, eight melee raiders, HP/damage, destruction, results, and retry/return. Raiders navigate around footprints, use a wall entrance, and breach sealed walls in the validation variant. Its state is isolated from the home village. The full phase remains partial: arbitrary snapshots, general village navigation, replay records and online validation are outstanding.
 
 Dependencies: 1, 3; coordinate with 4.
 

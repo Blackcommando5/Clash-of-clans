@@ -7,7 +7,7 @@ This is a working extension of Kingdoms, not a completed or exact Clash of Clans
 ## Playable additions
 
 - Resource HUD with proportional gold/elixir fill bars and native illustrated icons.
-- Builder availability indicator; pressing it opens an active job or explains how to assign a free builder.
+- Builder availability indicator opens a queue showing both builders, active jobs ordered by completion time, remaining time, target levels, and building coordinates. Tap either active job to inspect or cancel it; free slots explain how to assign a builder. The queue updates as jobs finish.
 - Shop with rendered model previews, costs, capacity/production descriptions, limits, and affordability states.
 - More detailed Town Hall prefab with tiled roof, timber framing, windows, chimney, and door details.
 - Tap/click a building to select it and show its footprint and action bar.
@@ -41,7 +41,11 @@ Gold and elixir in a producer can still be collected while its upgrade runs, but
 | Gold Storage | 600 elixir; 30 seconds | 1,500 elixir; 120 seconds |
 | Elixir Storage | 600 gold; 30 seconds | 1,500 gold; 120 seconds |
 
-Resource buildings can reach level 2 at Town Hall 1 and level 3 at Town Hall 2. Level 3 is the current content cap. New purchases still finish instantly; full construction jobs and upgrade cancellation are outstanding roadmap work.
+Resource buildings can reach level 2 at Town Hall 1 and level 3 at Town Hall 2. Level 3 is the current content cap. New purchases still finish instantly; full construction jobs remain outstanding roadmap work.
+
+Upgrade cancellation (23 September 2026): open an upgrading building's **Info / Upgrade**, choose **Cancel Upgrade**, review the refund, then confirm. Closing the window keeps the upgrade running. Cancellation keeps the current level, immediately frees its builder, and refunds 50% of the upgrade cost, capped by available storage (excess is lost). Producer output resumes from cancellation time without producing during the cancelled job. A job that has reached its finish timestamp completes and cannot be refunded. The action uses the existing copy/save/commit flow and version 3 save format.
+
+The builder queue uses the existing details window and creates its two reusable job buttons on first opening, including in previously authored scenes. Closing the queue restores village camera controls. A hidden upgrade action cannot start another job after cancellation closes the window.
 
 | Town Hall level | Limit for each producer type | Limit for each storage type |
 | --- | --- | --- |
@@ -60,6 +64,8 @@ The live PlayerPrefs key remains `Kingdoms.Village.v1`, while the payload versio
 Version 1 payloads retain the original `Kingdoms.Village.pre-v2` backup behavior. Version 2 payloads are backed up under `Kingdoms.Village.pre-v3`. Existing names, resources, building cells, and stored production survive migration. The old fixed Town Hall position restriction is retained when validating old saves, then removed for valid version 3 movement.
 
 ## Validation
+
+23 September 2026: `BuilderQueueValidation.Run` passed in the isolated Unity 6000.3.13f1 project. It exercised both queue row callbacks, job ordering, confirmation back-out and refund, a hidden-action guard, available-builder rows, completion refresh, camera blocking, and scene reload. See `BuilderQueueValidation.txt`, `BuilderQueuePreview.png`, and `UpgradeCancellationPreview.png`. Both captured dialogs were visually checked at 1600 × 900. Physical-phone testing and an updated APK remain outstanding.
 
 The isolated Unity runner verifies both the previous resource milestone and the new progression/movement paths. See `HomeVillageValidation.txt` and the saved Home Village previews for the executed result.
 

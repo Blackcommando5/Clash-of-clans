@@ -1,0 +1,1 @@
+PASS: defense rules, prices, overlap/bounds, limits and Town Hall unlocks, nonproduction, movement, active saves, refunds, offline upgrades; existing progression regressions; Play mode catalogue purchases, range display, upgrade/cancel buttons, portrait/stat panels, and scene reload. Unity 6000.3.13f1. Combat and physical-phone testing are not included.

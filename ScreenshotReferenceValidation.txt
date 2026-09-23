@@ -1,0 +1,1 @@
+PASS: serialized reference UI; four category tabs and 20 cards; unsupported items disabled; resource purchase and placement; wall purchase; insufficient funds; upgrade and cancellation confirmation/refund; builder queue; camera locks; save/reload; screenshots at 1600x702 and 1920x1080. Unity 6000.3.13f1. Phone and APK not tested.

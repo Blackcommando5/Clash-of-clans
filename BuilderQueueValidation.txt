@@ -1,0 +1,1 @@
+PASS: Play mode builder queue; both job callbacks; finish ordering; cancellation confirmation/back-out/refund; hidden action guard; available rows; completion refresh; camera locks; scene reload. Unity 6000.3.13f1. Physical phone not tested.
