@@ -60,3 +60,7 @@ The simulation now accepts an explicit 1-80 Raider budget, and replay rules vers
 ## Mixed troops - 24 September 2026
 
 Replay rules version 3 adds Raider/Archer budgets and typed commands. Campaign battles use the saved composition, constrained to 80 housing spaces (one per Raider, two per Archer). Archer range is 3.5 cells with wall-blocked line of sight, 55 HP and 14 damage per second. Practice retains eight Raiders. Earlier rules-version-1/2 notes describe superseded in-memory formats. See [mixed validation](MixedArmyValidation.txt) and [the current guide](BEGINNER_GUIDE.md#mixed-armies-and-archers---24-september-2026).
+
+## Ground positions ? 24 September 2026
+
+Replay rules version 4 replaces lane-only commands with exact X/Z positions and troop IDs. Ground taps use a visible validated southern zone and half-cell snapping; lane buttons produce their original positions through the same simulation API. Scouting, replay and terminal battles reject manual placement. UI presses, drags and multitouch gestures are filtered. Earlier rules versions and outstanding-ground-deployment notes are historical. See [current guide](BEGINNER_GUIDE.md#ground-deployment--24-september-2026) and [validation](GroundDeploymentValidation.txt). Save version remains 6.

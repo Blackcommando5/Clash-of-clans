@@ -65,3 +65,5 @@ Real-time raycast ground snapping with visual footprint.
 Resource counters format values using N0 format specifier.
 
 Focus loss smoothly halts camera inertia.
+
+Latest deployment: click or tap inside the green battlefield zone to place the selected troop. Lane buttons remain available, and replay preserves exact positions. See [the ground-deployment walkthrough](BEGINNER_GUIDE.md#ground-deployment--24-september-2026).

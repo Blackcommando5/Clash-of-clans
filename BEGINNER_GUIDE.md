@@ -46,12 +46,13 @@ The project is a Clash of Clans-inspired village prototype with its own Kingdoms
 | Progression | Two builders, timed upgrades through level 3, Town Hall limits, confirmed cancellation with a storage-capped 50% refund |
 | Defenses | Purchase, move, inspect range and upgrade; home defenses remain idle |
 | Practice battle | Eight raiders, three enemy buildings, walls, entrance routing, wall breach logic, star scoring, surrender, results, watch replay, retry and return |
+| Ground deployment | Click/tap within a visible southern zone; selected troop, half-cell snapping, placement feedback and exact-position replay; lane buttons retained |
 | Army preparation | Buildings > Prepare Army; free instant mixed Raider/Archer roster, weighted housing, troop selection, eight starter spaces plus camp capacity, readiness and immediate saving |
 | Campaign | Two fixed missions, prepared-army commitment, durable results, once-only first-clear rewards and saved unlocks |
 | Persistence | Local version 6 village saves; migrations from versions 1-5 |
 | Mobile setup | Welcome scene first, village second, landscape orientation, Android IL2CPP/ARM64 settings |
 
-Not implemented yet: tank troops, ground-position deployment, arbitrary enemy villages, unit separation, matchmaking, multiplayer, online accounts, purchases or a server economy. The fixed practice battlefield is separate from your home village. Gem counters and reference-style buttons do not imply that all reference-game features exist.
+Not implemented yet: tank troops, arbitrary enemy villages, unit separation, matchmaking, multiplayer, online accounts, purchases or a server economy. The fixed practice battlefield is separate from your home village. Gem counters and reference-style buttons do not imply that all reference-game features exist.
 
 The Android configuration exists, but an Android build and physical-phone testing have not been completed as part of this work.
 
@@ -805,4 +806,17 @@ Save version 6 preserves version-5 armies, campaign progress, active attempts an
 
 Study [troop definitions and roster rules](Assets/Scripts/Core/VillageArmy.cs), [mixed combat and replay](Assets/Scripts/Core/PracticeBattle.cs), [preparation controls](Assets/Scripts/UI/VillageArmy.cs), [deployment controls and models](Assets/Scripts/UI/VillagePracticeBattle.cs), and [campaign commitment](Assets/Scripts/Core/VillageCampaign.cs). Earlier Raider-only and save-version examples above are historical where superseded by this increment.
 
-Validation evidence: [MixedArmyValidation.txt](MixedArmyValidation.txt) and [validation source](Assets/Editor/MixedArmyValidation.cs) cover housing, unlocks, typed deployment, range/cooldown/wall behavior, both campaign wins, per-tick replay equality, migrations and live UI/save/reload flows. See [mixed preparation](MixedArmyPreviews/mixed-army-preparation.png) and [mixed combat](MixedArmyPreviews/mixed-army-combat.png). Original practice/replay, army preparation/migration and campaign/reward suites were rerun successfully; [resource regression](ArmyResourceRegression.txt) passed 66 assertions with v6 saves. Tank troops, manual ground deployment, unit separation, arbitrary enemy layouts, phone validation and an updated APK remain outstanding.
+Validation evidence: [MixedArmyValidation.txt](MixedArmyValidation.txt) and [validation source](Assets/Editor/MixedArmyValidation.cs) cover housing, unlocks, typed deployment, range/cooldown/wall behavior, both campaign wins, per-tick replay equality, migrations and live UI/save/reload flows. See [mixed preparation](MixedArmyPreviews/mixed-army-preparation.png) and [mixed combat](MixedArmyPreviews/mixed-army-combat.png). Original practice/replay, army preparation/migration and campaign/reward suites were rerun successfully; [resource regression](ArmyResourceRegression.txt) passed 66 assertions with v6 saves. At this increment, tank troops, manual ground deployment, unit separation, arbitrary enemy layouts, phone validation and an updated APK remained outstanding. Ground deployment is added below.
+
+
+### Ground deployment ? 24 September 2026
+
+Practice and campaign attacks now accept clicks or taps inside the green southern deployment outline. The three lane buttons remain available. Each accepted ground tap places one selected troop, snapped to a half-cell; rejected taps spend no troops. Deployment is free and instant, consistent with army preparation.
+
+**Try it:** Open **Attack!** for practice, or prepare a mixed army and choose a campaign mission. Inspect the green outline while scouting, press **Start Attack**, then click or tap inside it. For a mixed army, select **Raiders** or **Archers** first. Dragging, pressing a UI control, or using multiple fingers cancels ground placement. Lift all fingers before trying again. The instructions show placement feedback. Surrender or finish the attack, then **Watch Replay** to see the same troop positions and timing.
+
+The zone covers world X -10 through 10 and Z -14 through -8. Simulation rules validate bounds, available troops, live building footprints and battle state. Both ground taps and lane buttons record exact integer X/Z coordinates. In-memory replay rules are now version 4; village saves remain version 6. Older replay-version descriptions above are historical; replay export and cross-version loading are not implemented.
+
+Study [deployment legality and recorded coordinates](Assets/Scripts/Core/PracticeBattle.cs), [screen-to-ground projection, gestures and outline](Assets/Scripts/UI/VillageGroundDeployment.cs), and [battle lifecycle integration](Assets/Scripts/UI/VillagePracticeBattle.cs). Evidence: [ground deployment checks](GroundDeploymentValidation.txt), [validation source](Assets/Editor/GroundDeploymentValidation.cs), and [rendered deployment preview](GroundDeploymentPreviews/ground-deployment.png). The mixed-army suite also passed with replay rules v4, including campaign results, once-only claims and save migration. The practice suite passed scouting, both layouts, lane controls, replay, retry, surrender and home-save preservation.
+
+Known limits: the deployment zone is a fixed rectangle for the two existing layouts. Troops can overlap; there is no hold-to-deploy or drag-to-deploy. Automated gesture checks call the shared handlers directly; physical multitouch, phone performance and an updated APK remain unvalidated. Tank troops and broader enemy layouts are still future work.

@@ -19,13 +19,13 @@ namespace Kingdoms
         public struct Strike { public int From,To; public Strike(int from,int to){From=from;To=to;} }
         public readonly struct Deployment
         {
-            public readonly int Tick,Lane;
+            public readonly int Tick,X,Z;
             public readonly string Troop;
-            public Deployment(int tick,int lane,string troop="Raider"){Tick=tick;Lane=lane;Troop=troop;}
+            public Deployment(int tick,int x,int z,string troop){Tick=tick;X=x;Z=z;Troop=troop;}
         }
         public sealed class Recording
         {
-            public const int RulesVersion=3;
+            public const int RulesVersion=4;
             public readonly bool SealedEnclosure;
             public readonly int EndTick, ArmyBudget, ArcherBudget;
             public readonly PracticeOutcome Outcome;
@@ -84,15 +84,31 @@ namespace Kingdoms
             buildings.Add(new Entity{Id=id,Kind=definition.Id,X=x,Z=z,HalfSize=definition.Size*50,
                 HitPoints=definition.HitPoints,MaxHitPoints=definition.HitPoints,Damage=definition.DamagePerSecond,Range=(int)(definition.Range*100)});
         }
-        public bool Deploy(int lane, string troop="Raider")
+        // Southern entry strip, in hundredths of a world cell. Shared by rules and the ground overlay.
+        public const int DeploymentMinX=-1000, DeploymentMaxX=1000, DeploymentMinZ=-1400, DeploymentMaxZ=-800;
+        public bool CanDeployAt(int x,int z,string troop,out string reason)
         {
-            if(Outcome!=PracticeOutcome.Running || RemainingOf(troop)==0 || lane<0 || lane>2)return false;
-            deployments.Add(new Deployment(Tick,lane,troop));
+            if(Outcome!=PracticeOutcome.Running){reason="This attack has ended.";return false;}
+            if(TroopCatalog.Find(troop)==null){reason="Choose a valid troop.";return false;}
+            if(RemainingOf(troop)<=0){reason="No "+troop+"s remain. Select another troop type.";return false;}
+            if(x<DeploymentMinX || x>DeploymentMaxX || z<DeploymentMinZ || z>DeploymentMaxZ)
+            {reason="Deploy inside the outlined southern area.";return false;}
+            if(Blocked(x,z)){reason="That deployment point is occupied.";return false;}
+            reason="Ready to deploy.";return true;
+        }
+        public bool DeployAt(int x,int z,string troop="Raider")
+        {
+            if(!CanDeployAt(x,z,troop,out _))return false;
+            deployments.Add(new Deployment(Tick,x,z,troop));
             var definition=TroopCatalog.Find(troop);
-            int x=(lane-1)*650;
-            raiders.Add(new Entity{Id=100+raiders.Count,Kind=troop,X=x+(raiders.Count%3-1)*35,Z=-1350,
+            raiders.Add(new Entity{Id=100+raiders.Count,Kind=troop,X=x,Z=z,
                 HitPoints=definition.HitPoints,MaxHitPoints=definition.HitPoints,Damage=definition.Damage,Range=definition.Range});
             return true;
+        }
+        public bool Deploy(int lane, string troop="Raider")
+        {
+            if(lane<0 || lane>2)return false;
+            return DeployAt((lane-1)*650+(raiders.Count%3-1)*35,-1350,troop);
         }
         static long DistanceSquared(Entity a,Entity b)
         {long x=a.X-b.X,z=a.Z-b.Z;return x*x+z*z;}
@@ -235,7 +251,7 @@ namespace Kingdoms
         {
             while(nextCommand<recording.Deployments.Count && recording.Deployments[nextCommand].Tick==Battle.Tick)
             {
-                var command=recording.Deployments[nextCommand++];Battle.Deploy(command.Lane,command.Troop);
+                var command=recording.Deployments[nextCommand++];Battle.DeployAt(command.X,command.Z,command.Troop);
             }
             if(Battle.Tick==recording.EndTick && recording.Outcome==PracticeOutcome.Surrendered)Battle.Surrender();
         }

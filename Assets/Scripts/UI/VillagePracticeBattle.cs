@@ -90,7 +90,7 @@ namespace Kingdoms.UI
         {
             if(!ScoutingPractice || WatchingPracticeReplay)return;
             if(battleMission>=0 && !CommitCampaignArmy()){RefreshPracticeBattle();return;}
-            practiceScouting=false;practiceAccumulator=0;
+            practiceScouting=false;practiceAccumulator=0;CancelGroundGesture();deploymentInputAfterFrame=Time.frameCount;
             practiceInstructions.text=practiceSealedChallenge
                 ? "WALL BREACH: Break through the sealed enclosure and destroy all three buildings."
                 : "OPEN GATE: Deploy from the south. Raiders use the entrance to reach the Town Hall.";
@@ -123,6 +123,7 @@ namespace Kingdoms.UI
             practiceSealedChallenge=practiceBattle.SealedEnclosure;
             deployedTroop=practiceBattle.RaiderBudget>0 ? "Raider" : "Archer";
             practiceWorld=new GameObject("Practice Battlefield");practiceWorld.transform.SetParent(transform,false);
+            CreateDeploymentZone();
             foreach(var building in practiceBattle.Buildings)
             {
                 var model=Instantiate(PrefabFor(building.Kind),practiceWorld.transform);model.name="Practice "+building.Kind;model.SetActive(true);
@@ -184,6 +185,7 @@ namespace Kingdoms.UI
             if(practicePaused)return;
             Rect area=Screen.safeArea;practiceSafe.anchorMin=new Vector2(area.xMin/Screen.width,area.yMin/Screen.height);practiceSafe.anchorMax=new Vector2(area.xMax/Screen.width,area.yMax/Screen.height);
             if(ScoutingPractice){RefreshPracticeBattle();return;}
+            HandleGroundDeployment();
             practiceAccumulator+=Mathf.Min(Time.unscaledDeltaTime,.5f);
             while(practiceAccumulator>=.1f)
             {
@@ -248,6 +250,7 @@ namespace Kingdoms.UI
                 ? (PracticeReplayMatches ? "Replay complete. Result matches the original attack." : "Replay mismatch detected. Retry to start a new practice attack.")
                 : "Practice complete. Watch Replay, retry, or return home. No resources were spent or awarded.";
             if(battleMission>=0)RefreshCampaignBattle();
+            RefreshGroundDeployment();
         }
         void RefreshPracticeEntity(PracticeBattle.Entity entity)
         {
@@ -268,6 +271,7 @@ namespace Kingdoms.UI
             if(!PracticeOpen)return;
             if(battleMission>=0 && !ScoutingPractice && !WatchingPracticeReplay)
             {practiceBattle.Surrender();if(!SaveCampaignResult()){RefreshPracticeBattle();return;}}
+            CancelGroundGesture();
             battleMission=-1;battleRunId="";
             practiceBattle.Surrender();practiceBattle=null;practiceReplay=null;
             if(practiceWorld!=null){practiceWorld.SetActive(false);Destroy(practiceWorld);}

@@ -402,7 +402,7 @@ namespace Kingdoms.UI
 
         void ShowMessage(string message) { guide.text=message;messageUntil=Time.unscaledTime+5f; }
         void SaveProgress() { if(State!=null) { State.Accrue(VillageState.Now);if(!VillageSave.TryWrite(State,out string error)) ShowMessage(error); } }
-        void OnApplicationPause(bool paused) { practicePaused=paused;if(paused) SaveProgress(); }
+        void OnApplicationPause(bool paused) { practicePaused=paused;if(paused){CancelGroundGesture();SaveProgress();} }
         void OnApplicationQuit() { SaveProgress(); }
         void OnDisable() { shuttingDown=true;EnhancedTouchSupport.Disable();CancelPlacement(); }
 
