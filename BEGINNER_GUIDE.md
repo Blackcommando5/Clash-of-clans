@@ -8,7 +8,7 @@ Project: `E:\Project\Games\Kingdoms`
 
 This guide explains the work completed so far and how you can reproduce it manually. You do not need previous Unity experience. Work through one lesson at a time, test it, and then continue.
 
-The project is a Clash of Clans-inspired village prototype with its own Kingdoms title and starter assets. It is not the complete Clash of Clans game. The current loop is: enter the village, choose a name, build and collect resources, move and upgrade buildings, manage two builders, prepare an army, clear two local campaign missions, claim first-victory rewards, and try an isolated practice battle.
+The project is a Clash of Clans-inspired village prototype with its own Kingdoms title and starter assets. It is not the complete Clash of Clans game. The current loop is: enter the village, choose a name, build and collect resources, move and upgrade buildings, manage two builders, prepare an army, clear four authored local campaign missions, claim first-victory rewards, and try an isolated practice battle.
 
 ## Contents
 
@@ -51,11 +51,11 @@ The project is a Clash of Clans-inspired village prototype with its own Kingdoms
 | Campaign | Four authored missions, distinct layouts/deployment zones, dynamic scouting, prepared-army commitment, durable results, once-only first-clear rewards and saved unlocks |
 | Persistence | Local version 8 village saves; migrations from versions 1-7; saved guide milestones and hint preference |
 | Guided onboarding | Eight-step Village Guide, contextual shortcuts, saved milestones, pause/resume hints and recognition of existing progress |
-| Mobile setup | Welcome scene first, village second, landscape orientation, Android IL2CPP/ARM64 settings |
+| Mobile setup | Verified development APK, Welcome scene first, village second, landscape orientation, Android IL2CPP/ARM64; physical-phone checks pending |
 
 Not implemented yet: arbitrary enemy villages, unit separation, matchmaking, multiplayer, online accounts, purchases or a server economy. The fixed practice battlefield is separate from your home village. Gem counters and reference-style buttons do not imply that all reference-game features exist.
 
-The Android configuration exists, but an Android build and physical-phone testing have not been completed as part of this work.
+The Android development APK now builds and passes package checks. Physical-phone testing remains pending because ADB detected no connected device. See [Android validation](ANDROID_BUILD_VALIDATION.md).
 
 ## 2. How to practise without losing your work
 
@@ -885,3 +885,16 @@ Study [milestone evidence and guidance](Assets/Scripts/Core/VillageTutorial.cs),
 Regression checks passed for campaign rewards and pending-result reload, army preparation and legacy migrations, plus 66 resource/progression assertions with v8 saves.
 
 Known limits: guidance is a checklist with screen shortcuts, not animated arrows or a scripted battle. Pausing hints does not skip objectives. Progress is local to this device. Phone layout/performance testing and an updated APK remain outstanding.
+
+
+### Android development build workflow - 24 September 2026
+
+The project now has a repeatable Android development APK workflow. Open PowerShell in the project folder and run `./Tools/Build-Android.ps1`. It copies the current source into a fresh ignored validation project and builds with Unity 6000.3.13f1, leaving the open editor separate. The initial package import, shader compilation and Gradle downloads can take substantial time. Android Build Support, SDK/NDK and OpenJDK must be installed with Unity.
+
+Find the result at `Builds/Android/Kingdoms-development.apk` and check `build-report.txt` beside it for `Result: Succeeded`. Run `./Tools/Verify-AndroidApk.ps1` to check the package, signature, native libraries and ZIP alignment. The APK uses package ID **com.kingdoms.prototype**, debug signing and ARM64 IL2CPP. It starts with WelcomeScene and then Main Scene. It is a local development build; phone performance still needs measurement.
+
+For a phone test, enable USB debugging, connect an ARM64 Android phone and approve the computer's debugging prompt. Install using `adb install -r` to preserve this package's data. A prior installation under Unity's template package ID has separate storage. Follow [the device walkthrough](ANDROID_BUILD.md#device-smoke-test): load the village, use the guide, prepare troops for free, attack, replay, claim a result, and restart to check persistence. Never clear app data as a substitute for checking returning saves.
+
+Source links: [PowerShell build launcher](Tools/Build-Android.ps1), [Unity build entry point](Assets/Editor/AndroidDevelopmentBuild.cs), [APK verification](Tools/Verify-AndroidApk.ps1), and [build instructions](ANDROID_BUILD.md). Generated APKs, logs, signing keys and isolated project caches are ignored and must remain uncommitted. Earlier Android status notes describe the evidence available at those historical increments; this section and the build validation record track the current increment.
+
+Validation: [Android build evidence](ANDROID_BUILD_VALIDATION.md) records the successful build, package checks and SHA-256. The APK is 75,881,750 bytes (72.37 MiB). Unity reported zero errors and 1,049 warnings, including installed inference-package shader variants and duplicate assembly versions. No connected device was detected, so installation, touch, resume, frame rate and memory are not yet verified.

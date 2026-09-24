@@ -73,3 +73,5 @@ Latest troop: upgrade Barracks to level 2 to unlock Tanks, a slower four-space s
 Latest campaign expansion: Crossfire Pass and Hillfort add distinct authored villages, layout-specific deployment zones, dynamic scouting and once-only rewards. Exact layout snapshots are retained in replays. See [the enemy village walkthrough](BEGINNER_GUIDE.md#authored-enemy-villages--24-september-2026).
 
 Latest onboarding: the eight-step Village Guide follows building, collection, army preparation, a claimed campaign victory and upgrade completion. Milestones and pause/resume hints persist in version-8 saves. See [the guide walkthrough](BEGINNER_GUIDE.md#resumable-village-guide--24-september-2026).
+
+Latest Android build: an ARM64 IL2CPP development APK has been built and package-verified. See [build instructions](ANDROID_BUILD.md) and [validation evidence](ANDROID_BUILD_VALIDATION.md). Physical-phone testing remains pending; ADB detected no connected device.

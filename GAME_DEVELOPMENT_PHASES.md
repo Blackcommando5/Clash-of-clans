@@ -442,4 +442,6 @@ Next concrete task:
 
 Related project evidence: [Beginner guide](BEGINNER_GUIDE.md), [village validation](VillageValidation.txt), [current state rules](Assets/Scripts/Core/VillageState.cs), [current gameplay controller](Assets/Scripts/UI/VillageGameplay.cs).
 
-24 September campaign status: the minimal offline prepare -> attack -> claim -> upgrade loop is implemented. Phases 5-7 remain partial: this reuses fixed encounter layouts and does not complete arbitrary snapshots, troop variety, battle history, tutorials or phone validation.
+Historical campaign increment status (superseded by the troop, authored-layout and onboarding increments above): the minimal offline prepare -> attack -> claim -> upgrade loop is implemented. Phases 5-7 remain partial: this reuses fixed encounter layouts and does not complete arbitrary snapshots, troop variety, battle history, tutorials or phone validation.
+
+24 September Android increment: the current source now produces a debug-signed ARM64 IL2CPP APK and passes manifest, native-library, signature and ZIP-alignment checks. See [build validation](ANDROID_BUILD_VALIDATION.md). Phases 0 and 15 remain partial: no phone was detected, and installation, returning-save behavior, touch, FPS and memory still need device evidence. The next gate is the physical-device checklist in [ANDROID_BUILD.md](ANDROID_BUILD.md).
