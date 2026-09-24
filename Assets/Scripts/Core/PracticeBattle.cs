@@ -213,6 +213,7 @@ namespace Kingdoms
             if(Outcome==PracticeOutcome.Running)throw new InvalidOperationException("Finish the encounter before recording its result.");
             return new Recording(this);
         }
+        internal Recording CaptureCheckpoint() => new Recording(this);
         // Stable numeric FNV-1a hash; no runtime-dependent string hash codes.
         public ulong StateHash()
         {

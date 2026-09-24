@@ -31,7 +31,7 @@ namespace Kingdoms.UI
             if(accepted)TryDeployPracticeAtScreen(point);
         }
         bool GroundInputAllowed=>PracticeOpen && !ScoutingPractice && !WatchingPracticeReplay
-            && !practicePaused && practiceBattle.Outcome==PracticeOutcome.Running;
+            && !practicePaused && !checkpointSaveBlocked && practiceBattle.Outcome==PracticeOutcome.Running;
 
         void HandleGroundDeployment()
         {
@@ -72,7 +72,7 @@ namespace Kingdoms.UI
             if(!practiceBattle.CanDeployAt(x,z,deployedTroop,out string reason)){GroundFeedback(reason);return false;}
             if(!practiceBattle.DeployAt(x,z,deployedTroop))return false;
             GroundFeedback(deployedTroop+" deployed.");
-            CreatePracticeRaider(practiceBattle.Raiders[practiceBattle.Raiders.Count-1]);RefreshPracticeBattle();return true;
+            CreatePracticeRaider(practiceBattle.Raiders[practiceBattle.Raiders.Count-1]);SaveCampaignCheckpoint();RefreshPracticeBattle();return true;
         }
         void GroundFeedback(string message){deploymentFeedback=message;deploymentFeedbackUntil=Time.unscaledTime+2;}
         void CreateDeploymentZone()
@@ -91,6 +91,6 @@ namespace Kingdoms.UI
             deploymentZone.SetActive(!WatchingPracticeReplay && practiceBattle.Outcome==PracticeOutcome.Running);
             if(GroundInputAllowed)practiceInstructions.text=Time.unscaledTime<deploymentFeedbackUntil ? deploymentFeedback : "Select a troop, then tap inside the green outline. Lane buttons also work.";
         }
-        void OnApplicationFocus(bool focused){if(!focused)CancelGroundGesture();}
+        void OnApplicationFocus(bool focused){if(!focused){CancelGroundGesture();if(CampaignBattleOpen)SaveProgress();}}
     }
 }

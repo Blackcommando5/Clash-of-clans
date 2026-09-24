@@ -31,7 +31,7 @@ namespace Kingdoms.UI
             campaignResolve=Button("Resolve Campaign",page,"",new Vector2(.52f,.04f),new Vector2(.96f,.19f),new Color(.55f,.44f,.20f));
             campaignResolve.onClick.AddListener(ResolveCampaignFromMenu);
             var prepare=Button("Campaign Prepare Army",page,"PREPARE ARMY",new Vector2(.04f,.04f),new Vector2(.48f,.19f),new Color(.28f,.55f,.76f));
-            prepare.onClick.AddListener(OpenArmyPreparation);page.gameObject.SetActive(false);
+            prepare.onClick.AddListener(OpenArmyPreparation);BuildCampaignRecovery(page);page.gameObject.SetActive(false);
         }
 
         public void OpenCampaign()
@@ -50,12 +50,13 @@ namespace Kingdoms.UI
             campaignHillfort.GetComponentInChildren<Text>().text="HILLFORT"+(State.CampaignCleared(3) ? " - CLEARED" : State.CampaignUnlocked(3) ? " - SCOUT" : " - LOCKED");
             campaignCrossfire.interactable=campaignGate.interactable && State.CampaignUnlocked(2);campaignHillfort.interactable=campaignGate.interactable && State.CampaignUnlocked(3);
             campaignResolve.gameObject.SetActive(State.HasCampaignRun);
+            campaignResume.gameObject.SetActive(State.HasCampaignRun && State.campaignOutcome==PracticeOutcome.Running);
             string pending="";
             if(State.HasCampaignRun)
             {
                 bool interrupted=State.campaignOutcome==PracticeOutcome.Running;
                 campaignResolve.GetComponentInChildren<Text>().text=interrupted ? "ABANDON ATTACK" : State.campaignOutcome==PracticeOutcome.Victory ? "CLAIM / FINISH" : "DISMISS RESULT";
-                pending="\n"+CampaignCatalog.Find(State.campaignMission).Name+": "+(interrupted ? "Interrupted attack. Assigned troops are spent." : State.campaignOutcome+" - "+State.campaignStars+" / 3 stars. Result saved.");
+                pending="\n"+CampaignCatalog.Find(State.campaignMission).Name+": "+(interrupted ? string.IsNullOrEmpty(State.campaignCheckpoint) ? "Older interrupted attack has no checkpoint. Abandon to prepare again." : "Attack saved. Resume the committed army or abandon." : State.campaignOutcome+" - "+State.campaignStars+" / 3 stars. Result saved.");
             }
             campaignSummary.text="Prepared: "+State.ArmyCountOf("Raider")+" Raiders + "+State.ArmyCountOf("Archer")+" Archers + "+State.ArmyCountOf("Tank")+" Tanks | "+State.ArmyHousing+" / "+State.ArmyCapacity+" spaces"+
                 "\nStarting commits the entire roster, including undeployed troops.\nPrepare again for free after each attack. Scouting costs nothing."+
@@ -88,7 +89,7 @@ namespace Kingdoms.UI
             var candidate=State.Copy();
             if(!candidate.TryFinishCampaign(battleRunId,practiceBattle.Record(),out var reason)){campaignMessage=reason;return false;}
             if(!VillageSave.TryWrite(candidate,out var error)){campaignMessage=error;return false;}
-            State=candidate;campaignResultSaved=true;campaignMessage=reason;return true;
+            State=candidate;campaignResultSaved=true;checkpointSaveBlocked=false;campaignMessage=reason;return true;
         }
 
         void ClaimCampaignBattle()

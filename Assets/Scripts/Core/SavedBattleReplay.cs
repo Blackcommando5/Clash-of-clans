@@ -12,14 +12,15 @@ namespace Kingdoms
         public int format, rules, layout, layoutRevision, army, archers, tanks, endTick;
         public PracticeOutcome outcome;
         public string finalHash;
+        public string runId;
         public Command[] commands;
         [Serializable]
         public sealed class Command { public int tick, x, z; public string troop; }
 
-        public static string Encode(PracticeBattle.Recording recording)
+        public static string Encode(PracticeBattle.Recording recording, string runId=null)
         {
             var saved = new SavedBattleReplay {
-                format=FormatVersion, rules=PracticeBattle.Recording.RulesVersion,
+                runId=runId, format=FormatVersion, rules=PracticeBattle.Recording.RulesVersion,
                 layout=recording.Layout.Id, layoutRevision=recording.Layout.Revision,
                 army=recording.ArmyBudget, archers=recording.ArcherBudget, tanks=recording.TankBudget,
                 endTick=recording.EndTick, outcome=recording.Outcome,
@@ -36,7 +37,7 @@ namespace Kingdoms
 
         // Header checks are cheap enough for menu rendering. Full simulation runs only on Watch.
         public static bool CanRead(CampaignHistoryEntry entry, out string reason) => TryRead(entry,out _,out reason);
-        static bool TryRead(CampaignHistoryEntry entry, out SavedBattleReplay saved, out string reason)
+        static bool TryRead(CampaignHistoryEntry entry, out SavedBattleReplay saved, out string reason, bool running=false)
         {
             saved=null;reason="Replay unavailable";
             if(entry==null || entry.abandoned || string.IsNullOrEmpty(entry.replayJson)) {reason="No saved replay";return false;}
@@ -51,7 +52,7 @@ namespace Kingdoms
                 saved.army<1 || saved.archers<0 || saved.tanks<0 || (long)saved.archers+saved.tanks>saved.army ||
                 (long)saved.army+saved.archers+3L*saved.tanks>PracticeBattle.MaximumArmySize ||
                 saved.endTick!=entry.durationTicks || saved.endTick<0 || saved.endTick>PracticeBattle.TimeLimitTicks ||
-                saved.outcome!=entry.outcome || saved.outcome==PracticeOutcome.Running || !Enum.IsDefined(typeof(PracticeOutcome),saved.outcome) ||
+                saved.outcome!=entry.outcome || (!running && saved.outcome==PracticeOutcome.Running) || !Enum.IsDefined(typeof(PracticeOutcome),saved.outcome) ||
                 saved.finalHash==null || saved.finalHash.Length!=16 || !ulong.TryParse(saved.finalHash,NumberStyles.HexNumber,CultureInfo.InvariantCulture,out _) ||
                 saved.commands==null || saved.commands.Length>saved.army)return false;
             int previous=0;
@@ -69,7 +70,27 @@ namespace Kingdoms
             recording=null;
             if(!TryRead(entry,out var saved,out reason))return false;
             reason="Replay could not be verified. Your battle summary is still available.";
-            var battle=new PracticeBattle(EnemyLayoutCatalog.Find(saved.layout),saved.army,saved.archers,saved.tanks);
+            if(!TryRebuild(saved,out var battle) || battle.Stars!=entry.stars || battle.Destruction!=entry.destruction)return false;
+            recording=battle.Record();reason="Watching saved campaign replay.";return true;
+        }
+
+        public static bool TryRestoreCheckpoint(VillageState state, out PracticeBattle battle, out string reason)
+        {
+            battle=null;reason="No compatible checkpoint is available. You can abandon this attack and prepare again.";
+            if(!state.HasCampaignRun || state.campaignOutcome!=PracticeOutcome.Running || string.IsNullOrEmpty(state.campaignCheckpoint) || state.campaignCheckpoint.Length>MaximumJsonLength)return false;
+            SavedBattleReplay data;
+            try { data=JsonUtility.FromJson<SavedBattleReplay>(state.campaignCheckpoint); } catch(Exception){return false;}
+            if(data==null || data.runId!=state.campaignRunId)return false;
+            var entry=new CampaignHistoryEntry { replayJson=state.campaignCheckpoint,mission=state.campaignMission,
+                raiders=state.campaignArmy-state.campaignArchers-state.campaignTanks,archers=state.campaignArchers,tanks=state.campaignTanks,
+                durationTicks=data.endTick,outcome=PracticeOutcome.Running };
+            if(!TryRead(entry,out data,out _,true) || !TryRebuild(data,out var restored))return false;
+            battle=restored;reason="Attack restored. Your committed army was not charged again.";return true;
+        }
+
+        static bool TryRebuild(SavedBattleReplay saved, out PracticeBattle battle)
+        {
+            battle=new PracticeBattle(EnemyLayoutCatalog.Find(saved.layout),saved.army,saved.archers,saved.tanks);
             int next=0;
             for(int tick=0;tick<=saved.endTick;tick++)
             {
@@ -84,9 +105,8 @@ namespace Kingdoms
             }
             if(saved.outcome==PracticeOutcome.Surrendered)battle.Surrender();
             if(next!=saved.commands.Length || battle.Outcome!=saved.outcome || battle.Tick!=saved.endTick ||
-                battle.Stars!=entry.stars || battle.Destruction!=entry.destruction ||
                 battle.StateHash().ToString("X16",CultureInfo.InvariantCulture)!=saved.finalHash)return false;
-            recording=battle.Record();reason="Watching saved campaign replay.";return true;
+            return true;
         }
     }
 }

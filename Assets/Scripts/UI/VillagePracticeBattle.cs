@@ -33,11 +33,13 @@ namespace Kingdoms.UI
         public bool PracticeReplayMatches=>practiceReplay!=null && practiceReplay.Matches;
 
         public void OpenPracticeBattle() => OpenBattle(-1);
-        void OpenBattle(int mission, PracticeBattle.Recording savedRecording=null)
+        void OpenBattle(int mission, PracticeBattle.Recording savedRecording=null, PracticeBattle restoredBattle=null)
         {
             if(PracticeOpen || State==null || IsPlacing || !PlayerProfile.HasPlayerName)return;
             historyReplayOpen=savedRecording!=null;
             battleMission=mission;battleRunId="";campaignResultSaved=false;campaignSaveAttempted=false;campaignMessage="";
+            checkpointSaveBlocked=false;checkpointNextTick=(restoredBattle?.Tick ?? 0)+20;
+            if(restoredBattle!=null)battleRunId=State.campaignRunId;
             CloseProfile();CloseShop();CloseBuildingDetails();DeselectBuilding();
             homeCameraFocus=cameraController.focus;homeCameraZoom=viewCamera.orthographicSize;
             bool wide=(savedRecording?.Layout.Id ?? mission)>=2;
@@ -79,10 +81,11 @@ namespace Kingdoms.UI
             raiderCloth=PracticeMaterial("Raider tunic",new Color(.1f,.55f,.8f));raiderSkin=PracticeMaterial("Raider skin",new Color(.9f,.65f,.4f));shotMaterial=PracticeMaterial("Practice shots",new Color(1,.8f,.16f),true);
             campaignBattleClaim=Button("Claim Campaign Battle",practiceSafe,"CLAIM",new Vector2(.81f,.03f),new Vector2(.98f,.12f),new Color(.45f,.64f,.24f));
             campaignBattleClaim.onClick.AddListener(ClaimCampaignBattle);campaignBattleClaim.gameObject.SetActive(false);
+            BuildCheckpointRetry();
             tankArmor=PracticeMaterial("Tank armor",new Color(.38f,.32f,.48f));
             archerCloth=PracticeMaterial("Archer tunic",new Color(.22f,.62f,.18f));
             practiceSealedChallenge=mission>=0 && CampaignCatalog.Find(mission).Sealed;
-            if(savedRecording!=null)StartPracticeBattle(savedRecording);else ResetPracticeBattle();
+            if(restoredBattle!=null)StartPracticeBattle(null,restoredBattle);else if(savedRecording!=null)StartPracticeBattle(savedRecording);else ResetPracticeBattle();
         }
 
         Material PracticeMaterial(string name,Color color,bool unlit=false)
@@ -104,7 +107,7 @@ namespace Kingdoms.UI
         }
         public void SurrenderPracticeBattle()
         {
-            if(practiceBattle==null || ScoutingPractice || WatchingPracticeReplay || practiceBattle.Outcome!=PracticeOutcome.Running)return;
+            if(practiceBattle==null || ScoutingPractice || WatchingPracticeReplay || checkpointSaveBlocked || practiceBattle.Outcome!=PracticeOutcome.Running)return;
             practiceBattle.Surrender();RefreshPracticeBattle();
         }
         public bool SelectPracticeChallenge(bool sealedWalls)
@@ -117,17 +120,17 @@ namespace Kingdoms.UI
             if(practiceBattle==null || practiceBattle.Outcome==PracticeOutcome.Running || (battleMission>=0 && !campaignResultSaved))return;
             StartPracticeBattle(practiceBattle.Record());
         }
-        void StartPracticeBattle(PracticeBattle.Recording recording)
+        void StartPracticeBattle(PracticeBattle.Recording recording, PracticeBattle restoredBattle=null)
         {
             if(practiceCanvas==null)return;
             if(practiceWorld!=null){practiceWorld.SetActive(false);Destroy(practiceWorld);}
             foreach(var label in practiceHealth.Values){label.gameObject.SetActive(false);Destroy(label.gameObject);}
             practiceModels.Clear();practiceHealth.Clear();practiceShots.Clear();practiceAccumulator=0;practicePaused=false;
             practiceReplay=recording==null ? null : new PracticeReplay(recording);
-            practiceScouting=recording==null;
-            practiceBattle=practiceReplay==null ? new PracticeBattle(battleMission>=0 ? CampaignCatalog.Find(battleMission).Layout : practiceSealedChallenge ? EnemyLayoutCatalog.Keep : EnemyLayoutCatalog.Gate,battleMission>=0 ? State.ArmyCount : PracticeBattle.ArmySize,battleMission>=0 ? State.ArmyCountOf("Archer") : 0,battleMission>=0 ? State.ArmyCountOf("Tank") : 0) : practiceReplay.Battle;
+            practiceScouting=recording==null && restoredBattle==null;
+            practiceBattle=restoredBattle ?? (practiceReplay==null ? new PracticeBattle(battleMission>=0 ? CampaignCatalog.Find(battleMission).Layout : practiceSealedChallenge ? EnemyLayoutCatalog.Keep : EnemyLayoutCatalog.Gate,battleMission>=0 ? State.ArmyCount : PracticeBattle.ArmySize,battleMission>=0 ? State.ArmyCountOf("Archer") : 0,battleMission>=0 ? State.ArmyCountOf("Tank") : 0) : practiceReplay.Battle);
             practiceSealedChallenge=practiceBattle.SealedEnclosure;
-            deployedTroop=practiceBattle.RaiderBudget>0 ? "Raider" : practiceBattle.ArcherBudget>0 ? "Archer" : "Tank";
+            deployedTroop=practiceBattle.RemainingOf("Raider")>0 ? "Raider" : practiceBattle.RemainingOf("Archer")>0 ? "Archer" : "Tank";
             practiceWorld=new GameObject("Practice Battlefield");practiceWorld.transform.SetParent(transform,false);
             CreateDeploymentZone();
             foreach(var building in practiceBattle.Buildings)
@@ -162,9 +165,9 @@ namespace Kingdoms.UI
 
         public void DeployPracticeRaider(int lane)
         {
-            if(practiceBattle==null || ScoutingPractice || WatchingPracticeReplay || !practiceBattle.Deploy(lane,deployedTroop))return;
+            if(practiceBattle==null || ScoutingPractice || WatchingPracticeReplay || checkpointSaveBlocked || !practiceBattle.Deploy(lane,deployedTroop))return;
             var raider=practiceBattle.Raiders[practiceBattle.Raiders.Count-1];
-            CreatePracticeRaider(raider);RefreshPracticeBattle();
+            CreatePracticeRaider(raider);SaveCampaignCheckpoint();RefreshPracticeBattle();
         }
         void CreatePracticeRaider(PracticeBattle.Entity raider)
         {
@@ -196,9 +199,11 @@ namespace Kingdoms.UI
         void TickPracticeBattle()
         {
             if(practicePaused)return;
+            if(checkpointSaveBlocked){RefreshPracticeBattle();return;}
             Rect area=Screen.safeArea;practiceSafe.anchorMin=new Vector2(area.xMin/Screen.width,area.yMin/Screen.height);practiceSafe.anchorMax=new Vector2(area.xMax/Screen.width,area.yMax/Screen.height);
             if(ScoutingPractice){RefreshPracticeBattle();return;}
             HandleGroundDeployment();
+            if(checkpointSaveBlocked)return;
             practiceAccumulator+=Mathf.Min(Time.unscaledDeltaTime,.5f);
             while(practiceAccumulator>=.1f)
             {
@@ -208,6 +213,7 @@ namespace Kingdoms.UI
                 foreach(var strike in practiceBattle.Strikes)ShowPracticeStrike(strike);
             }
             practiceShots.RemoveAll(shot=>shot==null);
+            if(CampaignBattleOpen && !WatchingPracticeReplay && practiceBattle.Outcome==PracticeOutcome.Running && practiceBattle.Tick>=checkpointNextTick)SaveCampaignCheckpoint();
             RefreshPracticeBattle();
         }
         void ShowPracticeStrike(PracticeBattle.Strike strike)
@@ -277,6 +283,7 @@ namespace Kingdoms.UI
                 practiceSafe.Find("Return From Practice").GetComponentInChildren<Text>().text="BACK TO HISTORY";
             }
             RefreshGroundDeployment();
+            practiceSurrender.interactable=true;RefreshCheckpointControls();
         }
         void RefreshPracticeEntity(PracticeBattle.Entity entity)
         {
@@ -296,7 +303,7 @@ namespace Kingdoms.UI
         {
             if(!PracticeOpen)return;
             if(battleMission>=0 && !ScoutingPractice && !WatchingPracticeReplay)
-            {practiceBattle.Surrender();if(!SaveCampaignResult()){RefreshPracticeBattle();return;}}
+            {if(!SaveCampaignCheckpoint()){RefreshPracticeBattle();return;}}
             CancelGroundGesture();
             battleMission=-1;battleRunId="";
             practiceBattle.Surrender();practiceBattle=null;practiceReplay=null;

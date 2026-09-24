@@ -25,6 +25,7 @@ namespace Kingdoms
     {
         public int campaignCleared;
         public string campaignRunId = "";
+        public string campaignCheckpoint = "";
         public int campaignMission = -1, campaignArmy, campaignStars, campaignArchers, campaignTanks;
         public PracticeOutcome campaignOutcome;
         public bool HasCampaignRun => !string.IsNullOrEmpty(campaignRunId);
@@ -49,6 +50,7 @@ namespace Kingdoms
             if (!ArmyReady) { reason="Prepare at least one troop first."; return false; }
             campaignRunId=Guid.NewGuid().ToString("N");campaignMission=mission;campaignArmy=ArmyCount;campaignArchers=ArmyCountOf("Archer");campaignTanks=ArmyCountOf("Tank");
             campaignOutcome=PracticeOutcome.Running;campaignStars=0;army.Clear();
+            campaignCheckpoint=SavedBattleReplay.Encode(new PracticeBattle(CampaignCatalog.Find(mission).Layout,campaignArmy,campaignArchers,campaignTanks).CaptureCheckpoint(),campaignRunId);
             reason="Prepared army committed. All assigned troops are spent when the attack starts.";
             return true;
         }
@@ -64,6 +66,7 @@ namespace Kingdoms
             for(int i=0;i<=PracticeBattle.TimeLimitTicks && !replay.Finished;i++)replay.Step();
             if(!replay.Matches)return false;
             campaignOutcome=replay.Battle.Outcome;campaignStars=replay.Battle.Stars;
+            campaignCheckpoint="";
             RecordCampaignHistory(replay.Battle);
             reason="Campaign result saved. You can claim it after returning home or restarting.";
             return true;
@@ -94,6 +97,15 @@ namespace Kingdoms
         }
 
         void ResetCampaignRun()
-        {campaignRunId="";campaignMission=-1;campaignArmy=0;campaignArchers=0;campaignTanks=0;campaignStars=0;campaignOutcome=PracticeOutcome.Running;}
+        {campaignRunId="";campaignCheckpoint="";campaignMission=-1;campaignArmy=0;campaignArchers=0;campaignTanks=0;campaignStars=0;campaignOutcome=PracticeOutcome.Running;}
+
+        public bool TryCheckpointCampaign(string runId, PracticeBattle battle, out string reason)
+        {
+            reason="The checkpoint does not match the active campaign attack.";
+            if(!HasCampaignRun || runId!=campaignRunId || campaignOutcome!=PracticeOutcome.Running || battle==null || battle.Outcome!=PracticeOutcome.Running ||
+                battle.Layout!=CampaignCatalog.Find(campaignMission).Layout || battle.ArmyBudget!=campaignArmy || battle.ArcherBudget!=campaignArchers || battle.TankBudget!=campaignTanks)return false;
+            campaignCheckpoint=SavedBattleReplay.Encode(battle.CaptureCheckpoint(),runId);
+            reason="Attack saved. Resume it from Campaign.";return true;
+        }
     }
 }
