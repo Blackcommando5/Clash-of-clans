@@ -40,17 +40,17 @@ The project is a Clash of Clans-inspired village prototype with its own Kingdoms
 | New player | Name input, validation, confirmation and saved Chief nameplate |
 | Village | Starter Town Hall and surrounding trees |
 | HUD and shop | Resource bars, builder queue, categorized full-screen shop and model portraits |
-| Buildings | Gold Mine, Elixir Collector, both storage types, Cannon, Archer Tower and individual walls |
+| Buildings | Gold Mine, Elixir Collector, both storage types, Cannon, Archer Tower, individual walls, Barracks and Army Camps |
 | Placement | Grid snapping, overlap/boundary checks, preview cancellation and moving existing buildings |
 | Economy | Gold and elixir production, collection, storage limits and offline accrual |
 | Progression | Two builders, timed upgrades through level 3, Town Hall limits, confirmed cancellation with a storage-capped 50% refund |
 | Defenses | Purchase, move, inspect range and upgrade; home defenses remain idle |
 | Practice battle | Eight raiders, three enemy buildings, walls, entrance routing, wall breach logic, star scoring, surrender, results, watch replay, retry and return |
-| Army preparation | Buildings > Prepare Army; free instant Raider roster, eight starter spaces, readiness and immediate saving |
+| Army preparation | Buildings > Prepare Army; free instant Raider roster, eight starter spaces plus camp capacity, readiness and immediate saving |
 | Persistence | Local version 4 village saves; migrations from versions 1, 2 and 3 |
 | Mobile setup | Welcome scene first, village second, landscape orientation, Android IL2CPP/ARM64 settings |
 
-Not implemented yet: buildable barracks/camps, timed training, campaign use of the owned army, battle rewards, arbitrary enemy villages, unit separation, matchmaking, multiplayer, online accounts, purchases or a server economy. The fixed practice battlefield is separate from your home village. Gem counters and reference-style buttons do not imply that all reference-game features exist.
+Not implemented yet: additional troop types, campaign deployment, campaign use of the owned army, battle rewards, arbitrary enemy villages, unit separation, matchmaking, multiplayer, online accounts, purchases or a server economy. The fixed practice battlefield is separate from your home village. Gem counters and reference-style buttons do not imply that all reference-game features exist.
 
 The Android configuration exists, but an Android build and physical-phone testing have not been completed as part of this work.
 
@@ -739,12 +739,27 @@ The [phase plan and status table](GAME_DEVELOPMENT_PHASES.md#current-phase-statu
 Next priorities are: validate the latest mobile build, add an owned army and preparation/capacity rules, support multiple troop types and ground deployment, load authored enemy snapshots, and award campaign rewards exactly once. That creates the complete build ? prepare ? attack ? earn ? upgrade loop. Accounts, PvP and clans follow that foundation. See the [next implementation plan](GAME_DEVELOPMENT_PHASES.md#5-next-implementation-plan) for acceptance gates. This roadmap update changes documentation only; it does not add gameplay or claim new runtime tests.
 
 
-### Owned army foundation - 24 September 2026
+### Historical owned army foundation - 24 September 2026
 
 Open **Buildings**, then **Prepare Army**. Press **Add Raider** to prepare one unit, **Fill Army** to use all eight starter spaces, **Remove 1** to reduce the roster, or **Clear Army** to empty it. Preparation is free and instant; no gold, elixir or builder is spent. A nonempty legal roster shows READY. Full and empty rosters disable the corresponding add/remove controls. Close and reopen the screen, or restart the game, to confirm the roster persists.
 
-This is the first owned-army increment. Starter capacity is a fixed rule, not a placed camp. Barracks, camp expansion, other troop types, campaign deployment and troop consumption are still unimplemented. Attack continues to provide its separate free practice army; preparing or clearing your saved roster does not change practice difficulty.
+At this first owned-army increment, capacity was fixed and barracks/camps were not yet implemented. The facilities update below adds them. Other troop types, campaign deployment and troop consumption remain unimplemented. Attack continues to provide its separate free practice army; preparing or clearing your saved roster does not change practice difficulty.
 
 Study [the troop catalog and army rules](Assets/Scripts/Core/VillageArmy.cs), [the preparation screen](Assets/Scripts/UI/VillageArmy.cs), and [save migration](Assets/Scripts/Core/VillageState.cs). Each action edits a copy, validates it, writes it, then replaces the live state only after a successful save. Save version 4 adds the roster. Versions 1-3 migrate to an empty army without charging resources; version 3 JSON is backed up at `Kingdoms.Village.pre-v4` before later saves overwrite it. Unknown troops, duplicate stacks, nonpositive stack counts and excessive housing are rejected.
 
 Validation: [ArmyPreparationValidation.txt](ArmyPreparationValidation.txt) records the isolated Unity checks; [the validation source](Assets/Editor/ArmyPreparationValidation.cs) covers migration, invalid requests, persistence, actual UI controls and practice isolation. [Resource/save regression](ArmyResourceRegression.txt) also passed 66 existing assertions. No Android build or physical-phone test is included. Earlier v3-save explanations are historical; v4 is the current format.
+
+
+### Barracks and Army Camps - 24 September 2026
+
+**Try it:** Open **Shop > Army**. Buy **Barracks** for **200 elixir**, then place it on a free 3 x 3 area. Army Camp becomes available for **250 elixir**. Place a camp, then open **Buildings > Prepare Army** and press **Fill Army**. You can now prepare 16 Raiders: eight starter spaces plus eight from the camp. Preparation itself remains free and instant. Old saves keep their existing starter roster; the save format remains version 4.
+
+Select the camp and open **Info / Upgrade**. Level 2 costs 500 elixir, occupies one builder for 30 seconds, and increases that camp's contribution from 8 to 16 spaces (24 total with one camp). Current capacity and roster readiness remain available during the upgrade. Completion, including completion while the app is closed, adds capacity once. Cancelling uses the existing 50% refund rule and keeps the previous capacity. Move the building freely without losing its contribution.
+
+There is one Barracks per village; it unlocks camps and currently has no upgrades. Camp limits are one, two and three at Town Hall levels 1, 2 and 3. Each camp supports levels 1-3; level 3 requires Town Hall 2, costs 1,250 elixir and takes 120 seconds. Maximum current army capacity is 80 (eight starter spaces plus three level-3 camps). Neither facility generates or stores currency. New construction is still instant.
+
+Study [building definitions](Assets/Scripts/Core/BuildingCatalog.cs), [army capacity](Assets/Scripts/Core/VillageArmy.cs), [building progression](Assets/Scripts/Core/VillageProgression.cs), [preparation UI](Assets/Scripts/UI/VillageArmy.cs) and [editable model authoring](Assets/Editor/ArmyBuildingAuthoring.cs). Models live in `Assets/Resources/ArmyBuildings`; the shop uses rendered portraits in `Assets/Resources/BuildingIcons`. The shop explains the Barracks prerequisite and building details show the actual camp capacity gain.
+
+Validation evidence: [ArmyFacilitiesValidation.txt](ArmyFacilitiesValidation.txt), generated by [the isolated Editor validation](Assets/Editor/ArmyFacilitiesValidation.cs), covers prerequisites, costs, limits, capacity, upgrades/cancellation/offline completion, save validation, real purchases, moving, preparation and scene reload. [Preparation preview](ArmyFacilitiesPreviews/army-facilities-preparation.png) and [shop preview](ArmyFacilitiesPreviews/army-facilities-shop.png) show the tested screens. The existing [starter-army/migration checks](ArmyPreparationValidation.txt) were rerun and passed with the new camp rules. Prefab material references were also checked against the main project assets. No APK or physical-phone test was performed.
+
+Known limits: camps enlarge the saved roster for future campaign battles. Practice still supplies its own eight Raiders, and neither consumes nor deploys this roster. Barracks upgrades, new troop types, campaign integration, rewards and level-specific building art remain future work.

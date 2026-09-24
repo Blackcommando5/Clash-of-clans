@@ -318,6 +318,8 @@ namespace Kingdoms.UI
         {
             switch (kind)
             {
+                case "Barracks":
+                case "ArmyCamp": return Resources.Load<GameObject>("ArmyBuildings/"+kind);
                 case "Wall": return wallPrefab;
                 case "Cannon": return cannonPrefab;
                 case "ArcherTower": return archerTowerPrefab;
@@ -365,6 +367,7 @@ namespace Kingdoms.UI
         void RefreshHUD()
         {
             if(State==null) return;
+            if(armySummary!=null && ProfileOpen && profilePages[armyPageIndex].gameObject.activeSelf)RefreshArmyPreparation();
             goldLabel.text=State.gold.ToString("N0");
             elixirLabel.text=State.elixir.ToString("N0");
             gemsLabel.text=State.gems.ToString("N0");

@@ -26,10 +26,22 @@ namespace Kingdoms
 
     public sealed partial class VillageState
     {
-        // Starter capacity until buildable barracks and camps are introduced.
+        // Existing saves retain starter capacity; camps expand it.
         public const int StarterArmyCapacity = 8;
         public List<ArmyStack> army = new List<ArmyStack>();
-        public int ArmyCapacity => StarterArmyCapacity;
+        public const int ArmySpacesPerCampLevel = 8;
+        public int ArmyCapacity
+        {
+            get
+            {
+                int capacity = StarterArmyCapacity;
+                if (buildings != null)
+                    foreach (var building in buildings)
+                        if (building != null && building.kind == "ArmyCamp")
+                            capacity += ArmySpacesPerCampLevel * Math.Max(0, Math.Min(3, building.level));
+                return capacity;
+            }
+        }
         public int ArmyHousing
         {
             get
@@ -66,7 +78,7 @@ namespace Kingdoms
             var existing = army.Find(stack => stack.troop == troop);
             long housing = (long)ArmyHousing + ((long)count - (existing?.count ?? 0)) * definition.Housing;
             if (housing > ArmyCapacity)
-            { reason = "Your starter army is full."; return false; }
+            { reason = "Your army is full. Build or upgrade an Army Camp for more space."; return false; }
             if (count == 0) { if (existing != null) army.Remove(existing); }
             else if (existing != null) existing.count = count;
             else army.Add(new ArmyStack { troop = troop, count = count });

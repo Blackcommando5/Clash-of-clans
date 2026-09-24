@@ -5,7 +5,7 @@ namespace Kingdoms.UI
 {
     public sealed partial class VillageGameplay
     {
-        Text armySummary;
+        Text armySummary, armyRules;
         Button armyAdd, armyRemove, armyFill, armyClear;
         int armyPageIndex;
 
@@ -21,7 +21,7 @@ namespace Kingdoms.UI
             profilePages.Add(page);
             Label("Army Title", page, "Prepare your army", 40, new Color(.23f,.25f,.3f), new Vector2(.05f,.84f), new Vector2(.95f,.98f));
             armySummary = Label("Army Summary", page, "", 30, new Color(.23f,.25f,.3f), new Vector2(.06f,.50f), new Vector2(.94f,.83f));
-            Label("Army Rules", page, "Free, instant preparation. Saved on this device.\nStarter capacity: 8 spaces. Each Raider uses 1.\nPractice supplies its own army; this roster is for future campaign battles.", 23, new Color(.23f,.25f,.3f), new Vector2(.06f,.24f), new Vector2(.94f,.49f));
+            armyRules = Label("Army Rules", page, "", 23, new Color(.23f,.25f,.3f), new Vector2(.06f,.24f), new Vector2(.94f,.49f));
             armyRemove = ArmyButton(page, "Remove Raider", "REMOVE 1", .04f, () => ChangePreparedArmy(State.ArmyHousing - 1));
             armyAdd = ArmyButton(page, "Add Raider", "ADD RAIDER", .28f, () => ChangePreparedArmy(State.ArmyHousing + 1));
             armyFill = ArmyButton(page, "Fill Army", "FILL ARMY", .52f, () => ChangePreparedArmy(State.ArmyCapacity));
@@ -62,6 +62,9 @@ namespace Kingdoms.UI
                 "\n" + (State.ArmyReady ? "READY - Your roster is prepared." : "EMPTY - Add a Raider to prepare your army.");
             armyAdd.interactable = armyFill.interactable = count < State.ArmyCapacity;
             armyRemove.interactable = armyClear.interactable = count > 0;
+            armyRules.text = "Free, instant preparation. Each Raider uses 1 space.\n" +
+                (State.Count("Barracks") == 0 ? "Shop > Army: build Barracks to unlock Army Camps." : "Army Camps add 8 spaces per level. Upgrade them to expand.") +
+                "\nPractice supplies its own army; this roster is for future campaign battles.";
         }
     }
 }

@@ -89,6 +89,7 @@ namespace Kingdoms
         {
             var definition = BuildingCatalog.Find(kind);
             if (definition == null || kind == "TownHall") { reason = "Choose a building from the shop."; return false; }
+            if (kind == "ArmyCamp" && Count("Barracks") == 0) { reason = "Build Barracks first to unlock Army Camps."; return false; }
             if (Count(kind) >= BuildingLimit(kind)) { reason = definition.Name + " limit reached (" + BuildingLimit(kind) + ") at Town Hall " + TownHallLevel + "."; return false; }
             if (Balance(definition.CostResource) < definition.Cost) { reason = "You need " + definition.CostText + "."; return false; }
             reason = "Ready to build - " + definition.CostText + ".";
@@ -155,7 +156,8 @@ namespace Kingdoms
                 var definition = b == null ? null : BuildingCatalog.Find(b.kind);
                 if (definition == null) return false;
                 if (b.kind == "TownHall") halls++;
-                if (b.kind == "Wall" && (b.level != 1 || b.upgradeStarted != 0 || b.upgradeFinishes != 0)) return false;
+                if ((b.kind == "Wall" || b.kind == "Barracks") && (b.level != 1 || b.upgradeStarted != 0 || b.upgradeFinishes != 0)) return false;
+                if (b.kind == "ArmyCamp" && Count("Barracks") != 1) return false;
                 if (b.level<1 || b.level>3 || b.upgradeStarted<0 || b.upgradeFinishes<0) return false;
                 if (b.kind!="TownHall" && b.level>TownHallLevel+1) return false;
                 if (b.upgradeFinishes==0 ? b.upgradeStarted!=0 : b.level>=3 || b.upgradeFinishes<=b.upgradeStarted || b.upgradeFinishes-b.upgradeStarted!=UpgradeSeconds(b)) return false;

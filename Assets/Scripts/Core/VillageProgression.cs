@@ -12,6 +12,7 @@ namespace Kingdoms
         public int BusyBuilders => buildings.FindAll(b=>b!=null && b.upgradeFinishes>0).Count;
         public int BuildingLimit(string kind)
         {
+            if (kind == "Barracks") return 1;
             var d=BuildingCatalog.Find(kind);
             return kind=="Wall" ? 25*TownHallLevel : d==null ? 0 : d.Limit+(kind=="TownHall" ? 0 : TownHallLevel-1);
         }
@@ -25,7 +26,7 @@ namespace Kingdoms
         {
             if(index<0 || index>=buildings.Count) { reason="Select a building.";return false; }
             var b=buildings[index];
-            if(b.kind=="Wall") { reason="Wall upgrades are not available yet.";return false; }
+            if(b.kind=="Wall" || b.kind=="Barracks") { reason=BuildingCatalog.Find(b.kind).Name+" upgrades are not available yet.";return false; }
             if(b.upgradeFinishes>0) { reason="This building is already upgrading.";return false; }
             if(b.level>=3) { reason="Maximum available level reached.";return false; }
             if(b.kind!="TownHall" && b.level>=TownHallLevel+1) { reason="Upgrade your Town Hall first.";return false; }

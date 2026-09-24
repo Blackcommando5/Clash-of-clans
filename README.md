@@ -6,7 +6,7 @@ Current work: [Home Village interface and progression](HOME_VILLAGE_PROGRESS.md)
 
 Latest development: [the supplied screenshot reference implementation](SCREENSHOT_REFERENCE_MATCH.md) adds a full-screen categorized shop, compact HUD, builder suggestions, two-column upgrade dialog, new resource models, and village scenery. [The builder queue and upgrade cancellation](HOME_VILLAGE_PROGRESS.md) retain working progression. See [the phase checklist](GAME_DEVELOPMENT_PHASES.md) for completed and remaining work.
 
-Latest army foundation: open **Buildings > Prepare Army** to manage a saved Raider roster with eight starter spaces and free instant preparation. Practice still supplies its own army. Barracks, camp expansion and campaign integration remain pending. See [the beginner walkthrough](BEGINNER_GUIDE.md#owned-army-foundation--24-september-2026).
+Latest army progression: **Shop > Army** now sells Barracks (200 elixir) and Army Camps (250 elixir). Camps add eight spaces per level to your saved roster; **Buildings > Prepare Army** remains free and instant. Practice still supplies its own army. See [the beginner walkthrough](BEGINNER_GUIDE.md#barracks-and-army-camps---24-september-2026).
 
 ## Architecture
 

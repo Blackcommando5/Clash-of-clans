@@ -224,12 +224,13 @@ namespace Kingdoms.UI
         {
             foreach(var card in referenceCards)
             {
-                var definition=BuildingCatalog.Find(card.id);if(definition==null || !definition.IsDefense)continue;
+                var definition=BuildingCatalog.Find(card.id);if(definition==null || (!definition.IsDefense && card.id!="ArmyCamp" && card.id!="Barracks"))continue;
                 card.portrait.texture=Resources.Load<Texture2D>("BuildingIcons/"+card.id);
                 card.portrait.enabled=card.portrait.texture!=null;
                 var illustration=card.portrait.transform.parent.Find("Building Illustration");
                 if(illustration!=null)illustration.gameObject.SetActive(!card.portrait.enabled);
-                if(card.buy.transform.Find("Gold Icon")==null)Icon("Gold",card.buy.transform,new Vector2(.7f,.14f),new Vector2(.89f,.86f));
+                string currency=definition.CostResource==ResourceKind.Gold ? "Gold" : "Elixir";
+                if(card.buy.transform.Find(currency+" Icon")==null)Icon(currency,card.buy.transform,new Vector2(.7f,.14f),new Vector2(.89f,.86f));
                 FitReference(card.cost.rectTransform,new Vector2(.1f,.02f),new Vector2(.69f,.98f));card.cost.alignment=TextAnchor.MiddleRight;
             }
         }
@@ -264,6 +265,7 @@ namespace Kingdoms.UI
                 ReferenceColor(card.background,available ? new Color(.28f,.74f,.85f) : new Color(.62f,.63f,.62f));
                 card.portrait.color=available ? Color.white : new Color(.65f,.65f,.65f);
                 card.stock.text=d==null ? "COMING TO KINGDOMS" : "Build: Instant       Built:\n"+State.Count(d.Id)+" / "+State.BuildingLimit(d.Id);
+                if(card.id=="ArmyCamp" && State.Count("Barracks")==0)card.stock.text="Requires Barracks";
                 card.cost.text=d==null ? "UNAVAILABLE" : d.Cost.ToString("N0");
                 card.cost.color=d!=null && State.Balance(d.CostResource)<d.Cost ? new Color(1,.48f,.48f) : Color.white;
             }
@@ -285,9 +287,11 @@ namespace Kingdoms.UI
             referenceDetailPortrait.enabled=referenceDetailPortrait.texture!=null;
             string gain=definition.StorageBonus>0 ? "Storage Capacity\n"+(definition.StorageBonus*b.level).ToString("N0")+"  + "+definition.StorageBonus.ToString("N0") : definition.ProductionPerSecond>0 ? "Production / minute\n"+(definition.ProductionPerSecond*b.level*60)+"  + "+(definition.ProductionPerSecond*60) : b.kind=="TownHall" ? "Town Hall Level\n"+b.level+"  →  "+Mathf.Min(3,b.level+1) : "Connected village walls";
             referenceDetailGain.text=b.level>=3 ? "Maximum available level" : gain;
+            if(b.kind=="ArmyCamp")referenceDetailGain.text="Army spaces: "+(VillageState.ArmySpacesPerCampLevel*b.level)+(b.level<3 ? " + 8" : " (maximum)");
+            if(b.kind=="Barracks")referenceDetailGain.text="Unlocks Army Camps";
             if(definition.IsDefense)referenceDetailGain.text=b.level>=3 ? "Maximum available level" : "Hit points: "+(definition.HitPoints*b.level)+" + "+definition.HitPoints+"\nDamage / second: "+(definition.DamagePerSecond*b.level)+" + "+definition.DamagePerSecond;
-            referenceDetailTime.text=b.kind=="Wall" ? "" : "Upgrade time\n"+Duration(b.upgradeFinishes>0 ? b.upgradeFinishes-VillageState.Now : VillageState.UpgradeSeconds(b));
-            if(b.upgradeFinishes==0 && b.level<3 && b.kind!="Wall")detailTitle.text="Upgrade "+definition.Name+" to Level "+(b.level+1)+"?";
+            referenceDetailTime.text=(b.kind=="Wall" || b.kind=="Barracks") ? "" : "Upgrade time\n"+Duration(b.upgradeFinishes>0 ? b.upgradeFinishes-VillageState.Now : VillageState.UpgradeSeconds(b));
+            if(b.upgradeFinishes==0 && b.level<3 && b.kind!="Wall" && b.kind!="Barracks")detailTitle.text="Upgrade "+definition.Name+" to Level "+(b.level+1)+"?";
         }
 
         void LayoutReferenceDetails()
