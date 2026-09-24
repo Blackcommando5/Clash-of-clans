@@ -66,7 +66,7 @@ namespace Kingdoms.UI
             if(State==null || !PlayerProfile.HasPlayerName || IsPlacing)return;
             CloseShop();CloseBuildingDetails();DeselectBuilding();
 
-            profileModal.SetActive(true);cameraController.InputBlocked=true;
+            profileModal.SetActive(true);if(tutorialEntry!=null)tutorialEntry.gameObject.SetActive(false);cameraController.InputBlocked=true;
             for(int i=0;i<profilePages.Count;i++) profilePages[i].gameObject.SetActive(i==tab);
             profileContent=profilePages[tab];
             RefreshProfileValues();

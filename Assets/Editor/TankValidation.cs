@@ -58,8 +58,8 @@ public static class TankValidation
         var preference=new PracticeBattle(false,1,0,1);preference.DeployAt(0,-1000,"Tank");preference.Raiders[0].Z=100;preference.Step();Check(preference.Buildings[0].HitPoints==600,"Tank prioritizes live defenses over adjacent hall");
         foreach(int count in new[]{-1,21,int.MaxValue}){bool rejected=false;try{new PracticeBattle(false,Math.Max(1,count),0,count);}catch(ArgumentOutOfRangeException){rejected=true;}Check(rejected,"Invalid Tank budgets");}
         var old=Seed();old.TrySetArmyCount("Raider",8,out _);old.TryBeginCampaign(0,out _);var win=new PracticeBattle();for(int i=0;i<8;i++)win.Deploy(i%3);while(win.Outcome==PracticeOutcome.Running)win.Step();old.TryFinishCampaign(old.campaignRunId,win.Record(),out _);
-        json=JsonUtility.ToJson(old).Replace("\"version\":7","\"version\":6");PlayerPrefs.DeleteKey("Kingdoms.Village.pre-v7");PlayerPrefs.SetString(VillageSave.Key,json);
-        Check(VillageSave.TryLoad(out loaded,out _) && loaded.version==7 && loaded.campaignTanks==0 && loaded.campaignOutcome==PracticeOutcome.Victory && loaded.campaignRunId==old.campaignRunId && PlayerPrefs.GetString("Kingdoms.Village.pre-v7")==json,"v6 pending reward migration and backup");
+        json=JsonUtility.ToJson(old).Replace("\"version\":8","\"version\":6");PlayerPrefs.DeleteKey("Kingdoms.Village.pre-v7");PlayerPrefs.SetString(VillageSave.Key,json);
+        Check(VillageSave.TryLoad(out loaded,out _) && loaded.version==8 && loaded.campaignTanks==0 && loaded.campaignOutcome==PracticeOutcome.Victory && loaded.campaignRunId==old.campaignRunId && PlayerPrefs.GetString("Kingdoms.Village.pre-v7")==json,"v6 pending reward migration and backup");
         Check(loaded.TryClaimCampaign(loaded.campaignRunId,out _),"Migrated reward claim");
     }
     public static void Run()

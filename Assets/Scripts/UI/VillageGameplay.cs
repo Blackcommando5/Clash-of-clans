@@ -73,7 +73,7 @@ namespace Kingdoms.UI
                 if(!loaded.IsValid()){Debug.LogWarning("Starter Town Hall is outside the build area; using the default location.");loaded=VillageState.Create(VillageState.Now);}
             }
             State = loaded;
-            BuildArmyPreparation();BuildCampaignInterface();
+            BuildArmyPreparation();BuildCampaignInterface();BuildTutorialInterface();
             world = new GameObject("Village Buildings").transform;
             world.SetParent(transform, false);
             foreach (var building in State.buildings) Spawn(building);
@@ -396,8 +396,8 @@ namespace Kingdoms.UI
                 if (shop.activeSelf || IsPlacing) producerButtons[i].gameObject.SetActive(false);
             }
             if(Time.unscaledTime>=messageUntil)
-                guide.text=IsPlacing ? "Tap or drag on the ground to position your building." : State.Count("ElixirCollector")==0 ? "Build an Elixir Collector with gold to keep your village growing." : State.MineCount==0 ? "Open SHOP to build a Gold Mine with elixir." : "Collect resources. Build storage to increase capacity.";
-            RefreshScreenshotReference();
+                guide.text=TutorialHintsVisible ? "Guide "+(State.TutorialStep+1)+"/8: "+VillageTutorial.Title(State.TutorialStep)+" - open Village Guide." : IsPlacing ? "Tap or drag on the ground to position your building." : State.Count("ElixirCollector")==0 ? "Build an Elixir Collector with gold to keep your village growing." : State.MineCount==0 ? "Open SHOP to build a Gold Mine with elixir." : "Collect resources. Build storage to increase capacity.";
+            RefreshScreenshotReference();RefreshTutorialInterface();
         }
 
         void ShowMessage(string message) { guide.text=message;messageUntil=Time.unscaledTime+5f; }

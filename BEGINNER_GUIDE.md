@@ -49,7 +49,8 @@ The project is a Clash of Clans-inspired village prototype with its own Kingdoms
 | Ground deployment | Click/tap within a visible southern zone; selected troop, half-cell snapping, placement feedback and exact-position replay; lane buttons retained |
 | Army preparation | Buildings > Prepare Army; free instant mixed Raider/Archer/Tank roster, weighted housing, troop selection, eight starter spaces plus camp capacity, readiness and immediate saving |
 | Campaign | Four authored missions, distinct layouts/deployment zones, dynamic scouting, prepared-army commitment, durable results, once-only first-clear rewards and saved unlocks |
-| Persistence | Local version 7 village saves; migrations from versions 1-6 |
+| Persistence | Local version 8 village saves; migrations from versions 1-7; saved guide milestones and hint preference |
+| Guided onboarding | Eight-step Village Guide, contextual shortcuts, saved milestones, pause/resume hints and recognition of existing progress |
 | Mobile setup | Welcome scene first, village second, landscape orientation, Android IL2CPP/ARM64 settings |
 
 Not implemented yet: arbitrary enemy villages, unit separation, matchmaking, multiplayer, online accounts, purchases or a server economy. The fixed practice battlefield is separate from your home village. Gem counters and reference-style buttons do not imply that all reference-game features exist.
@@ -856,3 +857,31 @@ Source links: [combat/replay](Assets/Scripts/Core/PracticeBattle.cs), [mission r
 The original campaign and practice regression suites also passed, covering pending rewards, legacy mission wins, replay/retry, surrender and home-save preservation.
 
 Known limits: four authored villages, a fixed navigation grid, fixed defense stats, no unit separation, no external snapshot import and no persisted/exported replays. Phone performance and an updated APK remain unvalidated.
+
+
+### Resumable Village Guide ? 24 September 2026
+
+Click **Village Guide** near the top of the home village to open an eight-step checklist:
+
+1. Build a Gold Mine (150 elixir).
+2. Collect gold from it; production alone does not finish this step.
+3. Build an Elixir Collector (150 gold).
+4. Build Barracks (200 elixir).
+5. Build an Army Camp (250 elixir).
+6. Prepare an army for free.
+7. Win **Gate Outpost** and claim its reward.
+8. Complete a building upgrade. The guide opens the Gold Mine upgrade (300 elixir, 30 seconds), but any completed building upgrade counts.
+
+Use the guide's action button to open the relevant shop category, collect resources, prepare troops, open Campaign, or inspect the upgrade. Buying, placing, starting attacks and upgrades still use their normal controls. Your first camp may require more elixir: let the collector produce and collect it. The guide grants no extra resources and charges no tutorial fee.
+
+Home hints show the next unfinished step. **Pause Hints** hides those hints while keeping the guide available; **Resume Hints** restores them. Progress continues while hints are paused. Ordinary collection/placement/error messages take precedence over the hint. The guide does not interrupt battles or require finishing a step before using other features.
+
+Completed steps are saved and never undone by clearing or spending an army. Existing buildings, collected gold, owned/committed armies, claimed campaign progress and completed upgrades are recognized. An unclaimed victory remains on the attack step; losses can be dismissed and retried, and interrupted attacks can be abandoned through Campaign. Starting or canceling an upgrade does not count as completing it. After completion, the guide remains available and its action opens Campaign.
+
+Saves now use **version 8**. Version-7 villages migrate without losing troops, buildings or pending rewards; the old payload is backed up as `Kingdoms.Village.pre-v8`. Existing evidence initializes guide progress. Milestones and the hint preference are written with the village, using the same save-success checks as other actions. Earlier save-version descriptions above are historical. Replay rules remain 6.
+
+Study [milestone evidence and guidance](Assets/Scripts/Core/VillageTutorial.cs), [guide UI and action routing](Assets/Scripts/UI/VillageTutorial.cs), [save/migration integration](Assets/Scripts/Core/VillageState.cs), and [home hints](Assets/Scripts/UI/VillageGameplay.cs). Validation evidence: [TutorialValidation.txt](TutorialValidation.txt) and [test source](Assets/Editor/TutorialValidation.cs). Screenshots: [home entry and hint](TutorialPreviews/village-guide-home.png), [starting guide](TutorialPreviews/village-guide-start.png), [attack step](TutorialPreviews/village-guide-attack.png), [completed guide](TutorialPreviews/village-guide-complete.png).
+
+Regression checks passed for campaign rewards and pending-result reload, army preparation and legacy migrations, plus 66 resource/progression assertions with v8 saves.
+
+Known limits: guidance is a checklist with screen shortcuts, not animated arrows or a scripted battle. Pausing hints does not skip objectives. Progress is local to this device. Phone layout/performance testing and an updated APK remain outstanding.

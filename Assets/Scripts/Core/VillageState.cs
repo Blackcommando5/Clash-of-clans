@@ -19,7 +19,7 @@ namespace Kingdoms
     public sealed partial class VillageState
     {
         public const int MineCost = 150, MineLimit = 3, MineCapacity = 500, ResourceCapacity = BuildingCatalog.BaseCapacity;
-        public int version = 7;
+        public int version = 8;
         public int gold = 1000, elixir = 500, gems = 50;
         public bool collectedFirstGold;
         public long lastProduction;
@@ -144,7 +144,7 @@ namespace Kingdoms
 
         public bool IsValid()
         {
-            if (version != 7 || !IsCampaignValid() || !IsArmyValid() || buildings == null || buildings.Count < 1 ||
+            if (version != 8 || (tutorialMilestones & ~TutorialAll)!=0 || !IsCampaignValid() || !IsArmyValid() || buildings == null || buildings.Count < 1 ||
                 gold < 0 || elixir < 0 || gems < 0 || lastProduction < 0) return false;
             int maximumBuildings = 1;
             foreach (var definition in BuildingCatalog.Purchasable) maximumBuildings += BuildingLimit(definition.Id);
@@ -216,7 +216,9 @@ namespace Kingdoms
                     loaded.campaignArchers=0;loaded.version=6;
                 }
                 if (loaded.version == 6) { loaded.campaignTanks=0;loaded.version=7; }
+                if (loaded.version == 7) { loaded.tutorialMilestones=0;loaded.tutorialHintsPaused=false;loaded.version=8; }
                 if (!loaded.IsValid()) return false;
+                loaded.tutorialMilestones=loaded.TutorialProgress;
                 state = loaded;
                 return true;
             }
@@ -238,8 +240,8 @@ namespace Kingdoms
                 string json = PlayerPrefs.GetString(Key);
                 if (!VillageState.TryDeserialize(json, out var loaded)) throw new FormatException("Invalid village data");
                 var original = JsonUtility.FromJson<VillageState>(json);
-                string backupKey=original.version==1 ? LegacyBackupKey : original.version==2 ? "Kingdoms.Village.pre-v3" : original.version==3 ? "Kingdoms.Village.pre-v4" : original.version==4 ? "Kingdoms.Village.pre-v5" : original.version==5 ? "Kingdoms.Village.pre-v6" : "Kingdoms.Village.pre-v7";
-                if (original.version < 7 && !PlayerPrefs.HasKey(backupKey))
+                string backupKey=original.version==1 ? LegacyBackupKey : original.version==2 ? "Kingdoms.Village.pre-v3" : original.version==3 ? "Kingdoms.Village.pre-v4" : original.version==4 ? "Kingdoms.Village.pre-v5" : original.version==5 ? "Kingdoms.Village.pre-v6" : original.version==6 ? "Kingdoms.Village.pre-v7" : "Kingdoms.Village.pre-v8";
+                if (original.version < 8 && !PlayerPrefs.HasKey(backupKey))
                 { PlayerPrefs.SetString(backupKey, json); PlayerPrefs.Save(); }
                 loaded.Accrue(VillageState.Now);
                 state = loaded;
@@ -259,7 +261,8 @@ namespace Kingdoms
             if (state == null || !state.IsValid()) { error = "The village could not be saved."; return false; }
             bool hadSave = PlayerPrefs.HasKey(Key);
             string previous = PlayerPrefs.GetString(Key, "");
-            try { PlayerPrefs.SetString(Key, JsonUtility.ToJson(state)); PlayerPrefs.Save(); return true; }
+            var snapshot=state.Copy();snapshot.tutorialMilestones=state.TutorialProgress;
+            try { PlayerPrefs.SetString(Key, JsonUtility.ToJson(snapshot)); PlayerPrefs.Save(); state.tutorialMilestones=snapshot.tutorialMilestones;return true; }
             catch (Exception e)
             {
                 if (hadSave) PlayerPrefs.SetString(Key, previous); else PlayerPrefs.DeleteKey(Key);

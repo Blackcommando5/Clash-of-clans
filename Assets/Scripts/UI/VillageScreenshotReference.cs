@@ -277,7 +277,7 @@ namespace Kingdoms.UI
                 caption.text=badge.interactable ? "Collect" : "Producing";
                 ReferenceColor(badge.GetComponent<WelcomePanel>(),new Color(.22f,.31f,.09f,.8f));
             }
-            guide.transform.parent.gameObject.SetActive(IsPlacing || Time.unscaledTime<messageUntil);
+            guide.transform.parent.gameObject.SetActive(IsPlacing || Time.unscaledTime<messageUntil || TutorialHintsVisible);
             referenceDetailArt.SetActive(!viewingBuilderQueue);referenceDetailPaper.SetActive(!viewingBuilderQueue);referenceDetailTime.gameObject.SetActive(!viewingBuilderQueue);
             LayoutReferenceDetails();
             if(viewingBuilderQueue)return;

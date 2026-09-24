@@ -1,0 +1,5 @@
+PASS: eight evidence-based steps; partial progress; production/collection distinction; sticky preparation after roster clear; pause/resume save and scene reload; v7 migration and backup; invalid masks; upgrades count only on completion; campaign counts only after claimed victory; actual fresh-village guide through resource shop, placement, collection, army facilities, free preparation, Gate attack/result/claim, upgrade and complete-state reload; completed guide remains accessible. Unity 6000.3.13f1. No phone testing or APK rebuild.
+Additional checks: home guide entry; paused home hint hidden while guide remains accessible; pending version-7 victory ticket/stars/reward preserved through tutorial migration.
+Regression: CampaignValidation.Run passed with v8 saves, including original mission wins, pending reward reload, once-only claims, wrong-recording guards and reward-funded upgrade.
+Regression: ResourceMilestoneValidation.RunRules passed 66 resource/progression assertions with v8 saves.
+Regression: ArmyPreparationValidation.Run passed with v8 saves, including v1/v2/v3 migration, backup, preparation controls, save/reload and practice roster isolation.

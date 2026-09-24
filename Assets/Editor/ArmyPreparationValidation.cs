@@ -42,13 +42,13 @@ public static class ArmyPreparationValidation
             Check(state.TrySetArmyCount("Raider", 0, out _) && !state.ArmyReady && state.army.Count == 0, "Clear removes stack");
             for (int version = 1; version <= 3; version++)
             {
-                string legacy = JsonUtility.ToJson(state).Replace("\"version\":7", "\"version\":" + version).Replace(",\"army\":[]", "");
-                Check(VillageState.TryDeserialize(legacy, out var migrated) && migrated.version == 7 && migrated.IsValid() && !migrated.ArmyReady && migrated.gold == state.gold, "Legacy migration " + version);
+                string legacy = JsonUtility.ToJson(state).Replace("\"version\":8", "\"version\":" + version).Replace(",\"army\":[]", "");
+                Check(VillageState.TryDeserialize(legacy, out var migrated) && migrated.version == 8 && migrated.IsValid() && !migrated.ArmyReady && migrated.gold == state.gold, "Legacy migration " + version);
             }
-            string v3 = JsonUtility.ToJson(state).Replace("\"version\":7", "\"version\":3");
+            string v3 = JsonUtility.ToJson(state).Replace("\"version\":8", "\"version\":3");
             PlayerPrefs.DeleteKey("Kingdoms.Village.pre-v4");
             PlayerPrefs.SetString(VillageSave.Key, v3);
-            Check(VillageSave.TryLoad(out var loaded, out _) && loaded.version == 7 && PlayerPrefs.GetString("Kingdoms.Village.pre-v4") == v3, "Original save backed up");
+            Check(VillageSave.TryLoad(out var loaded, out _) && loaded.version == 8 && PlayerPrefs.GetString("Kingdoms.Village.pre-v4") == v3, "Original save backed up");
             Check(VillageSave.TryWrite(state, out _) && PlayerProfile.TrySaveName("ArmyChief", out _), "Set isolated save");
             EditorSceneManager.OpenScene("Assets/Scenes/Main Scene.unity");
             SessionState.SetBool(Pending, true);

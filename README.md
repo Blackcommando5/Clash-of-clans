@@ -71,3 +71,5 @@ Latest deployment: click or tap inside the green battlefield zone to place the s
 Latest troop: upgrade Barracks to level 2 to unlock Tanks, a slower four-space shield-bearing melee unit. Three-type armies work with ground/lane deployment, verified campaign results and replay. Saves now use version 7. See [the Tank walkthrough](BEGINNER_GUIDE.md#tank-troops-and-barracks-upgrades--24-september-2026).
 
 Latest campaign expansion: Crossfire Pass and Hillfort add distinct authored villages, layout-specific deployment zones, dynamic scouting and once-only rewards. Exact layout snapshots are retained in replays. See [the enemy village walkthrough](BEGINNER_GUIDE.md#authored-enemy-villages--24-september-2026).
+
+Latest onboarding: the eight-step Village Guide follows building, collection, army preparation, a claimed campaign victory and upgrade completion. Milestones and pause/resume hints persist in version-8 saves. See [the guide walkthrough](BEGINNER_GUIDE.md#resumable-village-guide--24-september-2026).

@@ -71,8 +71,8 @@ public static class MixedArmyValidation
         var legacy=VillageState.Create(1000);legacy.TrySetArmyCount("Raider",8,out _);legacy.TryBeginCampaign(0,out _);string id=legacy.campaignRunId;
         var victory=new PracticeBattle();for(int i=0;i<8;i++)victory.Deploy(i%3);while(victory.Outcome==PracticeOutcome.Running)victory.Step();
         Check(legacy.TryFinishCampaign(id,victory.Record(),out _),"Seed old pending reward");
-        string json=JsonUtility.ToJson(legacy).Replace("\"version\":7","\"version\":5");
-        Check(VillageState.TryDeserialize(json,out var migrated) && migrated.version==7 && migrated.campaignRunId==id && migrated.campaignArmy==8 && migrated.campaignArchers==0 && migrated.campaignOutcome==PracticeOutcome.Victory,"v5 pending victory preserved");
+        string json=JsonUtility.ToJson(legacy).Replace("\"version\":8","\"version\":5");
+        Check(VillageState.TryDeserialize(json,out var migrated) && migrated.version==8 && migrated.campaignRunId==id && migrated.campaignArmy==8 && migrated.campaignArchers==0 && migrated.campaignOutcome==PracticeOutcome.Victory,"v5 pending victory preserved");
         Check(migrated.TryClaimCampaign(id,out _) && !migrated.TryClaimCampaign(id,out _),"Migrated reward once only");
         PlayerPrefs.DeleteKey("Kingdoms.Village.pre-v6");PlayerPrefs.SetString(VillageSave.Key,json);
         Check(VillageSave.TryLoad(out _,out _) && PlayerPrefs.GetString("Kingdoms.Village.pre-v6")==json,"v5 backup preserved");
