@@ -50,3 +50,8 @@ Surrender stops a live attack immediately and displays its current results while
 Opening Attack, Retry and challenge changes now enter an untimed scouting phase. A summary displays damage and range from the defense entities, plus the selected enclosure's approach. Simulation ticks do not advance; deployment and surrender are guarded in both UI state and action handlers. Start Attack clears the frame accumulator and starts at combat tick zero, reveals deployment, and locks challenge changes even with no troops deployed. The normal three-minute timeout then applies.
 
 Replay bypasses scouting and retains its original combat timing. Returning home from scouting restores village controls. Scouting does not change the home save or recording rules version. The fixed camera remains blocked; this update does not add scouting pan, zoom, selectable defenses or range overlays. Validation checks a real-time scouting wait and all start/retry/replay transitions.
+
+
+## Campaign integration - 24 September 2026
+
+The simulation now accepts an explicit 1-80 Raider budget, and replay rules version 2 records that budget. Practice retains its free eight Raiders and both existing challenge layouts. The separate campaign flow reuses those layouts with an owned roster, saved results and first-clear rewards; see [the current guide](BEGINNER_GUIDE.md#first-offline-campaign-loop---24-september-2026). Historical rules-version-1 references above describe earlier in-memory recordings, which were never persisted.

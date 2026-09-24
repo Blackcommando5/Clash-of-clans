@@ -9,7 +9,7 @@ namespace Kingdoms
     // This encounter owns all combat state and never receives a VillageState.
     public sealed class PracticeBattle
     {
-        public const int TickMilliseconds=100, ArmySize=8, TimeLimitTicks=1800;
+        public const int TickMilliseconds=100, ArmySize=8, MaximumArmySize=80, TimeLimitTicks=1800;
         public sealed class Entity
         {
             public int Id, X, Z, HitPoints, MaxHitPoints, Damage, Range, HalfSize, NextAttack;
@@ -24,15 +24,15 @@ namespace Kingdoms
         }
         public sealed class Recording
         {
-            public const int RulesVersion=1;
+            public const int RulesVersion=2;
             public readonly bool SealedEnclosure;
-            public readonly int EndTick;
+            public readonly int EndTick, ArmyBudget;
             public readonly PracticeOutcome Outcome;
             public readonly ulong FinalHash;
             public readonly IReadOnlyList<Deployment> Deployments;
             internal Recording(PracticeBattle battle)
             {
-                SealedEnclosure=battle.sealedEnclosure;EndTick=battle.Tick;Outcome=battle.Outcome;
+                ArmyBudget=battle.ArmyBudget;SealedEnclosure=battle.sealedEnclosure;EndTick=battle.Tick;Outcome=battle.Outcome;
                 FinalHash=battle.StateHash();Deployments=Array.AsReadOnly(battle.deployments.ToArray());
             }
         }
@@ -46,7 +46,8 @@ namespace Kingdoms
         public IReadOnlyList<Entity> Raiders=>raiders;
         public IReadOnlyList<Strike> Strikes=>strikes;
         public int Tick {get;private set;}
-        public int Remaining=>ArmySize-raiders.Count;
+        public int ArmyBudget {get;}
+        public int Remaining=>ArmyBudget-raiders.Count;
         public PracticeOutcome Outcome {get;private set;}=PracticeOutcome.Running;
         public int DestroyedBuildings=>buildings.FindAll(b=>b.Kind!="Wall" && !b.Alive).Count;
         public int TotalBuildings=>buildings.FindAll(b=>b.Kind!="Wall").Count;
@@ -59,9 +60,10 @@ namespace Kingdoms
         sealed class Route { public Entity Target; public readonly Queue<int> Cells=new Queue<int>(); }
         readonly Dictionary<int,Route> routes=new Dictionary<int,Route>();
 
-        public PracticeBattle(bool sealedEnclosure=false)
+        public PracticeBattle(bool sealedEnclosure=false, int armyBudget=ArmySize)
         {
-            this.sealedEnclosure=sealedEnclosure;
+            if(armyBudget<1 || armyBudget>MaximumArmySize)throw new ArgumentOutOfRangeException(nameof(armyBudget));
+            ArmyBudget=armyBudget;this.sealedEnclosure=sealedEnclosure;
             buildings.Add(new Entity{Id=0,Kind="TownHall",X=0,Z=300,HitPoints=600,MaxHitPoints=600,HalfSize=200});
             AddDefense(BuildingCatalog.Cannon,1,-450,-100);
             AddDefense(BuildingCatalog.ArcherTower,2,450,-100);
@@ -201,7 +203,7 @@ namespace Kingdoms
         {
             ulong hash=14695981039346656037UL;
             Action<int> add=value=>{unchecked{for(int i=0;i<4;i++){hash^=(byte)(value>>(i*8));hash*=1099511628211UL;}}};
-            add(Recording.RulesVersion);add(sealedEnclosure ? 1 : 0);add(Tick);add((int)Outcome);add(Remaining);
+            add(Recording.RulesVersion);add(ArmyBudget);add(sealedEnclosure ? 1 : 0);add(Tick);add((int)Outcome);add(Remaining);
             foreach(var list in new[]{buildings,raiders})
             {
                 add(list.Count);
@@ -222,7 +224,7 @@ namespace Kingdoms
         public PracticeReplay(PracticeBattle.Recording recording)
         {
             this.recording=recording ?? throw new ArgumentNullException(nameof(recording));
-            Battle=new PracticeBattle(recording.SealedEnclosure);ApplyCommands();
+            Battle=new PracticeBattle(recording.SealedEnclosure,recording.ArmyBudget);ApplyCommands();
         }
         void ApplyCommands()
         {

@@ -8,7 +8,7 @@ Project: `E:\Project\Games\Kingdoms`
 
 This guide explains the work completed so far and how you can reproduce it manually. You do not need previous Unity experience. Work through one lesson at a time, test it, and then continue.
 
-The project is a Clash of Clans-inspired village prototype with its own Kingdoms title and starter assets. It is not the complete Clash of Clans game. The current loop is: enter the village, choose a name, build and collect resources, move and upgrade buildings, manage two builders, and try an isolated practice battle.
+The project is a Clash of Clans-inspired village prototype with its own Kingdoms title and starter assets. It is not the complete Clash of Clans game. The current loop is: enter the village, choose a name, build and collect resources, move and upgrade buildings, manage two builders, prepare an army, clear two local campaign missions, claim first-victory rewards, and try an isolated practice battle.
 
 ## Contents
 
@@ -47,10 +47,11 @@ The project is a Clash of Clans-inspired village prototype with its own Kingdoms
 | Defenses | Purchase, move, inspect range and upgrade; home defenses remain idle |
 | Practice battle | Eight raiders, three enemy buildings, walls, entrance routing, wall breach logic, star scoring, surrender, results, watch replay, retry and return |
 | Army preparation | Buildings > Prepare Army; free instant Raider roster, eight starter spaces plus camp capacity, readiness and immediate saving |
-| Persistence | Local version 4 village saves; migrations from versions 1, 2 and 3 |
+| Campaign | Two fixed missions, prepared-army commitment, durable results, once-only first-clear rewards and saved unlocks |
+| Persistence | Local version 5 village saves; migrations from versions 1-4 |
 | Mobile setup | Welcome scene first, village second, landscape orientation, Android IL2CPP/ARM64 settings |
 
-Not implemented yet: additional troop types, campaign deployment, campaign use of the owned army, battle rewards, arbitrary enemy villages, unit separation, matchmaking, multiplayer, online accounts, purchases or a server economy. The fixed practice battlefield is separate from your home village. Gem counters and reference-style buttons do not imply that all reference-game features exist.
+Not implemented yet: additional troop types, arbitrary enemy villages, unit separation, matchmaking, multiplayer, online accounts, purchases or a server economy. The fixed practice battlefield is separate from your home village. Gem counters and reference-style buttons do not imply that all reference-game features exist.
 
 The Android configuration exists, but an Android build and physical-phone testing have not been completed as part of this work.
 
@@ -734,7 +735,7 @@ Validation waits across real Play Mode frames to check the tick stays zero, reje
 
 ### Historical roadmap review - 23 September 2026
 
-The [phase plan and status table](GAME_DEVELOPMENT_PHASES.md#current-phase-status--23-september-2026) now distinguish completed local work from partial and future phases. Phase 2 resource production/storage is complete within its local scope. Phases 0?1, 3?7 and 15 are partial; online/social/release/expansion phases are not complete. Scouting, replay and stars are practice features, not a complete campaign or multiplayer game.
+The [phase plan and status table](GAME_DEVELOPMENT_PHASES.md#current-phase-status---24-september-2026) now distinguish completed local work from partial and future phases. Phase 2 resource production/storage is complete within its local scope. Phases 0?1, 3?7 and 15 are partial; online/social/release/expansion phases are not complete. Scouting, replay and stars are practice features, not a complete campaign or multiplayer game.
 
 Next priorities are: validate the latest mobile build, add an owned army and preparation/capacity rules, support multiple troop types and ground deployment, load authored enemy snapshots, and award campaign rewards exactly once. That creates the complete build ? prepare ? attack ? earn ? upgrade loop. Accounts, PvP and clans follow that foundation. See the [next implementation plan](GAME_DEVELOPMENT_PHASES.md#5-next-implementation-plan) for acceptance gates. This roadmap update changes documentation only; it does not add gameplay or claim new runtime tests.
 
@@ -743,16 +744,16 @@ Next priorities are: validate the latest mobile build, add an owned army and pre
 
 Open **Buildings**, then **Prepare Army**. Press **Add Raider** to prepare one unit, **Fill Army** to use all eight starter spaces, **Remove 1** to reduce the roster, or **Clear Army** to empty it. Preparation is free and instant; no gold, elixir or builder is spent. A nonempty legal roster shows READY. Full and empty rosters disable the corresponding add/remove controls. Close and reopen the screen, or restart the game, to confirm the roster persists.
 
-At this first owned-army increment, capacity was fixed and barracks/camps were not yet implemented. The facilities update below adds them. Other troop types, campaign deployment and troop consumption remain unimplemented. Attack continues to provide its separate free practice army; preparing or clearing your saved roster does not change practice difficulty.
+At this first owned-army increment, capacity was fixed and barracks/camps were not yet implemented. The facilities update below adds them. Other troop types remain unimplemented; the later campaign increment below adds deployment and roster consumption. Attack continues to provide its separate free practice army; preparing or clearing your saved roster does not change practice difficulty.
 
 Study [the troop catalog and army rules](Assets/Scripts/Core/VillageArmy.cs), [the preparation screen](Assets/Scripts/UI/VillageArmy.cs), and [save migration](Assets/Scripts/Core/VillageState.cs). Each action edits a copy, validates it, writes it, then replaces the live state only after a successful save. Save version 4 adds the roster. Versions 1-3 migrate to an empty army without charging resources; version 3 JSON is backed up at `Kingdoms.Village.pre-v4` before later saves overwrite it. Unknown troops, duplicate stacks, nonpositive stack counts and excessive housing are rejected.
 
-Validation: [ArmyPreparationValidation.txt](ArmyPreparationValidation.txt) records the isolated Unity checks; [the validation source](Assets/Editor/ArmyPreparationValidation.cs) covers migration, invalid requests, persistence, actual UI controls and practice isolation. [Resource/save regression](ArmyResourceRegression.txt) also passed 66 existing assertions. No Android build or physical-phone test is included. Earlier v3-save explanations are historical; v4 is the current format.
+Validation: [ArmyPreparationValidation.txt](ArmyPreparationValidation.txt) records the isolated Unity checks; [the validation source](Assets/Editor/ArmyPreparationValidation.cs) covers migration, invalid requests, persistence, actual UI controls and practice isolation. [Resource/save regression](ArmyResourceRegression.txt) also passed 66 existing assertions. No Android build or physical-phone test is included. Earlier v3-save explanations are historical; the campaign update below advances the format to v5.
 
 
 ### Barracks and Army Camps - 24 September 2026
 
-**Try it:** Open **Shop > Army**. Buy **Barracks** for **200 elixir**, then place it on a free 3 x 3 area. Army Camp becomes available for **250 elixir**. Place a camp, then open **Buildings > Prepare Army** and press **Fill Army**. You can now prepare 16 Raiders: eight starter spaces plus eight from the camp. Preparation itself remains free and instant. Old saves keep their existing starter roster; the save format remains version 4.
+**Try it:** Open **Shop > Army**. Buy **Barracks** for **200 elixir**, then place it on a free 3 x 3 area. Army Camp becomes available for **250 elixir**. Place a camp, then open **Buildings > Prepare Army** and press **Fill Army**. You can now prepare 16 Raiders: eight starter spaces plus eight from the camp. Preparation itself remains free and instant. Old saves keep their existing starter roster; this increment used save version 4 (now migrated to version 5).
 
 Select the camp and open **Info / Upgrade**. Level 2 costs 500 elixir, occupies one builder for 30 seconds, and increases that camp's contribution from 8 to 16 spaces (24 total with one camp). Current capacity and roster readiness remain available during the upgrade. Completion, including completion while the app is closed, adds capacity once. Cancelling uses the existing 50% refund rule and keeps the previous capacity. Move the building freely without losing its contribution.
 
@@ -762,4 +763,24 @@ Study [building definitions](Assets/Scripts/Core/BuildingCatalog.cs), [army capa
 
 Validation evidence: [ArmyFacilitiesValidation.txt](ArmyFacilitiesValidation.txt), generated by [the isolated Editor validation](Assets/Editor/ArmyFacilitiesValidation.cs), covers prerequisites, costs, limits, capacity, upgrades/cancellation/offline completion, save validation, real purchases, moving, preparation and scene reload. [Preparation preview](ArmyFacilitiesPreviews/army-facilities-preparation.png) and [shop preview](ArmyFacilitiesPreviews/army-facilities-shop.png) show the tested screens. The existing [starter-army/migration checks](ArmyPreparationValidation.txt) were rerun and passed with the new camp rules. Prefab material references were also checked against the main project assets. No APK or physical-phone test was performed.
 
-Known limits: camps enlarge the saved roster for future campaign battles. Practice still supplies its own eight Raiders, and neither consumes nor deploys this roster. Barracks upgrades, new troop types, campaign integration, rewards and level-specific building art remain future work.
+Known limits: camps enlarge the saved roster used by the campaign below. Practice still supplies its own eight Raiders, and neither consumes nor deploys this roster. Barracks upgrades, new troop types and level-specific building art remain future work.
+
+
+### First offline campaign loop - 24 September 2026
+
+1. Open **Buildings > Prepare Army**, then **Fill Army**. Preparation is still free and instant.
+2. Press **Campaign**, then **Gate Outpost - Scout**. Scouting has no timer or cost; Return Home keeps your roster.
+3. Press **Start Attack**. This commits and spends the **entire prepared roster**, including any Raiders you never deploy. The commitment saves before combat starts. Deploy with the left, center and right buttons; your roster size controls the deployment limit.
+4. Destroy all three non-wall buildings to win. Surrender, defeat and timeout do not earn resources. Partial stars are informational. Return Home during a live attack surrenders it.
+5. On the victory screen, press **Claim**. The first Gate Outpost victory grants **500 gold and 300 elixir**, and unlocks **Sealed Keep**. Its first victory grants **1,000 gold and 600 elixir**. Repeat victories give no resources. Finish/Dismiss clears nonreward results.
+6. Return home and spend the reward on buildings or upgrades. Prepare another army for free before attacking again. Camps increase the number of Raiders you can commit.
+
+Results are saved before rewards are claimed. If you leave a result or restart, reopen **Prepare Army > Campaign** and use **Claim / Finish**. Both reward currencies must fit in storage; if they do not, spend resources or build/upgrade storage and claim later. The complete reward stays pending. Reward balances, the cleared flag and removal of the pending result are written together, preventing a second claim after reload. A pending result must be resolved before another campaign attack.
+
+An unfinished attack cannot resume after closing the app or reloading the village scene. The campaign menu offers **Abandon Attack**; assigned Raiders stay spent, and you can prepare replacements for free. Pausing the application keeps a live battle frozen in memory. Replay reconstructs the current completed attack, including its original army size, without consuming troops or awarding resources. Replays themselves are not saved to disk.
+
+The two missions reuse the tested Open Gate and Wall Breach enclosures. This is a small fixed-layout campaign, not arbitrary village snapshots, PvP or a complete campaign content pipeline. The main **Attack!** button still opens free practice; campaign is reached through army preparation. Home buildings take no damage. Resource production and upgrades catch up when returning home.
+
+Study [campaign definitions and settlement](Assets/Scripts/Core/VillageCampaign.cs), [campaign menus and battle integration](Assets/Scripts/UI/VillageCampaign.cs), [combat and replay budgets](Assets/Scripts/Core/PracticeBattle.cs) and [save migration](Assets/Scripts/Core/VillageState.cs). Save version 5 adds campaign progress and the active/pending attempt; migration preserves version-4 armies and buildings and backs up the old payload at `Kingdoms.Village.pre-v5`. Replay rules version 2 includes the army budget. Completed results are locally re-simulated before acceptance; local saves and hashes are not server security.
+
+Validation: [CampaignValidation.txt](CampaignValidation.txt) and [its source](Assets/Editor/CampaignValidation.cs) cover settlement/restart rules, migrations, army limits, both missions, replay and the actual campaign UI. See [campaign menu](CampaignPreviews/campaign-menu.png), [results](CampaignPreviews/campaign-result.png) and [claimed reward](CampaignPreviews/campaign-claimed.png). The existing practice/replay suite and army preparation/migration checks were rerun successfully; [resource/save regression](ArmyResourceRegression.txt) passed 66 assertions with v5 saves. Android builds, physical-phone performance, interrupted combat resumption, persisted replays, more troop types and arbitrary layouts remain outstanding.

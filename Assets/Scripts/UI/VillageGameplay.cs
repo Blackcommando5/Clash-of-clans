@@ -73,7 +73,7 @@ namespace Kingdoms.UI
                 if(!loaded.IsValid()){Debug.LogWarning("Starter Town Hall is outside the build area; using the default location.");loaded=VillageState.Create(VillageState.Now);}
             }
             State = loaded;
-            BuildArmyPreparation();
+            BuildArmyPreparation();BuildCampaignInterface();
             world = new GameObject("Village Buildings").transform;
             world.SetParent(transform, false);
             foreach (var building in State.buildings) Spawn(building);
@@ -368,6 +368,7 @@ namespace Kingdoms.UI
         {
             if(State==null) return;
             if(armySummary!=null && ProfileOpen && profilePages[armyPageIndex].gameObject.activeSelf)RefreshArmyPreparation();
+            if(campaignSummary!=null && ProfileOpen && profilePages[campaignPageIndex].gameObject.activeSelf)RefreshCampaignPage();
             goldLabel.text=State.gold.ToString("N0");
             elixirLabel.text=State.elixir.ToString("N0");
             gemsLabel.text=State.gems.ToString("N0");

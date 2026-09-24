@@ -1,1 +1,1 @@
-PASS: 66 existing resource/progression rule assertions with v4 saves. Unity 6000.3.13f1. State-only run; no phone testing.
+PASS: 66 existing resource/progression rule assertions with v5 saves. Unity 6000.3.13f1. State-only run; no phone testing.

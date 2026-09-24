@@ -30,9 +30,11 @@ namespace Kingdoms.UI
         public bool ScoutingPractice=>PracticeOpen && practiceScouting;
         public bool PracticeReplayMatches=>practiceReplay!=null && practiceReplay.Matches;
 
-        public void OpenPracticeBattle()
+        public void OpenPracticeBattle() => OpenBattle(-1);
+        void OpenBattle(int mission)
         {
             if(PracticeOpen || State==null || IsPlacing || !PlayerProfile.HasPlayerName)return;
+            battleMission=mission;battleRunId="";campaignResultSaved=false;campaignSaveAttempted=false;campaignMessage="";
             CloseProfile();CloseShop();CloseBuildingDetails();DeselectBuilding();
             homeCameraFocus=cameraController.focus;homeCameraZoom=viewCamera.orthographicSize;
             cameraController.focus=new Vector3(0,0,-2);viewCamera.orthographicSize=14;cameraController.InputBlocked=true;
@@ -66,7 +68,9 @@ namespace Kingdoms.UI
             ReferenceText(practiceChallenge.GetComponentInChildren<Text>(),20,Color.white);
             practiceChallenge.onClick.AddListener(()=>SelectPracticeChallenge(!practiceSealedChallenge));
             raiderCloth=PracticeMaterial("Raider tunic",new Color(.1f,.55f,.8f));raiderSkin=PracticeMaterial("Raider skin",new Color(.9f,.65f,.4f));shotMaterial=PracticeMaterial("Practice shots",new Color(1,.8f,.16f),true);
-            practiceSealedChallenge=false;
+            campaignBattleClaim=Button("Claim Campaign Battle",practiceSafe,"CLAIM",new Vector2(.81f,.03f),new Vector2(.98f,.12f),new Color(.45f,.64f,.24f));
+            campaignBattleClaim.onClick.AddListener(ClaimCampaignBattle);campaignBattleClaim.gameObject.SetActive(false);
+            practiceSealedChallenge=mission>=0 && CampaignCatalog.Find(mission).Sealed;
             ResetPracticeBattle();
         }
 
@@ -76,10 +80,11 @@ namespace Kingdoms.UI
         }
 
         public void ResetPracticeBattle()
-        {StartPracticeBattle(null);}
+        {if(battleMission>=0 && !string.IsNullOrEmpty(battleRunId))return;StartPracticeBattle(null);}
         public void BeginPracticeAttack()
         {
             if(!ScoutingPractice || WatchingPracticeReplay)return;
+            if(battleMission>=0 && !CommitCampaignArmy()){RefreshPracticeBattle();return;}
             practiceScouting=false;practiceAccumulator=0;
             practiceInstructions.text=practiceSealedChallenge
                 ? "WALL BREACH: Break through the sealed enclosure and destroy all three buildings."
@@ -93,12 +98,12 @@ namespace Kingdoms.UI
         }
         public bool SelectPracticeChallenge(bool sealedWalls)
         {
-            if(practiceBattle==null || (practiceBattle.Outcome==PracticeOutcome.Running && !ScoutingPractice))return false;
+            if(battleMission>=0 || practiceBattle==null || (practiceBattle.Outcome==PracticeOutcome.Running && !ScoutingPractice))return false;
             practiceSealedChallenge=sealedWalls;StartPracticeBattle(null);return true;
         }
         public void WatchPracticeReplay()
         {
-            if(practiceBattle==null || practiceBattle.Outcome==PracticeOutcome.Running)return;
+            if(practiceBattle==null || practiceBattle.Outcome==PracticeOutcome.Running || (battleMission>=0 && !campaignResultSaved))return;
             StartPracticeBattle(practiceBattle.Record());
         }
         void StartPracticeBattle(PracticeBattle.Recording recording)
@@ -109,7 +114,7 @@ namespace Kingdoms.UI
             practiceModels.Clear();practiceHealth.Clear();practiceShots.Clear();practiceAccumulator=0;practicePaused=false;
             practiceReplay=recording==null ? null : new PracticeReplay(recording);
             practiceScouting=recording==null;
-            practiceBattle=practiceReplay==null ? new PracticeBattle(practiceSealedChallenge) : practiceReplay.Battle;
+            practiceBattle=practiceReplay==null ? new PracticeBattle(practiceSealedChallenge,battleMission>=0 ? State.ArmyHousing : PracticeBattle.ArmySize) : practiceReplay.Battle;
             practiceSealedChallenge=practiceBattle.SealedEnclosure;
             practiceWorld=new GameObject("Practice Battlefield");practiceWorld.transform.SetParent(transform,false);
             foreach(var building in practiceBattle.Buildings)
@@ -217,6 +222,7 @@ namespace Kingdoms.UI
             if(!running)practiceInstructions.text=WatchingPracticeReplay
                 ? (PracticeReplayMatches ? "Replay complete. Result matches the original attack." : "Replay mismatch detected. Retry to start a new practice attack.")
                 : "Practice complete. Watch Replay, retry, or return home. No resources were spent or awarded.";
+            if(battleMission>=0)RefreshCampaignBattle();
         }
         void RefreshPracticeEntity(PracticeBattle.Entity entity)
         {
@@ -235,6 +241,9 @@ namespace Kingdoms.UI
         public void ClosePracticeBattle()
         {
             if(!PracticeOpen)return;
+            if(battleMission>=0 && !ScoutingPractice && !WatchingPracticeReplay)
+            {practiceBattle.Surrender();if(!SaveCampaignResult()){RefreshPracticeBattle();return;}}
+            battleMission=-1;battleRunId="";
             practiceBattle.Surrender();practiceBattle=null;practiceReplay=null;
             if(practiceWorld!=null){practiceWorld.SetActive(false);Destroy(practiceWorld);}
             if(practiceCanvas!=null){practiceCanvas.SetActive(false);Destroy(practiceCanvas);}

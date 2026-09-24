@@ -1,6 +1,6 @@
 # Kingdoms — Complete Game Development Phases
 
-Prepared: 15 September 2026. Status reviewed: 23 September 2026.
+Prepared: 15 September 2026. Status reviewed: 24 September 2026.
 
 Purpose: turn the existing Unity village prototype into a complete mobile strategy game with persistent online villages, attacks, clans, wars, and long-term progression.
 
@@ -12,20 +12,20 @@ Newer update: [Home Village progression](HOME_VILLAGE_PROGRESS.md) adds selectio
 
 This is a development plan. Unchecked work is not implemented. Phase numbers describe dependency order, not weeks or promised delivery dates. Retain Kingdoms branding and create its production assets.
 
-## Current phase status ? 23 September 2026
+## Current phase status - 24 September 2026
 
-We have a playable local village and a tested practice-combat slice. We do not yet have the complete train ? attack ? earn ? upgrade loop, online multiplayer, or a phone-validated release. ?Complete locally? below means the scoped implementation and recorded Editor checks are present, not production readiness. A phase stays partial when any of its acceptance requirements remain missing. No overall completion percentage is assigned because phases differ greatly in size.
+We have a playable local village and a tested first prepare/attack/claim/upgrade loop across two fixed campaign missions, plus free practice. Broader campaign content, online multiplayer and a phone-validated release remain incomplete. ?Complete locally? below means the scoped implementation and recorded Editor checks are present, not production readiness. A phase stays partial when any of its acceptance requirements remain missing. No overall completion percentage is assigned because phases differ greatly in size.
 
 | Phase | Status | Implemented | Still needed |
 | --- | --- | --- | --- |
 | 0. Reliable baseline | Partial | Git history, pinned Unity/packages, scenes, Editor validation evidence | Rebuild latest APK; fresh-install/returning-save phone tests; performance measurements; final identity/asset audit |
-| 1. Architecture and data | Partial | Shared building catalog, separate state/progression rules, partial UI files, v4 saves and migrations | Stable village-instance IDs, authored level/content data, clock/repository/command interfaces, revisions and command IDs |
+| 1. Architecture and data | Partial | Shared building catalog, separate state/progression rules, partial UI files, v5 saves and migrations | Stable village-instance IDs, authored level/content data, clock/repository/command interfaces, revisions and command IDs |
 | 2. Resources and storage | Complete locally | Gold/elixir production and collection, storage capacities, Town Hall limits, offline behavior and save validation | Device regression testing and later server authority; these remain cross-phase release requirements |
 | 3. Village layout editing | Partial | Select, inspect, move/cancel, occupancy checks, individual walls | Continuous wall drawing, multi-selection, removable obstacles, saved layouts and interrupted-layout recovery |
 | 4. Builders and upgrades | Partial | Two builders, queue, timed upgrades, prerequisites, offline completion, capped cancellation refunds, initial level rules | Timed new construction, broader unlocks and level art, complete defense behavior during upgrades, optional notifications |
 | 5. Battle simulation | Partial | Cannon/tower fire, raiders, HP/damage, grid routing and wall breach, fixed ticks, timed commands and matching local replay hashes | Immutable arbitrary village snapshots, general-layout navigation, traps/target categories, persisted/versioned replays, server verification |
-| 6. Army preparation | Early partial | Saved Raider roster, Barracks/camps, upgradable capacity, free preparation/readiness screen; separate practice army and lane deployment | Campaign army integration, troop selection, ground deployment zones, ranged/tank troops, research |
-| 7. Complete attack loop | Partial | Two practice enclosure variants, untimed scouting, explicit start, timer, surrender, stars/results, retry/return and replay | Authored campaign villages, reward settlement exactly once, saved campaign progress, guided/resumable tutorial |
+| 6. Army preparation | Partial | Saved Raider roster, Barracks/camps, upgradable capacity, free preparation/readiness screen; campaign roster commitment, separate practice army and lane deployment | Troop selection, ground deployment zones, ranged/tank troops, research |
+| 7. Complete attack loop | Partial | Two fixed campaign missions, committed army, saved results/progress, once-only first-clear rewards; practice scouting/start, surrender, stars/results and replay | Broader authored snapshots, guided/resumable tutorial, battle history, interrupted combat resumption and phone validation |
 | 8. Accounts and backend | Not started | No implemented online service | Authentication/recovery, server economy, database, transactions, backups and monitoring |
 | 9. Asynchronous PvP | Not started | Local practice is not PvP | Opponent snapshots, battle tickets, server replay validation, atomic loot settlement, attack/defense history |
 | 10. Ranked progression | Not started | ? | Matchmaking, trophies, leagues, leaderboards, seasons and fairness checks |
@@ -42,12 +42,12 @@ We have a playable local village and a tested practice-combat slice. We do not y
 
 ### Evidence and limits
 
-Current evidence: [resource milestone](RESOURCE_MILESTONE.md), [home progression](HOME_VILLAGE_PROGRESS.md), [defense validation](DefenseVillageValidation.txt), [builder queue validation](BuilderQueueValidation.txt), [upgrade cancellation validation](UpgradeCancellationValidation.txt), and [practice validation](PracticeBattleValidation.txt). Practice tests cover both challenges, scouting/start, scoring, surrender, replay determinism and preservation of the home save. Existing screenshots show actual Editor renders. The latest features have not been rebuilt into an APK or tested on a physical phone. Reference-style menus and placeholder options are not evidence that their corresponding systems are implemented.
+Current evidence: [resource milestone](RESOURCE_MILESTONE.md), [home progression](HOME_VILLAGE_PROGRESS.md), [defense validation](DefenseVillageValidation.txt), [builder queue validation](BuilderQueueValidation.txt), [upgrade cancellation validation](UpgradeCancellationValidation.txt), [campaign validation](CampaignValidation.txt), and [practice validation](PracticeBattleValidation.txt). Campaign checks cover durable roster commitment, verified local results, once-only rewards after reload and spending rewards on upgrades. Practice tests cover both challenges, scouting/start, scoring, surrender, replay determinism and preservation of the home save. Existing screenshots show actual Editor renders. The latest features have not been rebuilt into an APK or tested on a physical phone. Reference-style menus and placeholder options are not evidence that their corresponding systems are implemented.
 
 ### Milestone status
 
 - **A ? Sustainable village:** playable locally; the full 0?4 acceptance gate remains partial.
-- **B ? Offline battle slice:** practice combat works; owned-army preparation is now present; campaign integration, opponents and rewards are missing.
+- **B ? Offline battle slice:** practice combat works; a first prepare/attack/claim/upgrade loop now works with two fixed layouts; broader snapshot-based content and phone validation remain missing.
 - **C?F ? Online, social, release and expansion:** not reached.
 
 ## 1. Original starting point (before the resource milestone)
@@ -195,10 +195,12 @@ Dependencies: 4–6.
 
 - [ ] Author several AI villages and a guided first attack.
 - [x] Implement practice scouting, explicit battle start, timer, surrender, destruction percentage and three-star scoring.
-- [ ] Integrate those controls with campaign opponents and army preparation.
-- [ ] Calculate loot, victory rewards, defeat outcomes, and first-completion rewards.
+- [x] Integrate those controls with the prepared roster and two fixed campaign missions.
+- [x] Implement first-clear campaign rewards, zero-reward defeats/repeats and saved claims.
+- [ ] Expand loot rules and rewards across broader campaign content.
 - [x] Add practice results UI, retry/return flow and in-memory replay playback.
-- [ ] Integrate reward claims and persistent battle history with the full attack loop.
+- [x] Persist pending campaign results and reward claims as part of the local attack loop.
+- [ ] Add persistent battle history and resumable interrupted combat.
 - [ ] Teach building, collection, upgrading, and deployment through resumable tutorial steps.
 
 Done when: a new player can finish an AI attack, claim its reward once, and spend the reward on village progression.
@@ -415,7 +417,7 @@ Prioritize finishing the offline game loop before adding more practice-only cont
 | 10 | Social, advanced content and release | 11?17 | Build clans/wars/events and advanced armies, then complete production art/audio, operations and release gates |
 | 11 | Optional expansion modes | 18?20 | Start only after the core service is stable and maintainable |
 
-**24 September increment:** saved Raider roster, fixed eight-space starter capacity, free instant preparation and readiness UI are implemented with v4 save migration. See [army validation](ArmyPreparationValidation.txt). Barracks and upgradable Army Camps are now implemented and validated in [the facilities increment](ArmyFacilitiesValidation.txt). Phase 6 remains partial. **Next code milestone:** troop selection and campaign integration; owned roster consumption and rewards are still missing. Timers and consumable training costs remain a future design decision. In parallel with planning, the current build needs the Phase 0 phone validation gate. Backend providers, hosting spend and production releases remain future decisions.
+**24 September increment:** saved Raider roster, fixed eight-space starter capacity, free instant preparation and readiness UI are implemented with v4 save migration. See [army validation](ArmyPreparationValidation.txt). Barracks and upgradable Army Camps are now implemented and validated in [the facilities increment](ArmyFacilitiesValidation.txt). Phase 6 remains partial. **Campaign increment:** the prepared roster now powers two fixed-layout missions with saved results, unlocks and once-only first-clear rewards; [validation](CampaignValidation.txt) includes spending a reward on a village upgrade. **Next code milestone:** additional troop types and selection, then broader authored enemy snapshots and guided onboarding. Timers and consumable training costs remain a future design decision. In parallel with planning, the current build needs the Phase 0 phone validation gate. Backend providers, hosting spend and production releases remain future decisions.
 
 Every development increment must update `BEGINNER_GUIDE.md`, record relevant validation evidence, and use a meaningful commit. Local commits remain valid progress even if remote authentication prevents a push; do not describe an unpushed commit as published.
 
@@ -439,3 +441,5 @@ Next concrete task:
 ```
 
 Related project evidence: [Beginner guide](BEGINNER_GUIDE.md), [village validation](VillageValidation.txt), [current state rules](Assets/Scripts/Core/VillageState.cs), [current gameplay controller](Assets/Scripts/UI/VillageGameplay.cs).
+
+24 September campaign status: the minimal offline prepare -> attack -> claim -> upgrade loop is implemented. Phases 5-7 remain partial: this reuses fixed encounter layouts and does not complete arbitrary snapshots, troop variety, battle history, tutorials or phone validation.

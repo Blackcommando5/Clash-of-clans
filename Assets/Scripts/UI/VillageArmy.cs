@@ -64,7 +64,7 @@ namespace Kingdoms.UI
             armyRemove.interactable = armyClear.interactable = count > 0;
             armyRules.text = "Free, instant preparation. Each Raider uses 1 space.\n" +
                 (State.Count("Barracks") == 0 ? "Shop > Army: build Barracks to unlock Army Camps." : "Army Camps add 8 spaces per level. Upgrade them to expand.") +
-                "\nPractice supplies its own army; this roster is for future campaign battles.";
+                "\nCampaign uses this roster. Practice supplies a separate free army.";
         }
     }
 }
