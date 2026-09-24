@@ -49,14 +49,14 @@ The project is a Clash of Clans-inspired village prototype with its own Kingdoms
 | Ground deployment | Click/tap within a visible southern zone; selected troop, half-cell snapping, placement feedback and exact-position replay; lane buttons retained |
 | Army preparation | Buildings > Prepare Army; free instant mixed Raider/Archer/Tank roster, weighted housing, troop selection, eight starter spaces plus camp capacity, readiness and immediate saving |
 | Campaign | Four authored missions, distinct layouts/deployment zones, dynamic scouting, prepared-army commitment, durable results, once-only first-clear rewards and saved unlocks |
-| Battle history | Latest 20 campaign results, newest first; outcome, stars, destruction, duration, committed army and actual claimed rewards; two entries per page and restart persistence |
+| Battle history | Latest 20 campaign results, newest first; outcome, stars, destruction, duration, committed army, claimed rewards and saved replay playback after restart |
 | Persistence | Local version 9 village saves; migrations from versions 1-8; saved guide milestones, hint preference and campaign history |
 | Guided onboarding | Eight-step Village Guide, contextual shortcuts, saved milestones, pause/resume hints and recognition of existing progress |
 | Mobile setup | Verified development APK, Welcome scene first, village second, landscape orientation, Android IL2CPP/ARM64; physical-phone checks pending |
 
 Not implemented yet: arbitrary enemy villages, unit separation, matchmaking, multiplayer, online accounts, purchases or a server economy. The fixed practice battlefield is separate from your home village. Gem counters and reference-style buttons do not imply that all reference-game features exist.
 
-The existing Android development APK builds and passes package checks, but predates battle history. Rebuild it to include this feature. Physical-phone testing remains pending and has been deferred by the user. See [Android validation](ANDROID_BUILD_VALIDATION.md).
+The existing Android development APK builds and passes package checks, but predates battle history and saved replays. Rebuild it to include these features. Physical-phone testing remains pending and has been deferred by the user. See [Android validation](ANDROID_BUILD_VALIDATION.md).
 
 ## 2. How to practise without losing your work
 
@@ -916,4 +916,20 @@ Study [history records, retention and validation](Assets/Scripts/Core/VillageBat
 
 Validation passed in isolated Unity 6000.3.13f1: all five recorded outcomes (including abandonment), full mixed composition, rejection of malformed/duplicate entries, 20-result retention, versions 1-8 migration, backup preservation, storage-blocked and repeated claims, deep-copy isolation, live battle-to-history UI, claim update, scene reload, page boundaries and camera release. Existing campaign, mixed-army, Tank, tutorial and resource/progression rule checks also passed. Screenshots were inspected at 1600x702 and 1280x720.
 
-Known limits: this is a local campaign summary list, not persisted replay playback or interrupted battle resumption. Practice battles are excluded. Only the newest 20 summaries remain, and history cannot claim rewards directly. Phone testing is deferred at the user's request. The existing Android APK predates this change and must be rebuilt to include battle history.
+Historical limits of the initial history increment: this was a local campaign summary list without persisted replay playback or interrupted battle resumption. Saved replay playback is added below. Practice battles are excluded. Only the newest 20 summaries remain, and history cannot claim rewards directly. Phone testing is deferred at the user's request. The existing Android APK predates this change and must be rebuilt to include battle history.
+
+### Saved campaign replay playback - 24 September 2026
+
+New completed campaign attacks now keep a replay alongside their Battle History summary. Open **Buildings > Prepare Army > Campaign > Battle History**, find an attack, and press **Watch Replay**. The battlefield plays the original accepted troop placements, troop types and timing automatically. **Watch Replay** on the finished battlefield starts it again; **Back to History** returns to the same history page, including when you leave playback early.
+
+**Try it:** Complete a Gate Outpost attack, return home, claim the reward and restart the scene or game. Open Battle History and watch that attack. Its destruction and final result should match the saved summary. You can also watch an unclaimed result; watching never claims its reward. A separate active campaign attempt and any prepared troops remain unchanged during playback. Claim rewards through Campaign as before.
+
+The saved replay includes the authored layout ID/revision, combat rules version, army composition, accepted deployment commands, ending tick/outcome and final state hash. Playback first reconstructs and verifies the recording, then starts a fresh visual replay. At most 80 deployments can be recorded, and recordings leave storage when their summaries leave the newest-20 history. The verifier rejects oversized data, invalid commands and mismatched outcomes. This is local verification, not server authority.
+
+Village saves remain **version 9**: the recording is an optional additional field on a history entry, so existing v9 villages load without a migration or reset. Older history entries and abandoned attacks show **No Saved Replay**. Missing recordings cannot be reconstructed from summary statistics. Unsupported recording formats, combat rules or layout revisions show **Replay Expired**; corrupt recordings are unavailable or report a verification failure without discarding the village, summary or pending reward. Future changes to combat behavior must increment the combat rules version; layout edits must increment the layout revision. Historical descriptions of campaign replays being memory-only are superseded by this increment.
+
+Source links: [recording serialization and verification](Assets/Scripts/Core/SavedBattleReplay.cs), [history recording attachment](Assets/Scripts/Core/VillageBattleHistory.cs), [history replay controls](Assets/Scripts/UI/VillageBattleHistory.cs), and [isolated visual playback](Assets/Scripts/UI/VillagePracticeBattle.cs). Validation: [SavedReplayValidation.txt](SavedReplayValidation.txt) and [test source](Assets/Editor/SavedReplayValidation.cs). Previews: [history replay controls](SavedReplayPreviews/saved-replay-history.png), [16:9 history](SavedReplayPreviews/saved-replay-history-16x9.png), [playback](SavedReplayPreviews/saved-replay-playing.png), and [verified result](SavedReplayPreviews/saved-replay-complete.png).
+
+Validation covers per-tick reconstruction, four layouts, mixed troops and exact ground coordinates, victory/defeat/surrender/timeout, zero-tick surrender, maximum command count, incompatible and corrupt recordings, unchanged village loading and economy, UI playback after reload, replaying again, returning to the same history page, and preserving a separate active campaign. The existing battle-history, campaign, mixed-army, Tank, tutorial and resource/progression rule suites also passed. The new suite passed in isolated Unity 6000.3.13f1, and screenshots were inspected at 1600x702 and 1280x720.
+
+Known limits: saved playback applies to campaign attacks completed after this update; practice replays remain in memory. Playback runs at normal speed with no seeking or export. Incompatible recordings expire, while summaries remain. Interrupted combat still cannot resume. Phone testing remains deferred, and the existing APK needs a rebuild to include this update.

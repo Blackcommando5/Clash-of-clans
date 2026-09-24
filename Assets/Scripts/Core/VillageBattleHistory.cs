@@ -14,6 +14,7 @@ namespace Kingdoms
         // Zero time and -1 statistics mean the old save never recorded these details.
         public int durationTicks = -1, destruction = -1;
         public int goldAwarded, elixirAwarded;
+        public string replayJson;
     }
 
     public sealed partial class VillageState
@@ -34,7 +35,8 @@ namespace Kingdoms
                 abandoned = abandoned, resolved = abandoned,
                 completedUtc = legacy ? 0 : Now,
                 durationTicks = battle == null ? -1 : battle.Tick,
-                destruction = battle == null ? -1 : battle.Destruction
+                destruction = battle == null ? -1 : battle.Destruction,
+                replayJson = battle == null ? null : SavedBattleReplay.Encode(battle.Record())
             });
             if (battleHistory.Count > BattleHistoryLimit) battleHistory.RemoveAt(battleHistory.Count - 1);
         }
