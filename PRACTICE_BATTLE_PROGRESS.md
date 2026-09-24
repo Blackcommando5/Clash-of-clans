@@ -68,3 +68,7 @@ Replay rules version 4 replaces lane-only commands with exact X/Z positions and 
 ## Tank troop ? 24 September 2026
 
 Campaign armies now include Tanks: four spaces, 300 HP, 16 melee damage/second and slower movement. Level-2 Barracks unlock them. Rules version 5 records the three-type composition; save version 7 preserves committed Tank counts. Practice still provides eight Raiders. Prior version and unsupported-troop notes are historical. See [Tank validation](TankValidation.txt) and [current guide](BEGINNER_GUIDE.md#tank-troops-and-barracks-upgrades--24-september-2026).
+
+## Authored campaign villages ? 24 September 2026
+
+Gate Outpost and Sealed Keep retain their original geometry; Crossfire Pass and Hillfort add distinct building/wall arrangements and deployment rectangles. Scouting uses actual counts, stats and rewards. Replay rules 6 retain immutable layout data and hash layout identity plus entity kinds. Campaign verification checks the exact layout, and clear flags now support all four missions. Village saves remain v7. Earlier two-layout limits are historical; external village import, general navigation and persisted replays remain future work. See [validation](EnemyLayoutValidation.txt) and [current guide](BEGINNER_GUIDE.md#authored-enemy-villages--24-september-2026).

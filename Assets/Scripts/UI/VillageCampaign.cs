@@ -9,7 +9,7 @@ namespace Kingdoms.UI
         string battleRunId="", campaignMessage="";
         bool campaignResultSaved, campaignSaveAttempted;
         Text campaignSummary;
-        Button campaignGate, campaignKeep, campaignResolve, campaignBattleClaim;
+        Button campaignGate, campaignKeep, campaignCrossfire, campaignHillfort, campaignResolve, campaignBattleClaim;
         public bool CampaignBattleOpen => PracticeOpen && battleMission>=0;
 
         void BuildCampaignInterface()
@@ -21,9 +21,12 @@ namespace Kingdoms.UI
             campaignPageIndex=profilePages.Count;
             var page=Box("Campaign Page",profilePages[0].parent,Vector2.zero,Vector2.one);profilePages.Add(page);
             Label("Campaign Title",page,"Border Campaign",40,new Color(.23f,.25f,.3f),new Vector2(.05f,.86f),new Vector2(.95f,.99f));
-            campaignSummary=Label("Campaign Summary",page,"",24,new Color(.23f,.25f,.3f),new Vector2(.06f,.40f),new Vector2(.94f,.84f));
-            campaignGate=Button("Campaign Gate",page,"",new Vector2(.04f,.23f),new Vector2(.48f,.38f),new Color(.35f,.60f,.25f));
-            campaignKeep=Button("Campaign Keep",page,"",new Vector2(.52f,.23f),new Vector2(.96f,.38f),new Color(.35f,.60f,.25f));
+            campaignSummary=Label("Campaign Summary",page,"",24,new Color(.23f,.25f,.3f),new Vector2(.06f,.56f),new Vector2(.94f,.84f));
+            campaignGate=Button("Campaign Gate",page,"",new Vector2(.04f,.39f),new Vector2(.48f,.53f),new Color(.35f,.60f,.25f));
+            campaignKeep=Button("Campaign Keep",page,"",new Vector2(.52f,.39f),new Vector2(.96f,.53f),new Color(.35f,.60f,.25f));
+            campaignCrossfire=Button("Campaign Crossfire",page,"",new Vector2(.04f,.23f),new Vector2(.48f,.37f),new Color(.35f,.60f,.25f));
+            campaignHillfort=Button("Campaign Hillfort",page,"",new Vector2(.52f,.23f),new Vector2(.96f,.37f),new Color(.35f,.60f,.25f));
+            campaignCrossfire.onClick.AddListener(()=>OpenCampaignBattle(2));campaignHillfort.onClick.AddListener(()=>OpenCampaignBattle(3));
             campaignGate.onClick.AddListener(()=>OpenCampaignBattle(0));campaignKeep.onClick.AddListener(()=>OpenCampaignBattle(1));
             campaignResolve=Button("Resolve Campaign",page,"",new Vector2(.52f,.04f),new Vector2(.96f,.19f),new Color(.55f,.44f,.20f));
             campaignResolve.onClick.AddListener(ResolveCampaignFromMenu);
@@ -43,6 +46,9 @@ namespace Kingdoms.UI
             campaignKeep.GetComponentInChildren<Text>().text="SEALED KEEP"+(State.CampaignCleared(1) ? " - CLEARED" : State.CampaignUnlocked(1) ? " - SCOUT" : " - LOCKED");
             campaignGate.interactable=State.ArmyReady && !State.HasCampaignRun;
             campaignKeep.interactable=campaignGate.interactable && State.CampaignUnlocked(1);
+            campaignCrossfire.GetComponentInChildren<Text>().text="CROSSFIRE PASS"+(State.CampaignCleared(2) ? " - CLEARED" : State.CampaignUnlocked(2) ? " - SCOUT" : " - LOCKED");
+            campaignHillfort.GetComponentInChildren<Text>().text="HILLFORT"+(State.CampaignCleared(3) ? " - CLEARED" : State.CampaignUnlocked(3) ? " - SCOUT" : " - LOCKED");
+            campaignCrossfire.interactable=campaignGate.interactable && State.CampaignUnlocked(2);campaignHillfort.interactable=campaignGate.interactable && State.CampaignUnlocked(3);
             campaignResolve.gameObject.SetActive(State.HasCampaignRun);
             string pending="";
             if(State.HasCampaignRun)
@@ -53,7 +59,7 @@ namespace Kingdoms.UI
             }
             campaignSummary.text="Prepared: "+State.ArmyCountOf("Raider")+" Raiders + "+State.ArmyCountOf("Archer")+" Archers + "+State.ArmyCountOf("Tank")+" Tanks | "+State.ArmyHousing+" / "+State.ArmyCapacity+" spaces"+
                 "\nStarting commits the entire roster, including undeployed troops.\nPrepare again for free after each attack. Scouting costs nothing."+
-                "\nFirst victories: Outpost 500 gold + 300 elixir; Keep 1,000 gold + 600 elixir.\nRepeat victories and losses give no resources."+pending+
+                "\nScout each mission to see its first-clear reward. Repeat victories and losses give no resources."+pending+
                 (string.IsNullOrEmpty(campaignMessage) ? "" : "\n"+campaignMessage);
         }
 

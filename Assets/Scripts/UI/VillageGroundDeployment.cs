@@ -65,8 +65,8 @@ namespace Kingdoms.UI
             var plane=new Plane(Vector3.up,Vector3.zero);var ray=viewCamera.ScreenPointToRay(point);
             if(!plane.Raycast(ray,out float distance))return false;
             Vector3 position=ray.GetPoint(distance);
-            if(position.x*100<PracticeBattle.DeploymentMinX || position.x*100>PracticeBattle.DeploymentMaxX
-                || position.z*100<PracticeBattle.DeploymentMinZ || position.z*100>PracticeBattle.DeploymentMaxZ)
+            if(position.x*100<practiceBattle.Layout.MinX || position.x*100>practiceBattle.Layout.MaxX
+                || position.z*100<practiceBattle.Layout.MinZ || position.z*100>practiceBattle.Layout.MaxZ)
             {GroundFeedback("Tap inside the green deployment outline.");return false;}
             int x=Mathf.RoundToInt(position.x*2)*50,z=Mathf.RoundToInt(position.z*2)*50;
             if(!practiceBattle.CanDeployAt(x,z,deployedTroop,out string reason)){GroundFeedback(reason);return false;}
@@ -82,8 +82,8 @@ namespace Kingdoms.UI
             deploymentZone=new GameObject("Deployment Zone",typeof(LineRenderer));deploymentZone.transform.SetParent(practiceWorld.transform,false);
             var line=deploymentZone.GetComponent<LineRenderer>();line.sharedMaterial=deploymentMaterial;
             line.useWorldSpace=false;line.loop=true;line.widthMultiplier=.12f;line.positionCount=4;
-            float left=PracticeBattle.DeploymentMinX*.01f,right=PracticeBattle.DeploymentMaxX*.01f;
-            float bottom=PracticeBattle.DeploymentMinZ*.01f,top=PracticeBattle.DeploymentMaxZ*.01f;
+            float left=practiceBattle.Layout.MinX*.01f,right=practiceBattle.Layout.MaxX*.01f;
+            float bottom=practiceBattle.Layout.MinZ*.01f,top=practiceBattle.Layout.MaxZ*.01f;
             line.SetPositions(new[]{new Vector3(left,.08f,bottom),new Vector3(right,.08f,bottom),new Vector3(right,.08f,top),new Vector3(left,.08f,top)});
         }
         void RefreshGroundDeployment()

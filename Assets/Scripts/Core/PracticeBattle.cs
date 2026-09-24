@@ -25,7 +25,8 @@ namespace Kingdoms
         }
         public sealed class Recording
         {
-            public const int RulesVersion=5;
+            public const int RulesVersion=6;
+            public readonly EnemyLayout Layout;
             public readonly bool SealedEnclosure;
             public readonly int EndTick, ArmyBudget, ArcherBudget, TankBudget;
             public readonly PracticeOutcome Outcome;
@@ -33,11 +34,12 @@ namespace Kingdoms
             public readonly IReadOnlyList<Deployment> Deployments;
             internal Recording(PracticeBattle battle)
             {
-                TankBudget=battle.TankBudget;ArcherBudget=battle.ArcherBudget;ArmyBudget=battle.ArmyBudget;SealedEnclosure=battle.sealedEnclosure;EndTick=battle.Tick;Outcome=battle.Outcome;
+                Layout=battle.Layout;TankBudget=battle.TankBudget;ArcherBudget=battle.ArcherBudget;ArmyBudget=battle.ArmyBudget;SealedEnclosure=battle.sealedEnclosure;EndTick=battle.Tick;Outcome=battle.Outcome;
                 FinalHash=battle.StateHash();Deployments=Array.AsReadOnly(battle.deployments.ToArray());
             }
         }
-        readonly bool sealedEnclosure;
+        public EnemyLayout Layout {get;}
+        bool sealedEnclosure=>Layout.Sealed;
         public bool SealedEnclosure=>sealedEnclosure;
         readonly List<Deployment> deployments=new List<Deployment>();
         readonly List<Entity> buildings=new List<Entity>();
@@ -66,33 +68,23 @@ namespace Kingdoms
         readonly Dictionary<int,Route> routes=new Dictionary<int,Route>();
 
         public PracticeBattle(bool sealedEnclosure=false, int armyBudget=ArmySize, int archerBudget=0, int tankBudget=0)
+            : this(sealedEnclosure ? EnemyLayoutCatalog.Keep : EnemyLayoutCatalog.Gate,armyBudget,archerBudget,tankBudget) {}
+        public PracticeBattle(EnemyLayout layout,int armyBudget=ArmySize,int archerBudget=0,int tankBudget=0)
         {
+            if(layout==null)throw new ArgumentNullException(nameof(layout));
             if(armyBudget<1 || armyBudget>MaximumArmySize || archerBudget<0 || tankBudget<0 || (long)archerBudget+tankBudget>armyBudget || (long)armyBudget+archerBudget+3L*tankBudget>MaximumArmySize)throw new ArgumentOutOfRangeException(nameof(armyBudget));
-            TankBudget=tankBudget;ArcherBudget=archerBudget;ArmyBudget=armyBudget;this.sealedEnclosure=sealedEnclosure;
-            buildings.Add(new Entity{Id=0,Kind="TownHall",X=0,Z=300,HitPoints=600,MaxHitPoints=600,HalfSize=200});
-            AddDefense(BuildingCatalog.Cannon,1,-450,-100);
-            AddDefense(BuildingCatalog.ArcherTower,2,450,-100);
-            for(int x=-300;x<=300;x+=100)
-            {
-                AddWall(x,650);
-                if(x!=0 || sealedEnclosure)AddWall(x,-50);
-            }
-            for(int z=50;z<650;z+=100){AddWall(-300,z);AddWall(300,z);}
+            Layout=layout;TankBudget=tankBudget;ArcherBudget=archerBudget;ArmyBudget=armyBudget;
+            foreach(var b in layout.Buildings)
+                buildings.Add(new Entity{Id=b.Id,Kind=b.Kind,X=b.X,Z=b.Z,HitPoints=b.HitPoints,MaxHitPoints=b.HitPoints,HalfSize=b.HalfSize,Damage=b.Damage,Range=b.Range});
         }
-        void AddWall(int x,int z)=>buildings.Add(new Entity{Id=10+buildings.Count,Kind="Wall",X=x,Z=z,HalfSize=50,HitPoints=80,MaxHitPoints=80});
-        void AddDefense(BuildingDefinition definition,int id,int x,int z)
-        {
-            buildings.Add(new Entity{Id=id,Kind=definition.Id,X=x,Z=z,HalfSize=definition.Size*50,
-                HitPoints=definition.HitPoints,MaxHitPoints=definition.HitPoints,Damage=definition.DamagePerSecond,Range=(int)(definition.Range*100)});
-        }
-        // Southern entry strip, in hundredths of a world cell. Shared by rules and the ground overlay.
+        // Original practice bounds retained for compatibility. Live rules and overlays use Layout bounds.
         public const int DeploymentMinX=-1000, DeploymentMaxX=1000, DeploymentMinZ=-1400, DeploymentMaxZ=-800;
         public bool CanDeployAt(int x,int z,string troop,out string reason)
         {
             if(Outcome!=PracticeOutcome.Running){reason="This attack has ended.";return false;}
             if(TroopCatalog.Find(troop)==null){reason="Choose a valid troop.";return false;}
             if(RemainingOf(troop)<=0){reason="No "+troop+"s remain. Select another troop type.";return false;}
-            if(x<DeploymentMinX || x>DeploymentMaxX || z<DeploymentMinZ || z>DeploymentMaxZ)
+            if(x<Layout.MinX || x>Layout.MaxX || z<Layout.MinZ || z>Layout.MaxZ)
             {reason="Deploy inside the outlined southern area.";return false;}
             if(Blocked(x,z)){reason="That deployment point is occupied.";return false;}
             reason="Ready to deploy.";return true;
@@ -226,11 +218,11 @@ namespace Kingdoms
         {
             ulong hash=14695981039346656037UL;
             Action<int> add=value=>{unchecked{for(int i=0;i<4;i++){hash^=(byte)(value>>(i*8));hash*=1099511628211UL;}}};
-            add(Recording.RulesVersion);add(ArmyBudget);add(ArcherBudget);add(TankBudget);add(sealedEnclosure ? 1 : 0);add(Tick);add((int)Outcome);add(Remaining);
+            add(Recording.RulesVersion);add(Layout.Id);add(Layout.Revision);add(ArmyBudget);add(ArcherBudget);add(TankBudget);add(sealedEnclosure ? 1 : 0);add(Tick);add((int)Outcome);add(Remaining);
             foreach(var list in new[]{buildings,raiders})
             {
                 add(list.Count);
-                foreach(var e in list){add(e.Id);add(e.Kind=="Archer" ? 1 : e.Kind=="Tank" ? 2 : 0);add(e.X);add(e.Z);add(e.HitPoints);add(e.MaxHitPoints);add(e.Damage);add(e.Range);add(e.HalfSize);add(e.NextAttack);}
+                foreach(var e in list){add(e.Id);add(e.Kind.Length);foreach(char character in e.Kind)add(character);add(e.X);add(e.Z);add(e.HitPoints);add(e.MaxHitPoints);add(e.Damage);add(e.Range);add(e.HalfSize);add(e.NextAttack);}
             }
             return hash;
         }
@@ -247,7 +239,7 @@ namespace Kingdoms
         public PracticeReplay(PracticeBattle.Recording recording)
         {
             this.recording=recording ?? throw new ArgumentNullException(nameof(recording));
-            Battle=new PracticeBattle(recording.SealedEnclosure,recording.ArmyBudget,recording.ArcherBudget,recording.TankBudget);ApplyCommands();
+            Battle=new PracticeBattle(recording.Layout,recording.ArmyBudget,recording.ArcherBudget,recording.TankBudget);ApplyCommands();
         }
         void ApplyCommands()
         {

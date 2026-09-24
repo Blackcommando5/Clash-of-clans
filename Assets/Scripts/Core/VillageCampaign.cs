@@ -6,6 +6,7 @@ namespace Kingdoms
     {
         public readonly int Id, Gold, Elixir;
         public readonly string Name;
+        public EnemyLayout Layout=>EnemyLayoutCatalog.Find(Id);
         public readonly bool Sealed;
         public CampaignMission(int id, string name, bool sealedWalls, int gold, int elixir)
         { Id=id; Name=name; Sealed=sealedWalls; Gold=gold; Elixir=elixir; }
@@ -15,7 +16,9 @@ namespace Kingdoms
     {
         public static readonly CampaignMission Gate = new CampaignMission(0,"Gate Outpost",false,500,300);
         public static readonly CampaignMission Keep = new CampaignMission(1,"Sealed Keep",true,1000,600);
-        public static CampaignMission Find(int id) => id==0 ? Gate : id==1 ? Keep : null;
+        public static readonly CampaignMission Crossfire = new CampaignMission(2,"Crossfire Pass",false,1500,900);
+        public static readonly CampaignMission Hillfort = new CampaignMission(3,"Hillfort",true,2000,1200);
+        public static CampaignMission Find(int id) => id==0 ? Gate : id==1 ? Keep : id==2 ? Crossfire : id==3 ? Hillfort : null;
     }
 
     public sealed partial class VillageState
@@ -30,7 +33,7 @@ namespace Kingdoms
 
         public bool IsCampaignValid()
         {
-            if (campaignCleared!=0 && campaignCleared!=1 && campaignCleared!=3) return false;
+            if (campaignCleared!=0 && campaignCleared!=1 && campaignCleared!=3 && campaignCleared!=7 && campaignCleared!=15) return false;
             if (!HasCampaignRun) return campaignMission==-1 && campaignArmy==0 && campaignArchers==0 && campaignTanks==0 && campaignStars==0 && campaignOutcome==PracticeOutcome.Running;
             if (!Guid.TryParseExact(campaignRunId,"N",out _) || !CampaignUnlocked(campaignMission) || campaignArmy<1 || campaignArmy>PracticeBattle.MaximumArmySize) return false;
             if(campaignArchers<0 || campaignTanks<0 || (long)campaignArchers+campaignTanks>campaignArmy || (long)campaignArmy+campaignArchers+3L*campaignTanks>PracticeBattle.MaximumArmySize)return false;
@@ -55,7 +58,7 @@ namespace Kingdoms
         {
             reason="This result does not match the active campaign attack.";
             if (!HasCampaignRun || runId!=campaignRunId || campaignOutcome!=PracticeOutcome.Running || recording==null ||
-                recording.ArmyBudget!=campaignArmy || recording.ArcherBudget!=campaignArchers || recording.TankBudget!=campaignTanks || recording.SealedEnclosure!=CampaignCatalog.Find(campaignMission).Sealed ||
+                recording.ArmyBudget!=campaignArmy || recording.ArcherBudget!=campaignArchers || recording.TankBudget!=campaignTanks || recording.Layout!=CampaignCatalog.Find(campaignMission).Layout ||
                 recording.EndTick<0 || recording.EndTick>PracticeBattle.TimeLimitTicks) return false;
             var replay=new PracticeReplay(recording);
             for(int i=0;i<=PracticeBattle.TimeLimitTicks && !replay.Finished;i++)replay.Step();

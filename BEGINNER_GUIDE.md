@@ -48,8 +48,8 @@ The project is a Clash of Clans-inspired village prototype with its own Kingdoms
 | Practice battle | Eight raiders, three enemy buildings, walls, entrance routing, wall breach logic, star scoring, surrender, results, watch replay, retry and return |
 | Ground deployment | Click/tap within a visible southern zone; selected troop, half-cell snapping, placement feedback and exact-position replay; lane buttons retained |
 | Army preparation | Buildings > Prepare Army; free instant mixed Raider/Archer/Tank roster, weighted housing, troop selection, eight starter spaces plus camp capacity, readiness and immediate saving |
-| Campaign | Two fixed missions, prepared-army commitment, durable results, once-only first-clear rewards and saved unlocks |
-| Persistence | Local version 6 village saves; migrations from versions 1-5 |
+| Campaign | Four authored missions, distinct layouts/deployment zones, dynamic scouting, prepared-army commitment, durable results, once-only first-clear rewards and saved unlocks |
+| Persistence | Local version 7 village saves; migrations from versions 1-6 |
 | Mobile setup | Welcome scene first, village second, landscape orientation, Android IL2CPP/ARM64 settings |
 
 Not implemented yet: arbitrary enemy villages, unit separation, matchmaking, multiplayer, online accounts, purchases or a server economy. The fixed practice battlefield is separate from your home village. Gem counters and reference-style buttons do not imply that all reference-game features exist.
@@ -835,3 +835,24 @@ Save version **7** adds Tank counts to committed campaign armies. Version-6 save
 Source links: [troop stats and unlocks](Assets/Scripts/Core/VillageArmy.cs), [Barracks upgrade rules](Assets/Scripts/Core/VillageProgression.cs), [combat and replay](Assets/Scripts/Core/PracticeBattle.cs), [campaign composition checks](Assets/Scripts/Core/VillageCampaign.cs), [save migration](Assets/Scripts/Core/VillageState.cs), [preparation UI](Assets/Scripts/UI/VillageArmy.cs), and [battle models and selection](Assets/Scripts/UI/VillagePracticeBattle.cs).
 
 Validation evidence is recorded in [TankValidation.txt](TankValidation.txt), with [test source](Assets/Editor/TankValidation.cs), [preparation preview](TankPreviews/tank-preparation.png) and [battle preview](TankPreviews/tank-deployment.png). Regression checks also passed for mixed Raider/Archer armies, facility progression and the Barracks upgrade UI; resource/save rules passed 66 assertions on v7. Phone controls/performance and an updated APK remain unvalidated. Balance is provisional; unit separation, broader enemy layouts and research are still outstanding.
+
+
+### Authored enemy villages ? 24 September 2026
+
+The Border Campaign now has four sequential missions. **Crossfire Pass** unlocks after Sealed Keep; **Hillfort** unlocks after Crossfire Pass. Their first-clear rewards are **1,500 gold + 900 elixir** and **2,000 gold + 1,200 elixir**. Full storage defers the entire reward, and repeat clears give no extra currency.
+
+**Try it:** Prepare your army and open **Campaign**. Clear the first two missions, then scout Crossfire Pass. Its four buildings include three defenses around an open approach. Hillfort has five buildings: a sealed Town Hall, three defenses and a Gold Storage. The storage counts toward destruction and victory; destroying it does not award separate loot. Walls do not count toward destruction. All non-wall buildings must fall for a three-star victory.
+
+Scouting displays building/defense counts, defense damage and range, approach hints, and the reward status. The green deployment outline follows the selected village. Crossfire uses X -12 to 12, Z -15 to -9.5; Hillfort uses X -9 to 9, Z -15 to -10. The original practice zones and lane-button positions remain available. The larger villages use a wider fixed camera view.
+
+One validated army for both new missions is **eight Raiders, four Archers and four Tanks** (32 spaces). Town Hall 2 and two level-2 Army Camps provide 40 total spaces; level-2 Barracks unlock Tanks. Deploy Tanks toward the front, support them with Raiders and Archers, and inspect where the defenses overlap. Preparation remains free and instant; starting an attack spends the full assigned roster.
+
+**How the data works:** [EnemyLayout.cs](Assets/Scripts/Core/EnemyLayout.cs) holds immutable authored building lists and deployment rectangles. Each battle copies them into independent combat entities, so damage cannot alter another attack. New layouts validate unique building IDs below 100, one Town Hall, navigation bounds, non-overlapping footprints and an empty deployment zone. The original encounters preserve their historical edge-overlapping defense/wall geometry. This is a fixed authored catalog, not an arbitrary village importer or in-game editor.
+
+Replay rules **6** retain the actual immutable layout alongside troop composition and deployment commands. The state hash includes layout identity/revision and entity kind; campaign verification rejects another layout even if it has the same open/sealed setting. Village saves remain **version 7**, with existing armies, clear flags and pending rewards preserved. Older notes describing only two missions or fixed practice-only layouts are historical.
+
+Source links: [combat/replay](Assets/Scripts/Core/PracticeBattle.cs), [mission rewards and unlocks](Assets/Scripts/Core/VillageCampaign.cs), [campaign menu](Assets/Scripts/UI/VillageCampaign.cs), [scouting and rendering](Assets/Scripts/UI/VillagePracticeBattle.cs), and [ground deployment](Assets/Scripts/UI/VillageGroundDeployment.cs). Validation: [EnemyLayoutValidation.txt](EnemyLayoutValidation.txt) and [test source](Assets/Editor/EnemyLayoutValidation.cs). Previews: [campaign menu](EnemyLayoutPreviews/expanded-campaign.png), [Crossfire](EnemyLayoutPreviews/crossfire-scout.png), [Hillfort](EnemyLayoutPreviews/hillfort-scout.png).
+
+The original campaign and practice regression suites also passed, covering pending rewards, legacy mission wins, replay/retry, surrender and home-save preservation.
+
+Known limits: four authored villages, a fixed navigation grid, fixed defense stats, no unit separation, no external snapshot import and no persisted/exported replays. Phone performance and an updated APK remain unvalidated.

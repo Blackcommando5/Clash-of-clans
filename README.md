@@ -69,3 +69,5 @@ Focus loss smoothly halts camera inertia.
 Latest deployment: click or tap inside the green battlefield zone to place the selected troop. Lane buttons remain available, and replay preserves exact positions. See [the ground-deployment walkthrough](BEGINNER_GUIDE.md#ground-deployment--24-september-2026).
 
 Latest troop: upgrade Barracks to level 2 to unlock Tanks, a slower four-space shield-bearing melee unit. Three-type armies work with ground/lane deployment, verified campaign results and replay. Saves now use version 7. See [the Tank walkthrough](BEGINNER_GUIDE.md#tank-troops-and-barracks-upgrades--24-september-2026).
+
+Latest campaign expansion: Crossfire Pass and Hillfort add distinct authored villages, layout-specific deployment zones, dynamic scouting and once-only rewards. Exact layout snapshots are retained in replays. See [the enemy village walkthrough](BEGINNER_GUIDE.md#authored-enemy-villages--24-september-2026).

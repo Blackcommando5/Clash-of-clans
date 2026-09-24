@@ -38,7 +38,7 @@ namespace Kingdoms.UI
             battleMission=mission;battleRunId="";campaignResultSaved=false;campaignSaveAttempted=false;campaignMessage="";
             CloseProfile();CloseShop();CloseBuildingDetails();DeselectBuilding();
             homeCameraFocus=cameraController.focus;homeCameraZoom=viewCamera.orthographicSize;
-            cameraController.focus=new Vector3(0,0,-2);viewCamera.orthographicSize=14;cameraController.InputBlocked=true;
+            cameraController.focus=new Vector3(0,0,mission>=2 ? 0 : -2);viewCamera.orthographicSize=mission>=2 ? 16 : 14;cameraController.InputBlocked=true;
             world.gameObject.SetActive(false);hud.SetActive(false);
             practiceCanvas=new GameObject("Practice Battle UI",typeof(RectTransform),typeof(Canvas),typeof(CanvasScaler),typeof(GraphicRaycaster));practiceCanvas.transform.SetParent(transform,false);
             var canvas=practiceCanvas.GetComponent<Canvas>();canvas.renderMode=RenderMode.ScreenSpaceOverlay;canvas.sortingOrder=200;
@@ -122,7 +122,7 @@ namespace Kingdoms.UI
             practiceModels.Clear();practiceHealth.Clear();practiceShots.Clear();practiceAccumulator=0;practicePaused=false;
             practiceReplay=recording==null ? null : new PracticeReplay(recording);
             practiceScouting=recording==null;
-            practiceBattle=practiceReplay==null ? new PracticeBattle(practiceSealedChallenge,battleMission>=0 ? State.ArmyCount : PracticeBattle.ArmySize,battleMission>=0 ? State.ArmyCountOf("Archer") : 0,battleMission>=0 ? State.ArmyCountOf("Tank") : 0) : practiceReplay.Battle;
+            practiceBattle=practiceReplay==null ? new PracticeBattle(battleMission>=0 ? CampaignCatalog.Find(battleMission).Layout : practiceSealedChallenge ? EnemyLayoutCatalog.Keep : EnemyLayoutCatalog.Gate,battleMission>=0 ? State.ArmyCount : PracticeBattle.ArmySize,battleMission>=0 ? State.ArmyCountOf("Archer") : 0,battleMission>=0 ? State.ArmyCountOf("Tank") : 0) : practiceReplay.Battle;
             practiceSealedChallenge=practiceBattle.SealedEnclosure;
             deployedTroop=practiceBattle.RaiderBudget>0 ? "Raider" : practiceBattle.ArcherBudget>0 ? "Archer" : "Tank";
             practiceWorld=new GameObject("Practice Battlefield");practiceWorld.transform.SetParent(transform,false);
@@ -212,7 +212,7 @@ namespace Kingdoms.UI
             if(!practiceModels.TryGetValue(strike.From,out var from) || !practiceModels.TryGetValue(strike.To,out var to))return;
             var shot=new GameObject("Practice Shot",typeof(LineRenderer));shot.transform.SetParent(practiceWorld.transform,false);
             var line=shot.GetComponent<LineRenderer>();line.sharedMaterial=shotMaterial;line.positionCount=2;line.widthMultiplier=strike.From<100 ? .09f : .04f;
-            line.SetPosition(0,from.transform.position+Vector3.up*(strike.From==2 ? 3.3f : 1));line.SetPosition(1,to.transform.position+Vector3.up*.7f);
+            line.SetPosition(0,from.transform.position+Vector3.up*(from.name.Contains("ArcherTower") ? 3.3f : 1));line.SetPosition(1,to.transform.position+Vector3.up*.7f);
             line.shadowCastingMode=UnityEngine.Rendering.ShadowCastingMode.Off;practiceShots.Add(shot);Destroy(shot,.16f);
         }
         void RefreshPracticeBattle()
@@ -240,10 +240,13 @@ namespace Kingdoms.UI
             practiceScoutInfo.SetActive(ScoutingPractice);
             if(ScoutingPractice)
             {
-                var cannon=practiceBattle.Buildings[1];var tower=practiceBattle.Buildings[2];
-                practiceScoutText.text="Cannon: "+cannon.Damage+" damage/sec, "+cannon.Range/100+"-cell range"
-                    +"\nArcher Tower: "+tower.Damage+" damage/sec, "+tower.Range/100+"-cell range"
-                    +"\n"+(practiceSealedChallenge ? "Sealed walls: raiders must break through." : "Open entrance: raiders can walk through.");
+                int defenses=0;var stats=new List<string>();var kinds=new HashSet<string>();
+                foreach(var building in practiceBattle.Buildings)if(building.Damage>0)
+                {defenses++;if(kinds.Add(building.Kind))stats.Add(BuildingCatalog.Find(building.Kind).Name+": "+building.Damage+" dmg/s, "+(building.Range/100f).ToString("0.#")+" cells");}
+                practiceScoutText.text=practiceBattle.TotalBuildings+" buildings | "+defenses+" defenses | Destroy all buildings to win"
+                    +"\n"+string.Join(" | ",stats)+"\n"+practiceBattle.Layout.Approach;
+                if(battleMission>=0){var mission=CampaignCatalog.Find(battleMission);practiceScoutText.text+=State.CampaignCleared(battleMission) ? "\nFirst-clear reward already claimed." : "\nFirst clear: "+mission.Gold+" gold + "+mission.Elixir+" elixir";}
+
             }
             practiceRetry.interactable=!running;
             practiceWatch.interactable=!running;
@@ -289,7 +292,7 @@ namespace Kingdoms.UI
             if(practiceWorld!=null){practiceWorld.SetActive(false);Destroy(practiceWorld);}
             if(practiceCanvas!=null){practiceCanvas.SetActive(false);Destroy(practiceCanvas);}
             practiceCanvas=null;practiceModels.Clear();practiceHealth.Clear();practiceShots.Clear();practiceDeployButtons.Clear();
-            foreach(var material in practiceMaterials)Destroy(material);practiceMaterials.Clear();
+            foreach(var material in practiceMaterials)Destroy(material);practiceMaterials.Clear();deploymentMaterial=null;deploymentZone=null;
             world.gameObject.SetActive(true);hud.SetActive(PlayerProfile.HasPlayerName);
             cameraController.focus=homeCameraFocus;viewCamera.orthographicSize=homeCameraZoom;cameraController.InputBlocked=false;RefreshHUD();
         }
