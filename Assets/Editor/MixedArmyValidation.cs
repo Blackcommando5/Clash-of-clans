@@ -71,8 +71,8 @@ public static class MixedArmyValidation
         var legacy=VillageState.Create(1000);legacy.TrySetArmyCount("Raider",8,out _);legacy.TryBeginCampaign(0,out _);string id=legacy.campaignRunId;
         var victory=new PracticeBattle();for(int i=0;i<8;i++)victory.Deploy(i%3);while(victory.Outcome==PracticeOutcome.Running)victory.Step();
         Check(legacy.TryFinishCampaign(id,victory.Record(),out _),"Seed old pending reward");
-        string json=JsonUtility.ToJson(legacy).Replace("\"version\":6","\"version\":5");
-        Check(VillageState.TryDeserialize(json,out var migrated) && migrated.version==6 && migrated.campaignRunId==id && migrated.campaignArmy==8 && migrated.campaignArchers==0 && migrated.campaignOutcome==PracticeOutcome.Victory,"v5 pending victory preserved");
+        string json=JsonUtility.ToJson(legacy).Replace("\"version\":7","\"version\":5");
+        Check(VillageState.TryDeserialize(json,out var migrated) && migrated.version==7 && migrated.campaignRunId==id && migrated.campaignArmy==8 && migrated.campaignArchers==0 && migrated.campaignOutcome==PracticeOutcome.Victory,"v5 pending victory preserved");
         Check(migrated.TryClaimCampaign(id,out _) && !migrated.TryClaimCampaign(id,out _),"Migrated reward once only");
         PlayerPrefs.DeleteKey("Kingdoms.Village.pre-v6");PlayerPrefs.SetString(VillageSave.Key,json);
         Check(VillageSave.TryLoad(out _,out _) && PlayerPrefs.GetString("Kingdoms.Village.pre-v6")==json,"v5 backup preserved");
@@ -136,7 +136,7 @@ public static class MixedArmyValidation
                 Check(game.State.ArmyHousing==15 && game.State.ArmyCountOf("Archer")==7 && !Button("Add Raider").interactable,"One spare space cannot fit another Archer");
                 Click("Prepare Raiders");Click("Add Raider");Check(game.State.ArmyHousing==16,"Raider can use remaining single space");
                 Click("Clear Army");Check(game.State.ArmyCount==0,"Clear removes entire roster");
-                Finish("PASS: Barracks unlock; weighted mixed housing and atomic overflow rejection; independent troop counts and budgets; ranged damage, cooldown, stand-off and wall line-of-sight; both mixed campaign wins; per-tick typed replays; composition mismatch rejection; 80-space bound; v5 pending reward migration/backup/once-only claim; mixed preparation/remove/fill/clear UI; save reload; typed deployment, Archer model, campaign result/replay/claim; Archer-only fill/deployment; odd-space fill and troop-specific button states; committed snapshot unlock/capacity checks. Unity "+Application.unityVersion+". Ground input is covered by GroundDeploymentValidation. No tank, phone validation or APK.",0);
+                Finish("PASS: Barracks unlock; weighted mixed housing and atomic overflow rejection; independent troop counts and budgets; ranged damage, cooldown, stand-off and wall line-of-sight; both mixed campaign wins; per-tick typed replays; composition mismatch rejection; 80-space bound; v5 pending reward migration/backup/once-only claim; mixed preparation/remove/fill/clear UI; save reload; typed deployment, Archer model, campaign result/replay/claim; Archer-only fill/deployment; odd-space fill and troop-specific button states; committed snapshot unlock/capacity checks. Unity "+Application.unityVersion+". Ground input is covered by GroundDeploymentValidation. Tanks are covered by TankValidation. No phone validation or APK.",0);
             }
         }
         catch(Exception e){Finish("FAIL: "+e,1);}

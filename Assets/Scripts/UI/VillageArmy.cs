@@ -6,7 +6,7 @@ namespace Kingdoms.UI
     public sealed partial class VillageGameplay
     {
         Text armySummary, armyRules;
-        Button armyAdd, armyRemove, armyFill, armyClear, armyRaiders, armyArchers;
+        Button armyAdd, armyRemove, armyFill, armyClear, armyRaiders, armyArchers, armyTanks;
         string preparedTroop="Raider";
         int armyPageIndex;
 
@@ -23,8 +23,10 @@ namespace Kingdoms.UI
             Label("Army Title", page, "Prepare your army", 40, new Color(.23f,.25f,.3f), new Vector2(.05f,.84f), new Vector2(.95f,.98f));
             armySummary = Label("Army Summary", page, "", 30, new Color(.23f,.25f,.3f), new Vector2(.06f,.44f), new Vector2(.94f,.72f));
             armyRules = Label("Army Rules", page, "", 23, new Color(.23f,.25f,.3f), new Vector2(.06f,.22f), new Vector2(.94f,.43f));
-            armyRaiders=Button("Prepare Raiders",page,"RAIDERS",new Vector2(.05f,.73f),new Vector2(.48f,.83f),new Color(.28f,.55f,.76f));
-            armyArchers=Button("Prepare Archers",page,"ARCHERS",new Vector2(.52f,.73f),new Vector2(.95f,.83f),new Color(.35f,.60f,.25f));
+            armyRaiders=Button("Prepare Raiders",page,"RAIDERS",new Vector2(.05f,.73f),new Vector2(.33f,.83f),new Color(.28f,.55f,.76f));
+            armyArchers=Button("Prepare Archers",page,"ARCHERS",new Vector2(.36f,.73f),new Vector2(.64f,.83f),new Color(.35f,.60f,.25f));
+            armyTanks=Button("Prepare Tanks",page,"TANKS",new Vector2(.67f,.73f),new Vector2(.95f,.83f),new Color(.5f,.45f,.6f));
+            armyTanks.onClick.AddListener(()=>SelectPreparedTroop("Tank"));
             armyRaiders.onClick.AddListener(()=>SelectPreparedTroop("Raider"));armyArchers.onClick.AddListener(()=>SelectPreparedTroop("Archer"));
             armyRemove = ArmyButton(page, "Remove Raider", "REMOVE 1", .04f, () => ChangePreparedArmy(State.ArmyCountOf(preparedTroop) - 1));
             armyAdd = ArmyButton(page, "Add Raider", "ADD RAIDER", .28f, () => ChangePreparedArmy(State.ArmyCountOf(preparedTroop) + 1));
@@ -66,7 +68,7 @@ namespace Kingdoms.UI
         void RefreshArmyPreparation()
         {
             int count = State.ArmyHousing;
-            armySummary.text = "Raiders: " + State.ArmyCountOf("Raider") + "   |   Archers: " + State.ArmyCountOf("Archer") + "\nArmy space: " + count + " / " + State.ArmyCapacity +
+            armySummary.text = "Raiders: " + State.ArmyCountOf("Raider") + "   |   Archers: " + State.ArmyCountOf("Archer") + "   |   Tanks: " + State.ArmyCountOf("Tank") + "\nArmy space: " + count + " / " + State.ArmyCapacity +
                 "\n" + (State.ArmyReady ? "READY - Your roster is prepared." : "EMPTY - Add troops to prepare your army.");
             var troop=TroopCatalog.Find(preparedTroop);
             armyAdd.GetComponentInChildren<Text>().text="ADD "+preparedTroop.ToUpperInvariant();
@@ -76,8 +78,11 @@ namespace Kingdoms.UI
             armyRaiders.GetComponentInChildren<Text>().text=preparedTroop=="Raider" ? "RAIDERS - SELECTED" : "RAIDERS";
             armyArchers.GetComponentInChildren<Text>().text=!State.TroopUnlocked("Archer") ? "ARCHERS - REQUIRES BARRACKS" : preparedTroop=="Archer" ? "ARCHERS - SELECTED" : "ARCHERS";
             armyArchers.interactable=State.TroopUnlocked("Archer");
+            armyTanks.interactable=State.TroopUnlocked("Tank");
+            armyTanks.GetComponentInChildren<Text>().text=!armyTanks.interactable ? "TANKS - BARRACKS LV 2" : preparedTroop=="Tank" ? "TANKS - SELECTED" : "TANKS";
             armyRules.text = troop.Name+": "+troop.Housing+" space(s), "+troop.HitPoints+" HP, "+troop.Damage+" damage/sec, "+(troop.Range/100f).ToString("0.##")+"-cell range."+
-                "\nFree, instant preparation. Fill adds the selected type; Clear removes both."+
+                (preparedTroop=="Tank" ? "\nPrefers defenses. Slower movement: 1.8 cells/sec." : "")+
+                "\nFree, instant preparation. Fill adds the selected type; Clear removes all types."+
                 "\nCampaign uses this roster. Practice supplies eight free Raiders.";
         }
     }

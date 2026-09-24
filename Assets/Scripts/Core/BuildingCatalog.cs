@@ -24,7 +24,7 @@ namespace Kingdoms
         }
 
         public string CostText => Cost.ToString("N0") + " " + CostResource.ToString().ToLowerInvariant();
-        public string Description => Id == "Barracks" ? "Unlocks Archers and Army Camps\nPreparation stays free and instant" : Id == "ArmyCamp" ? "+8 army spaces per level\nKeeps capacity during upgrades" : IsDefense ? "Damage: "+DamagePerSecond+" / second\nRange: "+Range+" cells" : ProductionPerSecond > 0
+        public string Description => Id == "Barracks" ? "Archers and camps; Tanks at level 2\nPreparation stays free and instant" : Id == "ArmyCamp" ? "+8 army spaces per level\nKeeps capacity during upgrades" : IsDefense ? "Damage: "+DamagePerSecond+" / second\nRange: "+Range+" cells" : ProductionPerSecond > 0
             ? (ProductionPerSecond * 60) + " " + Resource.ToString().ToLowerInvariant() + " / minute\nHolds " + ProductionCapacity.ToString("N0")
             : "+" + StorageBonus.ToString("N0") + " " + Resource.ToString().ToLowerInvariant() + " capacity";
     }

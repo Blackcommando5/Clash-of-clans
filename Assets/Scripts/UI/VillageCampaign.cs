@@ -51,7 +51,7 @@ namespace Kingdoms.UI
                 campaignResolve.GetComponentInChildren<Text>().text=interrupted ? "ABANDON ATTACK" : State.campaignOutcome==PracticeOutcome.Victory ? "CLAIM / FINISH" : "DISMISS RESULT";
                 pending="\n"+CampaignCatalog.Find(State.campaignMission).Name+": "+(interrupted ? "Interrupted attack. Assigned troops are spent." : State.campaignOutcome+" - "+State.campaignStars+" / 3 stars. Result saved.");
             }
-            campaignSummary.text="Prepared: "+State.ArmyCountOf("Raider")+" Raiders + "+State.ArmyCountOf("Archer")+" Archers | "+State.ArmyHousing+" / "+State.ArmyCapacity+" spaces"+
+            campaignSummary.text="Prepared: "+State.ArmyCountOf("Raider")+" Raiders + "+State.ArmyCountOf("Archer")+" Archers + "+State.ArmyCountOf("Tank")+" Tanks | "+State.ArmyHousing+" / "+State.ArmyCapacity+" spaces"+
                 "\nStarting commits the entire roster, including undeployed troops.\nPrepare again for free after each attack. Scouting costs nothing."+
                 "\nFirst victories: Outpost 500 gold + 300 elixir; Keep 1,000 gold + 600 elixir.\nRepeat victories and losses give no resources."+pending+
                 (string.IsNullOrEmpty(campaignMessage) ? "" : "\n"+campaignMessage);
@@ -69,7 +69,7 @@ namespace Kingdoms.UI
         {
             var candidate=State.Copy();
             if(!candidate.TryBeginCampaign(battleMission,out var reason)){campaignMessage=reason;return false;}
-            if(candidate.campaignArmy!=practiceBattle.ArmyBudget || candidate.campaignArchers!=practiceBattle.ArcherBudget){campaignMessage="Your roster changed. Return home and scout again.";return false;}
+            if(candidate.campaignArmy!=practiceBattle.ArmyBudget || candidate.campaignArchers!=practiceBattle.ArcherBudget || candidate.campaignTanks!=practiceBattle.TankBudget){campaignMessage="Your roster changed. Return home and scout again.";return false;}
             if(!VillageSave.TryWrite(candidate,out var error)){campaignMessage=error;return false;}
             State=candidate;battleRunId=State.campaignRunId;campaignMessage="";return true;
         }

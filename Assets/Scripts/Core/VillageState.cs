@@ -19,7 +19,7 @@ namespace Kingdoms
     public sealed partial class VillageState
     {
         public const int MineCost = 150, MineLimit = 3, MineCapacity = 500, ResourceCapacity = BuildingCatalog.BaseCapacity;
-        public int version = 6;
+        public int version = 7;
         public int gold = 1000, elixir = 500, gems = 50;
         public bool collectedFirstGold;
         public long lastProduction;
@@ -144,7 +144,7 @@ namespace Kingdoms
 
         public bool IsValid()
         {
-            if (version != 6 || !IsCampaignValid() || !IsArmyValid() || buildings == null || buildings.Count < 1 ||
+            if (version != 7 || !IsCampaignValid() || !IsArmyValid() || buildings == null || buildings.Count < 1 ||
                 gold < 0 || elixir < 0 || gems < 0 || lastProduction < 0) return false;
             int maximumBuildings = 1;
             foreach (var definition in BuildingCatalog.Purchasable) maximumBuildings += BuildingLimit(definition.Id);
@@ -156,7 +156,8 @@ namespace Kingdoms
                 var definition = b == null ? null : BuildingCatalog.Find(b.kind);
                 if (definition == null) return false;
                 if (b.kind == "TownHall") halls++;
-                if ((b.kind == "Wall" || b.kind == "Barracks") && (b.level != 1 || b.upgradeStarted != 0 || b.upgradeFinishes != 0)) return false;
+                if (b.kind == "Wall" && (b.level != 1 || b.upgradeStarted != 0 || b.upgradeFinishes != 0)) return false;
+                if (b.kind == "Barracks" && (b.level>2 || (b.level==2 && b.upgradeFinishes!=0))) return false;
                 if (b.kind == "ArmyCamp" && Count("Barracks") != 1) return false;
                 if (b.level<1 || b.level>3 || b.upgradeStarted<0 || b.upgradeFinishes<0) return false;
                 if (b.kind!="TownHall" && b.level>TownHallLevel+1) return false;
@@ -214,6 +215,7 @@ namespace Kingdoms
                 {
                     loaded.campaignArchers=0;loaded.version=6;
                 }
+                if (loaded.version == 6) { loaded.campaignTanks=0;loaded.version=7; }
                 if (!loaded.IsValid()) return false;
                 state = loaded;
                 return true;
@@ -236,8 +238,8 @@ namespace Kingdoms
                 string json = PlayerPrefs.GetString(Key);
                 if (!VillageState.TryDeserialize(json, out var loaded)) throw new FormatException("Invalid village data");
                 var original = JsonUtility.FromJson<VillageState>(json);
-                string backupKey=original.version==1 ? LegacyBackupKey : original.version==2 ? "Kingdoms.Village.pre-v3" : original.version==3 ? "Kingdoms.Village.pre-v4" : original.version==4 ? "Kingdoms.Village.pre-v5" : "Kingdoms.Village.pre-v6";
-                if (original.version < 6 && !PlayerPrefs.HasKey(backupKey))
+                string backupKey=original.version==1 ? LegacyBackupKey : original.version==2 ? "Kingdoms.Village.pre-v3" : original.version==3 ? "Kingdoms.Village.pre-v4" : original.version==4 ? "Kingdoms.Village.pre-v5" : original.version==5 ? "Kingdoms.Village.pre-v6" : "Kingdoms.Village.pre-v7";
+                if (original.version < 7 && !PlayerPrefs.HasKey(backupKey))
                 { PlayerPrefs.SetString(backupKey, json); PlayerPrefs.Save(); }
                 loaded.Accrue(VillageState.Now);
                 state = loaded;

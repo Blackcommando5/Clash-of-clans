@@ -67,3 +67,5 @@ Resource counters format values using N0 format specifier.
 Focus loss smoothly halts camera inertia.
 
 Latest deployment: click or tap inside the green battlefield zone to place the selected troop. Lane buttons remain available, and replay preserves exact positions. See [the ground-deployment walkthrough](BEGINNER_GUIDE.md#ground-deployment--24-september-2026).
+
+Latest troop: upgrade Barracks to level 2 to unlock Tanks, a slower four-space shield-bearing melee unit. Three-type armies work with ground/lane deployment, verified campaign results and replay. Saves now use version 7. See [the Tank walkthrough](BEGINNER_GUIDE.md#tank-troops-and-barracks-upgrades--24-september-2026).

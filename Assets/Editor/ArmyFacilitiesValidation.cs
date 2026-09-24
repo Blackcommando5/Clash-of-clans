@@ -39,7 +39,7 @@ public static class ArmyFacilitiesValidation
         Check(!s.TryPlace("ArmyCamp",5,5,1000,out _) && s.elixir==10000,"Camp requires Barracks without charge");
         Check(!s.TryPlace("Barracks",-1,-1,1000,out _) && s.elixir==10000,"Blocked placement does not charge");
         Check(s.TryPlace("Barracks",5,5,1000,out _) && s.elixir==9800,"Barracks price");
-        Check(!s.CanBuy("Barracks",out _) && !s.CanUpgrade(1,out _),"One Barracks and no unsupported upgrade");
+        Check(!s.CanBuy("Barracks",out _) && s.CanUpgrade(1,out _),"One Barracks and supported level-2 upgrade");
         Check(s.TryPlace("ArmyCamp",9,5,1000,out _) && s.elixir==9550 && s.ArmyCapacity==16,"Camp price and capacity");
         Check(s.TrySetArmyCount("Raider",16,out _) && !s.TrySetArmyCount("Raider",17,out _),"Expanded roster boundary");
         Check(!s.CanBuy("ArmyCamp",out _),"Town Hall one camp limit");
@@ -55,7 +55,7 @@ public static class ArmyFacilitiesValidation
         Check(s.TryMove(2,9,9,out _) && s.ArmyCapacity==32,"Moving camp retains capacity");
         Check(s.TrySetArmyCount("Raider",32,out _) && s.IsValid(),"Larger roster valid");
         var invalid=s.Copy();invalid.buildings.RemoveAt(1);Check(!invalid.IsValid(),"Saved camp requires Barracks");
-        invalid=s.Copy();invalid.buildings[1].level=2;Check(!invalid.IsValid(),"Unsupported Barracks level rejected");
+        invalid=s.Copy();invalid.buildings[1].level=3;Check(!invalid.IsValid(),"Unsupported Barracks level rejected");
         invalid=s.Copy();invalid.army[0].count=33;Check(!VillageState.TryDeserialize(JsonUtility.ToJson(invalid),out _),"Over-capacity save rejected");
         Check(s.GoldCapacity==10000 && s.ElixirCapacity==10000 && s.CollectableGold==0 && s.CollectableElixir==0,"Facilities do not produce or store currency");
     }
@@ -73,7 +73,7 @@ public static class ArmyFacilitiesValidation
                 Check(game.State.ArmyCapacity==24 && game.State.ArmyHousing==24 && game.State.buildings[2].z==9,"Facilities and roster survive scene reload");
                 game.OpenArmyPreparation();Capture("army-facilities-preparation.png");
                 game.CloseProfile();game.OpenShop();Click("Shop Category 0");Capture("army-facilities-shop.png");
-                Finish("PASS: Barracks/camp prices and prerequisites; placement/limits; preserved starter roster; expanded capacity boundaries; upgrade/cancel/offline completion; Town Hall gates and second camp; invalid facility and roster saves; no currency production; authored prefab/icon loading; real shop buy/place/move/details/upgrade controls; expanded free preparation; persistence and scene reload. Unity "+Application.unityVersion+". No campaign integration, APK or phone validation.",0);return;
+                Finish("PASS: Barracks/camp prices and prerequisites; placement/limits; preserved starter roster; expanded capacity boundaries; upgrade/cancel/offline completion; Town Hall gates and second camp; invalid facility and roster saves; no currency production; authored prefab/icon loading; real shop buy/place/move/details/upgrade controls; Barracks level-2 upgrade and Tank selection UI; expanded free preparation; persistence and scene reload. Unity "+Application.unityVersion+". No campaign integration, APK or phone validation.",0);return;
             }
             game.OpenShop();Click("Shop Category 0");Check(!Button("Catalogue Buy ArmyCamp").interactable && Button("Catalogue Buy Barracks").interactable,"Shop prerequisite");
             Click("Catalogue Buy Barracks");Check(game.IsPlacing,"Barracks model loads");game.SetPreviewCell(5,5);game.ConfirmPlacement();
@@ -86,6 +86,11 @@ public static class ArmyFacilitiesValidation
             game.State.Accrue(game.State.buildings[2].upgradeFinishes);game.CloseBuildingDetails();game.OpenArmyPreparation();Click("Fill Army");
             Check(game.State.ArmyHousing==24 && game.State.ArmyReady,"Fill expanded army");
             Check(VillageSave.TryLoad(out var saved,out _) && saved.ArmyHousing==24 && saved.ArmyCapacity==24,"Expanded roster saved");
+            Click("Close Profile");game.SelectBuilding(1);game.OpenBuildingDetails();
+            Check(GameObject.Find("Details Stats").GetComponent<Text>().text.Contains("Level 2 unlocks Tanks"),"Barracks unlock details");
+            Click("Confirm Upgrade");Check(game.State.buildings[1].upgradeFinishes>0 && !game.State.TroopUnlocked("Tank"),"Barracks UI starts upgrade");
+            game.State.Accrue(game.State.buildings[1].upgradeFinishes);game.CloseBuildingDetails();game.OpenArmyPreparation();
+            Click("Prepare Tanks");Check(GameObject.Find("Add Raider").GetComponentInChildren<Text>().text=="ADD TANK","Completed Barracks UI unlock");
             Check(Resources.Load<Texture2D>("BuildingIcons/ArmyCamp")!=null && Resources.Load<Texture2D>("BuildingIcons/Barracks")!=null,"Portraits load");
             SessionState.SetInt("ArmyFacilities.Step",1);SceneManager.LoadScene("Main Scene");
         }

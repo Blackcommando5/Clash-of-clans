@@ -13,7 +13,7 @@ namespace Kingdoms.UI
         Text practiceStatus,practiceInstructions,practiceResultsText;
         GameObject practiceResults,practiceScoutInfo;
         Text practiceScoutText;
-        Button practiceRetry,practiceWatch,practiceChallenge,practiceSurrender,practiceBegin,deployRaiders,deployArchers;
+        Button practiceRetry,practiceWatch,practiceChallenge,practiceSurrender,practiceBegin,deployRaiders,deployArchers,deployTanks;
         string deployedTroop="Raider";
         bool practiceSealedChallenge,practiceScouting;
         readonly List<Button> practiceDeployButtons=new List<Button>();
@@ -21,7 +21,7 @@ namespace Kingdoms.UI
         readonly Dictionary<int,Text> practiceHealth=new Dictionary<int,Text>();
         readonly List<GameObject> practiceShots=new List<GameObject>();
         readonly List<Material> practiceMaterials=new List<Material>();
-        Material raiderCloth,archerCloth,raiderSkin,shotMaterial;
+        Material raiderCloth,archerCloth,tankArmor,raiderSkin,shotMaterial;
         Vector3 homeCameraFocus;
         float homeCameraZoom,practiceAccumulator;
         bool practicePaused;
@@ -53,8 +53,10 @@ namespace Kingdoms.UI
                 var button=Button("Deploy Raider "+i,practiceSafe,new[]{"DEPLOY LEFT","DEPLOY CENTER","DEPLOY RIGHT"}[i],new Vector2(.25f+i*.17f,.025f),new Vector2(.405f+i*.17f,.13f),new Color(.53f,.77f,.2f));
                 ReferenceText(button.GetComponentInChildren<Text>(),23,Color.white);button.onClick.AddListener(()=>DeployPracticeRaider(lane));practiceDeployButtons.Add(button);
             }
-            deployRaiders=Button("Select Battle Raiders",practiceSafe,"RAIDERS",new Vector2(.25f,.14f),new Vector2(.49f,.22f),new Color(.28f,.55f,.76f));
-            deployArchers=Button("Select Battle Archers",practiceSafe,"ARCHERS",new Vector2(.51f,.14f),new Vector2(.75f,.22f),new Color(.35f,.60f,.25f));
+            deployRaiders=Button("Select Battle Raiders",practiceSafe,"RAIDERS",new Vector2(.25f,.14f),new Vector2(.405f,.22f),new Color(.28f,.55f,.76f));
+            deployArchers=Button("Select Battle Archers",practiceSafe,"ARCHERS",new Vector2(.42f,.14f),new Vector2(.575f,.22f),new Color(.35f,.60f,.25f));
+            deployTanks=Button("Select Battle Tanks",practiceSafe,"TANKS",new Vector2(.59f,.14f),new Vector2(.745f,.22f),new Color(.5f,.45f,.6f));
+            deployTanks.onClick.AddListener(()=>SelectDeploymentTroop("Tank"));
             deployRaiders.onClick.AddListener(()=>SelectDeploymentTroop("Raider"));deployArchers.onClick.AddListener(()=>SelectDeploymentTroop("Archer"));
             var back=Button("Return From Practice",practiceSafe,"RETURN HOME",new Vector2(.02f,.03f),new Vector2(.19f,.12f),new Color(.8f,.3f,.15f));ReferenceText(back.GetComponentInChildren<Text>(),23,Color.white);back.onClick.AddListener(ClosePracticeBattle);
             practiceSurrender=Button("Surrender Practice",practiceSafe,"SURRENDER",new Vector2(.02f,.15f),new Vector2(.19f,.23f),new Color(.65f,.25f,.16f));
@@ -74,6 +76,7 @@ namespace Kingdoms.UI
             raiderCloth=PracticeMaterial("Raider tunic",new Color(.1f,.55f,.8f));raiderSkin=PracticeMaterial("Raider skin",new Color(.9f,.65f,.4f));shotMaterial=PracticeMaterial("Practice shots",new Color(1,.8f,.16f),true);
             campaignBattleClaim=Button("Claim Campaign Battle",practiceSafe,"CLAIM",new Vector2(.81f,.03f),new Vector2(.98f,.12f),new Color(.45f,.64f,.24f));
             campaignBattleClaim.onClick.AddListener(ClaimCampaignBattle);campaignBattleClaim.gameObject.SetActive(false);
+            tankArmor=PracticeMaterial("Tank armor",new Color(.38f,.32f,.48f));
             archerCloth=PracticeMaterial("Archer tunic",new Color(.22f,.62f,.18f));
             practiceSealedChallenge=mission>=0 && CampaignCatalog.Find(mission).Sealed;
             ResetPracticeBattle();
@@ -119,9 +122,9 @@ namespace Kingdoms.UI
             practiceModels.Clear();practiceHealth.Clear();practiceShots.Clear();practiceAccumulator=0;practicePaused=false;
             practiceReplay=recording==null ? null : new PracticeReplay(recording);
             practiceScouting=recording==null;
-            practiceBattle=practiceReplay==null ? new PracticeBattle(practiceSealedChallenge,battleMission>=0 ? State.ArmyCount : PracticeBattle.ArmySize,battleMission>=0 ? State.ArmyCountOf("Archer") : 0) : practiceReplay.Battle;
+            practiceBattle=practiceReplay==null ? new PracticeBattle(practiceSealedChallenge,battleMission>=0 ? State.ArmyCount : PracticeBattle.ArmySize,battleMission>=0 ? State.ArmyCountOf("Archer") : 0,battleMission>=0 ? State.ArmyCountOf("Tank") : 0) : practiceReplay.Battle;
             practiceSealedChallenge=practiceBattle.SealedEnclosure;
-            deployedTroop=practiceBattle.RaiderBudget>0 ? "Raider" : "Archer";
+            deployedTroop=practiceBattle.RaiderBudget>0 ? "Raider" : practiceBattle.ArcherBudget>0 ? "Archer" : "Tank";
             practiceWorld=new GameObject("Practice Battlefield");practiceWorld.transform.SetParent(transform,false);
             CreateDeploymentZone();
             foreach(var building in practiceBattle.Buildings)
@@ -164,7 +167,7 @@ namespace Kingdoms.UI
         {
             var root=new GameObject("Practice "+raider.Kind+" "+raider.Id);root.transform.SetParent(practiceWorld.transform,false);
             root.transform.position=PracticePosition(raider);
-            var body=GameObject.CreatePrimitive(PrimitiveType.Capsule);body.transform.SetParent(root.transform,false);body.transform.localPosition=new Vector3(0,.55f,0);body.transform.localScale=new Vector3(.43f,.48f,.43f);body.GetComponent<Renderer>().sharedMaterial=raider.Kind=="Archer" ? archerCloth : raiderCloth;Destroy(body.GetComponent<Collider>());
+            var body=GameObject.CreatePrimitive(PrimitiveType.Capsule);body.transform.SetParent(root.transform,false);body.transform.localPosition=new Vector3(0,.55f,0);body.transform.localScale=new Vector3(.43f,.48f,.43f);body.GetComponent<Renderer>().sharedMaterial=raider.Kind=="Archer" ? archerCloth : raider.Kind=="Tank" ? tankArmor : raiderCloth;Destroy(body.GetComponent<Collider>());
             var head=GameObject.CreatePrimitive(PrimitiveType.Sphere);head.transform.SetParent(root.transform,false);head.transform.localPosition=new Vector3(0,1.12f,0);head.transform.localScale=Vector3.one*.38f;head.GetComponent<Renderer>().sharedMaterial=raiderSkin;Destroy(head.GetComponent<Collider>());
             if(raider.Kind=="Archer")
             {
@@ -176,6 +179,13 @@ namespace Kingdoms.UI
             else
             {
             var spear=GameObject.CreatePrimitive(PrimitiveType.Cube);spear.transform.SetParent(root.transform,false);spear.transform.localPosition=new Vector3(.3f,.73f,0);spear.transform.localScale=new Vector3(.06f,1.25f,.06f);spear.GetComponent<Renderer>().sharedMaterial=shotMaterial;Destroy(spear.GetComponent<Collider>());
+            }
+            if(raider.Kind=="Tank")
+            {
+                root.transform.localScale=Vector3.one*1.4f;
+                var shield=GameObject.CreatePrimitive(PrimitiveType.Cube);shield.name="Tank Shield";shield.transform.SetParent(root.transform,false);
+                shield.transform.localPosition=new Vector3(-.32f,.65f,-.18f);shield.transform.localScale=new Vector3(.55f,.75f,.16f);
+                shield.GetComponent<Renderer>().sharedMaterial=tankArmor;Destroy(shield.GetComponent<Collider>());
             }
             practiceModels.Add(raider.Id,root);AddPracticeHealth(raider);
         }
@@ -218,12 +228,14 @@ namespace Kingdoms.UI
                 button.gameObject.SetActive(!ScoutingPractice);
                 button.interactable=running && !ScoutingPractice && !WatchingPracticeReplay && practiceBattle.RemainingOf(deployedTroop)>0;
             }
-            bool selectTroops=running && !ScoutingPractice && !WatchingPracticeReplay && practiceBattle.ArcherBudget>0;
-            deployRaiders.gameObject.SetActive(selectTroops);deployArchers.gameObject.SetActive(selectTroops);
+            bool selectTroops=running && !ScoutingPractice && !WatchingPracticeReplay && (practiceBattle.ArcherBudget>0 || practiceBattle.TankBudget>0);
+            deployRaiders.gameObject.SetActive(selectTroops);deployArchers.gameObject.SetActive(selectTroops);deployTanks.gameObject.SetActive(selectTroops);
+            deployTanks.interactable=practiceBattle.RemainingOf("Tank")>0;
+            deployTanks.GetComponentInChildren<Text>().text=(deployedTroop=="Tank" ? "> " : "")+"TANKS: "+practiceBattle.RemainingOf("Tank");
             deployRaiders.interactable=practiceBattle.RemainingOf("Raider")>0;deployArchers.interactable=practiceBattle.RemainingOf("Archer")>0;
             deployRaiders.GetComponentInChildren<Text>().text=(deployedTroop=="Raider" ? "> " : "")+"RAIDERS: "+practiceBattle.RemainingOf("Raider");
             deployArchers.GetComponentInChildren<Text>().text=(deployedTroop=="Archer" ? "> " : "")+"ARCHERS: "+practiceBattle.RemainingOf("Archer");
-            if(selectTroops){deployRaiders.transform.SetAsLastSibling();deployArchers.transform.SetAsLastSibling();}
+            if(selectTroops){deployRaiders.transform.SetAsLastSibling();deployArchers.transform.SetAsLastSibling();deployTanks.transform.SetAsLastSibling();}
             practiceBegin.gameObject.SetActive(ScoutingPractice);
             practiceScoutInfo.SetActive(ScoutingPractice);
             if(ScoutingPractice)

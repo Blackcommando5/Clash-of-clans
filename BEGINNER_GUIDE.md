@@ -47,12 +47,12 @@ The project is a Clash of Clans-inspired village prototype with its own Kingdoms
 | Defenses | Purchase, move, inspect range and upgrade; home defenses remain idle |
 | Practice battle | Eight raiders, three enemy buildings, walls, entrance routing, wall breach logic, star scoring, surrender, results, watch replay, retry and return |
 | Ground deployment | Click/tap within a visible southern zone; selected troop, half-cell snapping, placement feedback and exact-position replay; lane buttons retained |
-| Army preparation | Buildings > Prepare Army; free instant mixed Raider/Archer roster, weighted housing, troop selection, eight starter spaces plus camp capacity, readiness and immediate saving |
+| Army preparation | Buildings > Prepare Army; free instant mixed Raider/Archer/Tank roster, weighted housing, troop selection, eight starter spaces plus camp capacity, readiness and immediate saving |
 | Campaign | Two fixed missions, prepared-army commitment, durable results, once-only first-clear rewards and saved unlocks |
 | Persistence | Local version 6 village saves; migrations from versions 1-5 |
 | Mobile setup | Welcome scene first, village second, landscape orientation, Android IL2CPP/ARM64 settings |
 
-Not implemented yet: tank troops, arbitrary enemy villages, unit separation, matchmaking, multiplayer, online accounts, purchases or a server economy. The fixed practice battlefield is separate from your home village. Gem counters and reference-style buttons do not imply that all reference-game features exist.
+Not implemented yet: arbitrary enemy villages, unit separation, matchmaking, multiplayer, online accounts, purchases or a server economy. The fixed practice battlefield is separate from your home village. Gem counters and reference-style buttons do not imply that all reference-game features exist.
 
 The Android configuration exists, but an Android build and physical-phone testing have not been completed as part of this work.
 
@@ -758,7 +758,7 @@ Validation: [ArmyPreparationValidation.txt](ArmyPreparationValidation.txt) recor
 
 Select the camp and open **Info / Upgrade**. Level 2 costs 500 elixir, occupies one builder for 30 seconds, and increases that camp's contribution from 8 to 16 spaces (24 total with one camp). Current capacity and roster readiness remain available during the upgrade. Completion, including completion while the app is closed, adds capacity once. Cancelling uses the existing 50% refund rule and keeps the previous capacity. Move the building freely without losing its contribution.
 
-There is one Barracks per village; it unlocks camps and currently has no upgrades. Camp limits are one, two and three at Town Hall levels 1, 2 and 3. Each camp supports levels 1-3; level 3 requires Town Hall 2, costs 1,250 elixir and takes 120 seconds. Maximum current army capacity is 80 (eight starter spaces plus three level-3 camps). Neither facility generates or stores currency. New construction is still instant.
+There is one Barracks per village; it unlocks camps. The original facilities increment had no Barracks upgrades; the Tank increment below adds level 2. Camp limits are one, two and three at Town Hall levels 1, 2 and 3. Each camp supports levels 1-3; level 3 requires Town Hall 2, costs 1,250 elixir and takes 120 seconds. Maximum current army capacity is 80 (eight starter spaces plus three level-3 camps). Neither facility generates or stores currency. New construction is still instant.
 
 Study [building definitions](Assets/Scripts/Core/BuildingCatalog.cs), [army capacity](Assets/Scripts/Core/VillageArmy.cs), [building progression](Assets/Scripts/Core/VillageProgression.cs), [preparation UI](Assets/Scripts/UI/VillageArmy.cs) and [editable model authoring](Assets/Editor/ArmyBuildingAuthoring.cs). Models live in `Assets/Resources/ArmyBuildings`; the shop uses rendered portraits in `Assets/Resources/BuildingIcons`. The shop explains the Barracks prerequisite and building details show the actual camp capacity gain.
 
@@ -819,4 +819,19 @@ The zone covers world X -10 through 10 and Z -14 through -8. Simulation rules va
 
 Study [deployment legality and recorded coordinates](Assets/Scripts/Core/PracticeBattle.cs), [screen-to-ground projection, gestures and outline](Assets/Scripts/UI/VillageGroundDeployment.cs), and [battle lifecycle integration](Assets/Scripts/UI/VillagePracticeBattle.cs). Evidence: [ground deployment checks](GroundDeploymentValidation.txt), [validation source](Assets/Editor/GroundDeploymentValidation.cs), and [rendered deployment preview](GroundDeploymentPreviews/ground-deployment.png). The mixed-army suite also passed with replay rules v4, including campaign results, once-only claims and save migration. The practice suite passed scouting, both layouts, lane controls, replay, retry, surrender and home-save preservation.
 
-Known limits: the deployment zone is a fixed rectangle for the two existing layouts. Troops can overlap; there is no hold-to-deploy or drag-to-deploy. Automated gesture checks call the shared handlers directly; physical multitouch, phone performance and an updated APK remain unvalidated. Tank troops and broader enemy layouts are still future work.
+Known limits: the deployment zone is a fixed rectangle for the two existing layouts. Troops can overlap; there is no hold-to-deploy or drag-to-deploy. Automated gesture checks call the shared handlers directly; physical multitouch, phone performance and an updated APK remain unvalidated. At that increment, Tank troops and broader enemy layouts were still future work. Tanks are added below.
+
+
+### Tank troops and Barracks upgrades ? 24 September 2026
+
+Armies now support **Raiders, Archers and Tanks**. The Tank is a large shield-bearing melee unit with **300 HP**, **16 damage per second**, **0.85-cell attack range**, and **four housing spaces**. It moves at 1.8 cells/second versus 2.8 for Raiders and Archers. It prioritizes living defenses, breaches walls when needed, and attacks other buildings once defenses are destroyed. It has no taunt; defenses retain their usual target selection.
+
+**Beginner walkthrough:** Build Barracks, open its building details, and upgrade it to **level 2** for **400 elixir and 30 seconds** using a builder. Tanks unlock when the upgrade finishes. Canceling keeps them locked and uses the normal half-cost refund. Level 2 is currently the Barracks maximum. Go to **Buildings > Prepare Army**, select **Tanks**, and use Add or Fill. Preparation remains free and instant. Clear removes all three types.
+
+A level-1 Army Camp provides 16 total spaces: try **two Tanks, four Raiders and two Archers**. In a campaign battle, select Tanks and tap the green deployment zone, or use the lane buttons. Tanks have larger purple bodies and shields. A Tank-only army selects Tanks automatically. Practice still supplies eight free Raiders.
+
+Save version **7** adds Tank counts to committed campaign armies. Version-6 saves migrate with zero committed Tanks while preserving prepared armies, mission progress and pending rewards; the original is backed up as `Kingdoms.Village.pre-v7`. Replay rules **5** include Tank composition, movement and exact deployment positions. Earlier version descriptions in this guide are historical. Recordings remain in memory only.
+
+Source links: [troop stats and unlocks](Assets/Scripts/Core/VillageArmy.cs), [Barracks upgrade rules](Assets/Scripts/Core/VillageProgression.cs), [combat and replay](Assets/Scripts/Core/PracticeBattle.cs), [campaign composition checks](Assets/Scripts/Core/VillageCampaign.cs), [save migration](Assets/Scripts/Core/VillageState.cs), [preparation UI](Assets/Scripts/UI/VillageArmy.cs), and [battle models and selection](Assets/Scripts/UI/VillagePracticeBattle.cs).
+
+Validation evidence is recorded in [TankValidation.txt](TankValidation.txt), with [test source](Assets/Editor/TankValidation.cs), [preparation preview](TankPreviews/tank-preparation.png) and [battle preview](TankPreviews/tank-deployment.png). Regression checks also passed for mixed Raider/Archer armies, facility progression and the Barracks upgrade UI; resource/save rules passed 66 assertions on v7. Phone controls/performance and an updated APK remain unvalidated. Balance is provisional; unit separation, broader enemy layouts and research are still outstanding.

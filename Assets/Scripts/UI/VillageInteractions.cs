@@ -228,8 +228,8 @@ namespace Kingdoms.UI
                 upgradeCaption.text="UPGRADES COMING LATER";upgradeAction.interactable=false;return;
             }
             bool allowed=State.CanUpgrade(selectedIndex,out string reason);
-            if(b.kind=="ArmyCamp")stats="Army capacity: +"+(VillageState.ArmySpacesPerCampLevel*b.level)+" spaces\nKeeps capacity while upgrading.\nFree, instant Raider preparation.";
-            if(b.kind=="Barracks")stats="Unlocks Archers and Army Camps.\nPreparation remains free and instant.\nBarracks upgrades are not available yet.";
+            if(b.kind=="ArmyCamp")stats="Army capacity: +"+(VillageState.ArmySpacesPerCampLevel*b.level)+" spaces\nKeeps capacity while upgrading.\nFree, instant army preparation.";
+            if(b.kind=="Barracks")stats="Unlocks Archers and Army Camps.\n"+(b.level>=2 ? "Tanks unlocked." : "Level 2 unlocks Tanks.")+"\nPreparation remains free and instant.";
             if(d.IsDefense)stats="Hit points: "+(d.HitPoints*b.level)+"\nDamage / second: "+(d.DamagePerSecond*b.level)+"\nRange: "+d.Range+" cells\nTry practice combat from Attack.";
             if(b.upgradeFinishes>0)
             {
@@ -239,8 +239,8 @@ namespace Kingdoms.UI
             }
             else
             {
-                detailStats.text=stats+"\n\n"+(b.level>=3 ? "Maximum available level" : "Next level: "+(b.level+1)+"\nTime: "+Duration(VillageState.UpgradeSeconds(b))+"\n"+reason);
-                upgradeCaption.text=confirmingUpgradeCancellation ? "UPGRADE COMPLETED" : b.level>=3 ? "MAX LEVEL" : "UPGRADE\n"+VillageState.UpgradeCost(b).ToString("N0")+" "+VillageState.UpgradeResource(b).ToString().ToUpperInvariant();
+                detailStats.text=stats+"\n\n"+((b.level>=3 || (b.kind=="Barracks" && b.level>=2)) ? "Maximum available level" : "Next level: "+(b.level+1)+"\nTime: "+Duration(VillageState.UpgradeSeconds(b))+"\n"+reason);
+                upgradeCaption.text=confirmingUpgradeCancellation ? "UPGRADE COMPLETED" : (b.level>=3 || (b.kind=="Barracks" && b.level>=2)) ? "MAX LEVEL" : "UPGRADE\n"+VillageState.UpgradeCost(b).ToString("N0")+" "+VillageState.UpgradeResource(b).ToString().ToUpperInvariant();
                 upgradeAction.interactable=allowed && !confirmingUpgradeCancellation;
             }
         }

@@ -6,16 +6,17 @@ namespace Kingdoms
     public sealed class TroopDefinition
     {
         public readonly string Id, Name;
-        public readonly int Housing, HitPoints, Damage, Range;
-        public TroopDefinition(string id, string name, int housing, int hitPoints, int damage, int range)
-        { Id=id; Name=name; Housing=housing; HitPoints=hitPoints; Damage=damage; Range=range; }
+        public readonly int Housing, HitPoints, Damage, Range, Speed;
+        public TroopDefinition(string id, string name, int housing, int hitPoints, int damage, int range, int speed=28)
+        { Id=id; Name=name; Housing=housing; HitPoints=hitPoints; Damage=damage; Range=range; Speed=speed; }
     }
 
     public static class TroopCatalog
     {
         public static readonly TroopDefinition Raider = new TroopDefinition("Raider", "Raider", 1, 90, 20, 85);
         public static readonly TroopDefinition Archer = new TroopDefinition("Archer", "Archer", 2, 55, 14, 350);
-        public static TroopDefinition Find(string id) => id == Raider.Id ? Raider : id == Archer.Id ? Archer : null;
+        public static readonly TroopDefinition Tank = new TroopDefinition("Tank", "Tank", 4, 300, 16, 85, 18);
+        public static TroopDefinition Find(string id) => id == Raider.Id ? Raider : id == Archer.Id ? Archer : id == Tank.Id ? Tank : null;
     }
 
     [Serializable]
@@ -54,8 +55,8 @@ namespace Kingdoms
             }
         }
         public int ArmyCountOf(string troop) => army?.Find(stack => stack != null && stack.troop == troop)?.count ?? 0;
-        public int ArmyCount => ArmyCountOf("Raider") + ArmyCountOf("Archer");
-        public bool TroopUnlocked(string troop) => troop == "Raider" || (troop == "Archer" && buildings != null && buildings.Exists(b => b != null && b.kind == "Barracks"));
+        public int ArmyCount => ArmyCountOf("Raider") + ArmyCountOf("Archer") + ArmyCountOf("Tank");
+        public bool TroopUnlocked(string troop) => troop == "Raider" || ((troop == "Archer" || troop == "Tank") && buildings != null && buildings.Exists(b => b != null && b.kind == "Barracks" && b.level >= (troop == "Tank" ? 2 : 1)));
         public bool ArmyReady => IsArmyValid() && ArmyHousing > 0;
 
         public bool IsArmyValid()
@@ -80,7 +81,7 @@ namespace Kingdoms
             if (!IsArmyValid() || definition == null || count < 0)
             { reason = "Choose a valid troop count."; return false; }
             if (count > 0 && !TroopUnlocked(troop))
-            { reason = "Build Barracks to unlock Archers."; return false; }
+            { reason = troop == "Tank" ? "Upgrade Barracks to level 2 to unlock Tanks." : "Build Barracks to unlock Archers."; return false; }
             var existing = army.Find(stack => stack.troop == troop);
             long housing = (long)ArmyHousing + ((long)count - (existing?.count ?? 0)) * definition.Housing;
             if (housing > ArmyCapacity)

@@ -22,7 +22,7 @@ namespace Kingdoms
     {
         public int campaignCleared;
         public string campaignRunId = "";
-        public int campaignMission = -1, campaignArmy, campaignStars, campaignArchers;
+        public int campaignMission = -1, campaignArmy, campaignStars, campaignArchers, campaignTanks;
         public PracticeOutcome campaignOutcome;
         public bool HasCampaignRun => !string.IsNullOrEmpty(campaignRunId);
         public bool CampaignCleared(int mission) => CampaignCatalog.Find(mission)!=null && (campaignCleared & (1<<mission))!=0;
@@ -31,10 +31,10 @@ namespace Kingdoms
         public bool IsCampaignValid()
         {
             if (campaignCleared!=0 && campaignCleared!=1 && campaignCleared!=3) return false;
-            if (!HasCampaignRun) return campaignMission==-1 && campaignArmy==0 && campaignArchers==0 && campaignStars==0 && campaignOutcome==PracticeOutcome.Running;
+            if (!HasCampaignRun) return campaignMission==-1 && campaignArmy==0 && campaignArchers==0 && campaignTanks==0 && campaignStars==0 && campaignOutcome==PracticeOutcome.Running;
             if (!Guid.TryParseExact(campaignRunId,"N",out _) || !CampaignUnlocked(campaignMission) || campaignArmy<1 || campaignArmy>PracticeBattle.MaximumArmySize) return false;
-            if(campaignArchers<0 || campaignArchers>campaignArmy || (long)campaignArmy+campaignArchers>PracticeBattle.MaximumArmySize)return false;
-            if((long)campaignArmy+campaignArchers>ArmyCapacity || (campaignArchers>0 && !TroopUnlocked("Archer")))return false;
+            if(campaignArchers<0 || campaignTanks<0 || (long)campaignArchers+campaignTanks>campaignArmy || (long)campaignArmy+campaignArchers+3L*campaignTanks>PracticeBattle.MaximumArmySize)return false;
+            if((long)campaignArmy+campaignArchers+3L*campaignTanks>ArmyCapacity || (campaignArchers>0 && !TroopUnlocked("Archer")) || (campaignTanks>0 && !TroopUnlocked("Tank")))return false;
             if (!Enum.IsDefined(typeof(PracticeOutcome),campaignOutcome) || campaignStars<0 || campaignStars>3) return false;
             return campaignOutcome==PracticeOutcome.Running ? campaignStars==0 : campaignOutcome==PracticeOutcome.Victory ? campaignStars==3 : campaignStars<3;
         }
@@ -44,7 +44,7 @@ namespace Kingdoms
             if (HasCampaignRun) { reason="Finish or dismiss your previous campaign result first."; return false; }
             if (!CampaignUnlocked(mission)) { reason="Clear the previous mission first."; return false; }
             if (!ArmyReady) { reason="Prepare at least one troop first."; return false; }
-            campaignRunId=Guid.NewGuid().ToString("N");campaignMission=mission;campaignArmy=ArmyCount;campaignArchers=ArmyCountOf("Archer");
+            campaignRunId=Guid.NewGuid().ToString("N");campaignMission=mission;campaignArmy=ArmyCount;campaignArchers=ArmyCountOf("Archer");campaignTanks=ArmyCountOf("Tank");
             campaignOutcome=PracticeOutcome.Running;campaignStars=0;army.Clear();
             reason="Prepared army committed. All assigned troops are spent when the attack starts.";
             return true;
@@ -55,7 +55,7 @@ namespace Kingdoms
         {
             reason="This result does not match the active campaign attack.";
             if (!HasCampaignRun || runId!=campaignRunId || campaignOutcome!=PracticeOutcome.Running || recording==null ||
-                recording.ArmyBudget!=campaignArmy || recording.ArcherBudget!=campaignArchers || recording.SealedEnclosure!=CampaignCatalog.Find(campaignMission).Sealed ||
+                recording.ArmyBudget!=campaignArmy || recording.ArcherBudget!=campaignArchers || recording.TankBudget!=campaignTanks || recording.SealedEnclosure!=CampaignCatalog.Find(campaignMission).Sealed ||
                 recording.EndTick<0 || recording.EndTick>PracticeBattle.TimeLimitTicks) return false;
             var replay=new PracticeReplay(recording);
             for(int i=0;i<=PracticeBattle.TimeLimitTicks && !replay.Finished;i++)replay.Step();
@@ -86,6 +86,6 @@ namespace Kingdoms
         }
 
         void ResetCampaignRun()
-        {campaignRunId="";campaignMission=-1;campaignArmy=0;campaignArchers=0;campaignStars=0;campaignOutcome=PracticeOutcome.Running;}
+        {campaignRunId="";campaignMission=-1;campaignArmy=0;campaignArchers=0;campaignTanks=0;campaignStars=0;campaignOutcome=PracticeOutcome.Running;}
     }
 }

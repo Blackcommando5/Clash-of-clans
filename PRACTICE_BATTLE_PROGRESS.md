@@ -64,3 +64,7 @@ Replay rules version 3 adds Raider/Archer budgets and typed commands. Campaign b
 ## Ground positions ? 24 September 2026
 
 Replay rules version 4 replaces lane-only commands with exact X/Z positions and troop IDs. Ground taps use a visible validated southern zone and half-cell snapping; lane buttons produce their original positions through the same simulation API. Scouting, replay and terminal battles reject manual placement. UI presses, drags and multitouch gestures are filtered. Earlier rules versions and outstanding-ground-deployment notes are historical. See [current guide](BEGINNER_GUIDE.md#ground-deployment--24-september-2026) and [validation](GroundDeploymentValidation.txt). Save version remains 6.
+
+## Tank troop ? 24 September 2026
+
+Campaign armies now include Tanks: four spaces, 300 HP, 16 melee damage/second and slower movement. Level-2 Barracks unlock them. Rules version 5 records the three-type composition; save version 7 preserves committed Tank counts. Practice still provides eight Raiders. Prior version and unsupported-troop notes are historical. See [Tank validation](TankValidation.txt) and [current guide](BEGINNER_GUIDE.md#tank-troops-and-barracks-upgrades--24-september-2026).
