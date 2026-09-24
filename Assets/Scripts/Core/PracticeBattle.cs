@@ -20,19 +20,20 @@ namespace Kingdoms
         public readonly struct Deployment
         {
             public readonly int Tick,Lane;
-            public Deployment(int tick,int lane){Tick=tick;Lane=lane;}
+            public readonly string Troop;
+            public Deployment(int tick,int lane,string troop="Raider"){Tick=tick;Lane=lane;Troop=troop;}
         }
         public sealed class Recording
         {
-            public const int RulesVersion=2;
+            public const int RulesVersion=3;
             public readonly bool SealedEnclosure;
-            public readonly int EndTick, ArmyBudget;
+            public readonly int EndTick, ArmyBudget, ArcherBudget;
             public readonly PracticeOutcome Outcome;
             public readonly ulong FinalHash;
             public readonly IReadOnlyList<Deployment> Deployments;
             internal Recording(PracticeBattle battle)
             {
-                ArmyBudget=battle.ArmyBudget;SealedEnclosure=battle.sealedEnclosure;EndTick=battle.Tick;Outcome=battle.Outcome;
+                ArcherBudget=battle.ArcherBudget;ArmyBudget=battle.ArmyBudget;SealedEnclosure=battle.sealedEnclosure;EndTick=battle.Tick;Outcome=battle.Outcome;
                 FinalHash=battle.StateHash();Deployments=Array.AsReadOnly(battle.deployments.ToArray());
             }
         }
@@ -47,6 +48,9 @@ namespace Kingdoms
         public IReadOnlyList<Strike> Strikes=>strikes;
         public int Tick {get;private set;}
         public int ArmyBudget {get;}
+        public int ArcherBudget {get;}
+        public int RaiderBudget => ArmyBudget-ArcherBudget;
+        public int RemainingOf(string troop) => troop=="Raider" ? RaiderBudget-raiders.FindAll(r=>r.Kind=="Raider").Count : troop=="Archer" ? ArcherBudget-raiders.FindAll(r=>r.Kind=="Archer").Count : 0;
         public int Remaining=>ArmyBudget-raiders.Count;
         public PracticeOutcome Outcome {get;private set;}=PracticeOutcome.Running;
         public int DestroyedBuildings=>buildings.FindAll(b=>b.Kind!="Wall" && !b.Alive).Count;
@@ -60,10 +64,10 @@ namespace Kingdoms
         sealed class Route { public Entity Target; public readonly Queue<int> Cells=new Queue<int>(); }
         readonly Dictionary<int,Route> routes=new Dictionary<int,Route>();
 
-        public PracticeBattle(bool sealedEnclosure=false, int armyBudget=ArmySize)
+        public PracticeBattle(bool sealedEnclosure=false, int armyBudget=ArmySize, int archerBudget=0)
         {
-            if(armyBudget<1 || armyBudget>MaximumArmySize)throw new ArgumentOutOfRangeException(nameof(armyBudget));
-            ArmyBudget=armyBudget;this.sealedEnclosure=sealedEnclosure;
+            if(armyBudget<1 || armyBudget>MaximumArmySize || archerBudget<0 || archerBudget>armyBudget || (long)armyBudget+archerBudget>MaximumArmySize)throw new ArgumentOutOfRangeException(nameof(armyBudget));
+            ArcherBudget=archerBudget;ArmyBudget=armyBudget;this.sealedEnclosure=sealedEnclosure;
             buildings.Add(new Entity{Id=0,Kind="TownHall",X=0,Z=300,HitPoints=600,MaxHitPoints=600,HalfSize=200});
             AddDefense(BuildingCatalog.Cannon,1,-450,-100);
             AddDefense(BuildingCatalog.ArcherTower,2,450,-100);
@@ -80,13 +84,14 @@ namespace Kingdoms
             buildings.Add(new Entity{Id=id,Kind=definition.Id,X=x,Z=z,HalfSize=definition.Size*50,
                 HitPoints=definition.HitPoints,MaxHitPoints=definition.HitPoints,Damage=definition.DamagePerSecond,Range=(int)(definition.Range*100)});
         }
-        public bool Deploy(int lane)
+        public bool Deploy(int lane, string troop="Raider")
         {
-            if(Outcome!=PracticeOutcome.Running || Remaining==0 || lane<0 || lane>2)return false;
-            deployments.Add(new Deployment(Tick,lane));
+            if(Outcome!=PracticeOutcome.Running || RemainingOf(troop)==0 || lane<0 || lane>2)return false;
+            deployments.Add(new Deployment(Tick,lane,troop));
+            var definition=TroopCatalog.Find(troop);
             int x=(lane-1)*650;
-            raiders.Add(new Entity{Id=100+raiders.Count,Kind="Raider",X=x+(raiders.Count%3-1)*35,Z=-1350,
-                HitPoints=90,MaxHitPoints=90,Damage=20,Range=85});
+            raiders.Add(new Entity{Id=100+raiders.Count,Kind=troop,X=x+(raiders.Count%3-1)*35,Z=-1350,
+                HitPoints=definition.HitPoints,MaxHitPoints=definition.HitPoints,Damage=definition.Damage,Range=definition.Range});
             return true;
         }
         static long DistanceSquared(Entity a,Entity b)
@@ -203,11 +208,11 @@ namespace Kingdoms
         {
             ulong hash=14695981039346656037UL;
             Action<int> add=value=>{unchecked{for(int i=0;i<4;i++){hash^=(byte)(value>>(i*8));hash*=1099511628211UL;}}};
-            add(Recording.RulesVersion);add(ArmyBudget);add(sealedEnclosure ? 1 : 0);add(Tick);add((int)Outcome);add(Remaining);
+            add(Recording.RulesVersion);add(ArmyBudget);add(ArcherBudget);add(sealedEnclosure ? 1 : 0);add(Tick);add((int)Outcome);add(Remaining);
             foreach(var list in new[]{buildings,raiders})
             {
                 add(list.Count);
-                foreach(var e in list){add(e.Id);add(e.X);add(e.Z);add(e.HitPoints);add(e.MaxHitPoints);add(e.Damage);add(e.Range);add(e.HalfSize);add(e.NextAttack);}
+                foreach(var e in list){add(e.Id);add(e.Kind=="Archer" ? 1 : 0);add(e.X);add(e.Z);add(e.HitPoints);add(e.MaxHitPoints);add(e.Damage);add(e.Range);add(e.HalfSize);add(e.NextAttack);}
             }
             return hash;
         }
@@ -224,12 +229,14 @@ namespace Kingdoms
         public PracticeReplay(PracticeBattle.Recording recording)
         {
             this.recording=recording ?? throw new ArgumentNullException(nameof(recording));
-            Battle=new PracticeBattle(recording.SealedEnclosure,recording.ArmyBudget);ApplyCommands();
+            Battle=new PracticeBattle(recording.SealedEnclosure,recording.ArmyBudget,recording.ArcherBudget);ApplyCommands();
         }
         void ApplyCommands()
         {
             while(nextCommand<recording.Deployments.Count && recording.Deployments[nextCommand].Tick==Battle.Tick)
-                Battle.Deploy(recording.Deployments[nextCommand++].Lane);
+            {
+                var command=recording.Deployments[nextCommand++];Battle.Deploy(command.Lane,command.Troop);
+            }
             if(Battle.Tick==recording.EndTick && recording.Outcome==PracticeOutcome.Surrendered)Battle.Surrender();
         }
         public void Step()

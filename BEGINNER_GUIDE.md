@@ -46,12 +46,12 @@ The project is a Clash of Clans-inspired village prototype with its own Kingdoms
 | Progression | Two builders, timed upgrades through level 3, Town Hall limits, confirmed cancellation with a storage-capped 50% refund |
 | Defenses | Purchase, move, inspect range and upgrade; home defenses remain idle |
 | Practice battle | Eight raiders, three enemy buildings, walls, entrance routing, wall breach logic, star scoring, surrender, results, watch replay, retry and return |
-| Army preparation | Buildings > Prepare Army; free instant Raider roster, eight starter spaces plus camp capacity, readiness and immediate saving |
+| Army preparation | Buildings > Prepare Army; free instant mixed Raider/Archer roster, weighted housing, troop selection, eight starter spaces plus camp capacity, readiness and immediate saving |
 | Campaign | Two fixed missions, prepared-army commitment, durable results, once-only first-clear rewards and saved unlocks |
-| Persistence | Local version 5 village saves; migrations from versions 1-4 |
+| Persistence | Local version 6 village saves; migrations from versions 1-5 |
 | Mobile setup | Welcome scene first, village second, landscape orientation, Android IL2CPP/ARM64 settings |
 
-Not implemented yet: additional troop types, arbitrary enemy villages, unit separation, matchmaking, multiplayer, online accounts, purchases or a server economy. The fixed practice battlefield is separate from your home village. Gem counters and reference-style buttons do not imply that all reference-game features exist.
+Not implemented yet: tank troops, ground-position deployment, arbitrary enemy villages, unit separation, matchmaking, multiplayer, online accounts, purchases or a server economy. The fixed practice battlefield is separate from your home village. Gem counters and reference-style buttons do not imply that all reference-game features exist.
 
 The Android configuration exists, but an Android build and physical-phone testing have not been completed as part of this work.
 
@@ -744,7 +744,7 @@ Next priorities are: validate the latest mobile build, add an owned army and pre
 
 Open **Buildings**, then **Prepare Army**. Press **Add Raider** to prepare one unit, **Fill Army** to use all eight starter spaces, **Remove 1** to reduce the roster, or **Clear Army** to empty it. Preparation is free and instant; no gold, elixir or builder is spent. A nonempty legal roster shows READY. Full and empty rosters disable the corresponding add/remove controls. Close and reopen the screen, or restart the game, to confirm the roster persists.
 
-At this first owned-army increment, capacity was fixed and barracks/camps were not yet implemented. The facilities update below adds them. Other troop types remain unimplemented; the later campaign increment below adds deployment and roster consumption. Attack continues to provide its separate free practice army; preparing or clearing your saved roster does not change practice difficulty.
+At this first owned-army increment, capacity was fixed and barracks/camps were not yet implemented. The facilities update below adds them. At this historical point only Raiders existed; later campaign and Archer increments below add roster consumption and troop choice. Attack continues to provide its separate free practice army; preparing or clearing your saved roster does not change practice difficulty.
 
 Study [the troop catalog and army rules](Assets/Scripts/Core/VillageArmy.cs), [the preparation screen](Assets/Scripts/UI/VillageArmy.cs), and [save migration](Assets/Scripts/Core/VillageState.cs). Each action edits a copy, validates it, writes it, then replaces the live state only after a successful save. Save version 4 adds the roster. Versions 1-3 migrate to an empty army without charging resources; version 3 JSON is backed up at `Kingdoms.Village.pre-v4` before later saves overwrite it. Unknown troops, duplicate stacks, nonpositive stack counts and excessive housing are rejected.
 
@@ -753,7 +753,7 @@ Validation: [ArmyPreparationValidation.txt](ArmyPreparationValidation.txt) recor
 
 ### Barracks and Army Camps - 24 September 2026
 
-**Try it:** Open **Shop > Army**. Buy **Barracks** for **200 elixir**, then place it on a free 3 x 3 area. Army Camp becomes available for **250 elixir**. Place a camp, then open **Buildings > Prepare Army** and press **Fill Army**. You can now prepare 16 Raiders: eight starter spaces plus eight from the camp. Preparation itself remains free and instant. Old saves keep their existing starter roster; this increment used save version 4 (now migrated to version 5).
+**Try it:** Open **Shop > Army**. Buy **Barracks** for **200 elixir**, then place it on a free 3 x 3 area. Army Camp becomes available for **250 elixir**. Place a camp, then open **Buildings > Prepare Army** and press **Fill Raiders**. You can now prepare 16 Raiders: eight starter spaces plus eight from the camp. Preparation itself remains free and instant. Old saves keep their existing starter roster; this increment used save version 4 (now migrated to version 5).
 
 Select the camp and open **Info / Upgrade**. Level 2 costs 500 elixir, occupies one builder for 30 seconds, and increases that camp's contribution from 8 to 16 spaces (24 total with one camp). Current capacity and roster readiness remain available during the upgrade. Completion, including completion while the app is closed, adds capacity once. Cancelling uses the existing 50% refund rule and keeps the previous capacity. Move the building freely without losing its contribution.
 
@@ -763,14 +763,14 @@ Study [building definitions](Assets/Scripts/Core/BuildingCatalog.cs), [army capa
 
 Validation evidence: [ArmyFacilitiesValidation.txt](ArmyFacilitiesValidation.txt), generated by [the isolated Editor validation](Assets/Editor/ArmyFacilitiesValidation.cs), covers prerequisites, costs, limits, capacity, upgrades/cancellation/offline completion, save validation, real purchases, moving, preparation and scene reload. [Preparation preview](ArmyFacilitiesPreviews/army-facilities-preparation.png) and [shop preview](ArmyFacilitiesPreviews/army-facilities-shop.png) show the tested screens. The existing [starter-army/migration checks](ArmyPreparationValidation.txt) were rerun and passed with the new camp rules. Prefab material references were also checked against the main project assets. No APK or physical-phone test was performed.
 
-Known limits: camps enlarge the saved roster used by the campaign below. Practice still supplies its own eight Raiders, and neither consumes nor deploys this roster. Barracks upgrades, new troop types and level-specific building art remain future work.
+Known limits: camps enlarge the saved roster used by the campaign below. Practice still supplies its own eight Raiders, and neither consumes nor deploys this roster. Barracks upgrades, tank troops and level-specific building art remain future work.
 
 
 ### First offline campaign loop - 24 September 2026
 
-1. Open **Buildings > Prepare Army**, then **Fill Army**. Preparation is still free and instant.
+1. Open **Buildings > Prepare Army**, then **Fill Raiders**. Preparation is still free and instant.
 2. Press **Campaign**, then **Gate Outpost - Scout**. Scouting has no timer or cost; Return Home keeps your roster.
-3. Press **Start Attack**. This commits and spends the **entire prepared roster**, including any Raiders you never deploy. The commitment saves before combat starts. Deploy with the left, center and right buttons; your roster size controls the deployment limit.
+3. Press **Start Attack**. This commits and spends the **entire prepared roster**, including any Raiders you never deploy. The commitment saves before combat starts. Deploy with the left, center and right buttons; your saved counts control the separate Raider and Archer deployment limits.
 4. Destroy all three non-wall buildings to win. Surrender, defeat and timeout do not earn resources. Partial stars are informational. Return Home during a live attack surrenders it.
 5. On the victory screen, press **Claim**. The first Gate Outpost victory grants **500 gold and 300 elixir**, and unlocks **Sealed Keep**. Its first victory grants **1,000 gold and 600 elixir**. Repeat victories give no resources. Finish/Dismiss clears nonreward results.
 6. Return home and spend the reward on buildings or upgrades. Prepare another army for free before attacking again. Camps increase the number of Raiders you can commit.
@@ -783,4 +783,26 @@ The two missions reuse the tested Open Gate and Wall Breach enclosures. This is 
 
 Study [campaign definitions and settlement](Assets/Scripts/Core/VillageCampaign.cs), [campaign menus and battle integration](Assets/Scripts/UI/VillageCampaign.cs), [combat and replay budgets](Assets/Scripts/Core/PracticeBattle.cs) and [save migration](Assets/Scripts/Core/VillageState.cs). Save version 5 adds campaign progress and the active/pending attempt; migration preserves version-4 armies and buildings and backs up the old payload at `Kingdoms.Village.pre-v5`. Replay rules version 2 includes the army budget. Completed results are locally re-simulated before acceptance; local saves and hashes are not server security.
 
-Validation: [CampaignValidation.txt](CampaignValidation.txt) and [its source](Assets/Editor/CampaignValidation.cs) cover settlement/restart rules, migrations, army limits, both missions, replay and the actual campaign UI. See [campaign menu](CampaignPreviews/campaign-menu.png), [results](CampaignPreviews/campaign-result.png) and [claimed reward](CampaignPreviews/campaign-claimed.png). The existing practice/replay suite and army preparation/migration checks were rerun successfully; [resource/save regression](ArmyResourceRegression.txt) passed 66 assertions with v5 saves. Android builds, physical-phone performance, interrupted combat resumption, persisted replays, more troop types and arbitrary layouts remain outstanding.
+Validation: [CampaignValidation.txt](CampaignValidation.txt) and [its source](Assets/Editor/CampaignValidation.cs) cover settlement/restart rules, migrations, army limits, both missions, replay and the actual campaign UI. See [campaign menu](CampaignPreviews/campaign-menu.png), [results](CampaignPreviews/campaign-result.png) and [claimed reward](CampaignPreviews/campaign-claimed.png). The existing practice/replay suite and army preparation/migration checks were rerun successfully; [resource/save regression](ArmyResourceRegression.txt) passed 66 assertions with v5 saves. Android builds, physical-phone performance, interrupted combat resumption, persisted replays, tank troops and arbitrary layouts remain outstanding.
+
+
+### Mixed armies and Archers - 24 September 2026
+
+Build **Barracks** to unlock **Archers**, then open **Buildings > Prepare Army**. Use the **Raiders / Archers** buttons to choose a troop. **Add** and **Remove 1** change the selected type. **Fill Raiders / Fill Archers** adds as many of that type as fit while retaining your other troops. **Clear Army** removes both. All preparation remains free and instant; the roster saves after each change.
+
+| Troop | Army spaces | Health | Damage per second | Attack range |
+| --- | --- | --- | --- | --- |
+| Raider | 1 | 90 | 20 | 0.85 cells |
+| Archer | 2 | 55 | 14 | 3.5 cells |
+
+Both move at 2.8 cells per second and attack once per second. Archers wear green and carry a bow and quiver; Raiders retain blue tunics and spears. Damage applies immediately on the simulation attack tick, with a visual firing trace. Archer shots require a clear line to the target: intact walls block them, and Archers can attack a blocking wall. This does not add projectile travel time or new unit animations.
+
+**Try a mixed army:** With one level-1 Army Camp (16 spaces), add eight Raiders, select Archers, then press **Fill Archers**. The result is 12 troops using 16 spaces: eight Raiders and four Archers. If only one space remains, an Archer will not fit; switch to Raiders to use it.
+
+Open **Campaign**, scout a mission and press **Start Attack**. When the roster contains Archers, the battle shows **Raiders / Archers** selectors above the three deployment buttons. Select a type, then deploy left, center or right. Counts are independent: exhausting Raiders does not deploy an Archer automatically. Archer-only armies start with Archers selected. The entire composition is committed at attack start, including undeployed units. Practice continues to supply only its eight free Raiders.
+
+Save version 6 preserves version-5 armies, campaign progress, active attempts and unclaimed rewards; it adds the committed Archer count. Version-5 payloads are backed up at `Kingdoms.Village.pre-v6`. Campaign verification checks both troop counts, so a recording with the same total count but a different composition is rejected. Replay rules version 3 records each deployment's troop type and both budgets. The 80-space village maximum permits at most 80 Raiders or 40 Archers, or a mixture within that housing limit.
+
+Study [troop definitions and roster rules](Assets/Scripts/Core/VillageArmy.cs), [mixed combat and replay](Assets/Scripts/Core/PracticeBattle.cs), [preparation controls](Assets/Scripts/UI/VillageArmy.cs), [deployment controls and models](Assets/Scripts/UI/VillagePracticeBattle.cs), and [campaign commitment](Assets/Scripts/Core/VillageCampaign.cs). Earlier Raider-only and save-version examples above are historical where superseded by this increment.
+
+Validation evidence: [MixedArmyValidation.txt](MixedArmyValidation.txt) and [validation source](Assets/Editor/MixedArmyValidation.cs) cover housing, unlocks, typed deployment, range/cooldown/wall behavior, both campaign wins, per-tick replay equality, migrations and live UI/save/reload flows. See [mixed preparation](MixedArmyPreviews/mixed-army-preparation.png) and [mixed combat](MixedArmyPreviews/mixed-army-combat.png). Original practice/replay, army preparation/migration and campaign/reward suites were rerun successfully; [resource regression](ArmyResourceRegression.txt) passed 66 assertions with v6 saves. Tank troops, manual ground deployment, unit separation, arbitrary enemy layouts, phone validation and an updated APK remain outstanding.

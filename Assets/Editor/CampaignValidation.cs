@@ -29,8 +29,8 @@ public static class CampaignValidation
         var s=VillageState.Create(1000);
         Check(s.IsValid() && !s.TryBeginCampaign(0,out _),"Empty army cannot attack");
         Check(s.TrySetArmyCount("Raider",8,out _),"Prepare starter roster");
-        string legacy=JsonUtility.ToJson(s).Replace("\"version\":5","\"version\":4");
-        Check(VillageState.TryDeserialize(legacy,out var migrated) && migrated.version==5 && migrated.ArmyHousing==8 && !migrated.HasCampaignRun && migrated.campaignCleared==0,"v4 roster retained");
+        string legacy=JsonUtility.ToJson(s).Replace("\"version\":6","\"version\":4");
+        Check(VillageState.TryDeserialize(legacy,out var migrated) && migrated.version==6 && migrated.ArmyHousing==8 && !migrated.HasCampaignRun && migrated.campaignCleared==0,"v4 roster retained");
         PlayerPrefs.DeleteKey("Kingdoms.Village.pre-v5");PlayerPrefs.SetString(VillageSave.Key,legacy);
         Check(VillageSave.TryLoad(out _,out _) && PlayerPrefs.GetString("Kingdoms.Village.pre-v5")==legacy,"v4 original backup");
         Check(!s.TryBeginCampaign(1,out _) && s.ArmyHousing==8,"Locked mission preserves roster");
@@ -130,7 +130,7 @@ public static class CampaignValidation
                 Check(game.State.campaignOutcome==PracticeOutcome.Surrendered && game.State.gold==500,"Loss result gives no currency");
                 Click("Claim Campaign Battle");Check(!game.State.HasCampaignRun && !game.State.CampaignCleared(1),"Dismiss loss UI");
                 Click("Return From Practice");game.OpenPracticeBattle();Check(game.CurrentPracticeBattle.ArmyBudget==8 && !game.CampaignBattleOpen,"Practice remains independent");game.ClosePracticeBattle();
-                Finish("PASS: v4-to-v5 roster migration and backup; empty/locked/duplicate start guards; durable whole-roster commitment; interrupted abandonment; recording verification, ticket/layout/army mismatch rejection; full-storage reward preservation; once-only first clear after reload; repeat/loss policy; both missions winnable; 80-unit deterministic replay; malformed saves/budgets; real campaign menu/scout/start/deploy/results/replay; pending-result scene reload and claim; reward-funded Town Hall upgrade; free re-preparation, second mission surrender/dismiss; practice isolation. Unity "+Application.unityVersion+". Fixed two-layout campaign; no server authority, persisted replay, APK or phone validation.",0);
+                Finish("PASS: v4-to-v6 roster migration and backup; empty/locked/duplicate start guards; durable whole-roster commitment; interrupted abandonment; recording verification, ticket/layout/army mismatch rejection; full-storage reward preservation; once-only first clear after reload; repeat/loss policy; both missions winnable; 80-unit deterministic replay; malformed saves/budgets; real campaign menu/scout/start/deploy/results/replay; pending-result scene reload and claim; reward-funded Town Hall upgrade; free re-preparation, second mission surrender/dismiss; practice isolation. Unity "+Application.unityVersion+". Fixed two-layout campaign; no server authority, persisted replay, APK or phone validation.",0);
             }
         }
         catch(Exception e){Finish("FAIL: "+e,1);}

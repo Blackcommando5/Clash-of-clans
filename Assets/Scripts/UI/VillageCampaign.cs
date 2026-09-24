@@ -49,10 +49,10 @@ namespace Kingdoms.UI
             {
                 bool interrupted=State.campaignOutcome==PracticeOutcome.Running;
                 campaignResolve.GetComponentInChildren<Text>().text=interrupted ? "ABANDON ATTACK" : State.campaignOutcome==PracticeOutcome.Victory ? "CLAIM / FINISH" : "DISMISS RESULT";
-                pending="\n"+CampaignCatalog.Find(State.campaignMission).Name+": "+(interrupted ? "Interrupted attack. Assigned Raiders are spent." : State.campaignOutcome+" - "+State.campaignStars+" / 3 stars. Result saved.");
+                pending="\n"+CampaignCatalog.Find(State.campaignMission).Name+": "+(interrupted ? "Interrupted attack. Assigned troops are spent." : State.campaignOutcome+" - "+State.campaignStars+" / 3 stars. Result saved.");
             }
-            campaignSummary.text="Prepared Raiders: "+State.ArmyHousing+" / "+State.ArmyCapacity+
-                "\nStarting commits the entire roster, including undeployed Raiders.\nPrepare again for free after each attack. Scouting costs nothing."+
+            campaignSummary.text="Prepared: "+State.ArmyCountOf("Raider")+" Raiders + "+State.ArmyCountOf("Archer")+" Archers | "+State.ArmyHousing+" / "+State.ArmyCapacity+" spaces"+
+                "\nStarting commits the entire roster, including undeployed troops.\nPrepare again for free after each attack. Scouting costs nothing."+
                 "\nFirst victories: Outpost 500 gold + 300 elixir; Keep 1,000 gold + 600 elixir.\nRepeat victories and losses give no resources."+pending+
                 (string.IsNullOrEmpty(campaignMessage) ? "" : "\n"+campaignMessage);
         }
@@ -69,7 +69,7 @@ namespace Kingdoms.UI
         {
             var candidate=State.Copy();
             if(!candidate.TryBeginCampaign(battleMission,out var reason)){campaignMessage=reason;return false;}
-            if(candidate.campaignArmy!=practiceBattle.ArmyBudget){campaignMessage="Your roster changed. Return home and scout again.";return false;}
+            if(candidate.campaignArmy!=practiceBattle.ArmyBudget || candidate.campaignArchers!=practiceBattle.ArcherBudget){campaignMessage="Your roster changed. Return home and scout again.";return false;}
             if(!VillageSave.TryWrite(candidate,out var error)){campaignMessage=error;return false;}
             State=candidate;battleRunId=State.campaignRunId;campaignMessage="";return true;
         }
@@ -116,13 +116,13 @@ namespace Kingdoms.UI
             campaignBattleClaim.GetComponentInChildren<Text>().text=!campaignResultSaved ? "SAVE RESULT" : practiceBattle.Outcome==PracticeOutcome.Victory ? "CLAIM" : "FINISH";
             if(ScoutingPractice)
             {
-                practiceStatus.text="CAMPAIGN SCOUTING | "+mission.Name+"\n"+practiceBattle.ArmyBudget+" prepared Raiders | 3-minute attack";
+                practiceStatus.text="CAMPAIGN SCOUTING | "+mission.Name+"\n"+practiceBattle.ArmyBudget+" prepared troops | 3-minute attack";
                 practiceInstructions.text=string.IsNullOrEmpty(campaignMessage) ? "Start Attack spends the whole roster. Return Home from scouting keeps it." : campaignMessage;
             }
             else if(running && !WatchingPracticeReplay)
             {
                 practiceStatus.text=practiceStatus.text.Replace("PRACTICE BATTLE",mission.Name.ToUpperInvariant());
-                practiceInstructions.text="Campaign attack: destroy every building to win. Assigned Raiders are spent; prepare again for free.";
+                practiceInstructions.text="Campaign attack: destroy every building to win. Assigned troops are spent; prepare again for free.";
             }
             else if(!running && !WatchingPracticeReplay)
                 practiceInstructions.text=campaignMessage;

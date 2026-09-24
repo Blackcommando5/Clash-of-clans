@@ -13,14 +13,15 @@ namespace Kingdoms.UI
         Text practiceStatus,practiceInstructions,practiceResultsText;
         GameObject practiceResults,practiceScoutInfo;
         Text practiceScoutText;
-        Button practiceRetry,practiceWatch,practiceChallenge,practiceSurrender,practiceBegin;
+        Button practiceRetry,practiceWatch,practiceChallenge,practiceSurrender,practiceBegin,deployRaiders,deployArchers;
+        string deployedTroop="Raider";
         bool practiceSealedChallenge,practiceScouting;
         readonly List<Button> practiceDeployButtons=new List<Button>();
         readonly Dictionary<int,GameObject> practiceModels=new Dictionary<int,GameObject>();
         readonly Dictionary<int,Text> practiceHealth=new Dictionary<int,Text>();
         readonly List<GameObject> practiceShots=new List<GameObject>();
         readonly List<Material> practiceMaterials=new List<Material>();
-        Material raiderCloth,raiderSkin,shotMaterial;
+        Material raiderCloth,archerCloth,raiderSkin,shotMaterial;
         Vector3 homeCameraFocus;
         float homeCameraZoom,practiceAccumulator;
         bool practicePaused;
@@ -52,6 +53,9 @@ namespace Kingdoms.UI
                 var button=Button("Deploy Raider "+i,practiceSafe,new[]{"DEPLOY LEFT","DEPLOY CENTER","DEPLOY RIGHT"}[i],new Vector2(.25f+i*.17f,.025f),new Vector2(.405f+i*.17f,.13f),new Color(.53f,.77f,.2f));
                 ReferenceText(button.GetComponentInChildren<Text>(),23,Color.white);button.onClick.AddListener(()=>DeployPracticeRaider(lane));practiceDeployButtons.Add(button);
             }
+            deployRaiders=Button("Select Battle Raiders",practiceSafe,"RAIDERS",new Vector2(.25f,.14f),new Vector2(.49f,.22f),new Color(.28f,.55f,.76f));
+            deployArchers=Button("Select Battle Archers",practiceSafe,"ARCHERS",new Vector2(.51f,.14f),new Vector2(.75f,.22f),new Color(.35f,.60f,.25f));
+            deployRaiders.onClick.AddListener(()=>SelectDeploymentTroop("Raider"));deployArchers.onClick.AddListener(()=>SelectDeploymentTroop("Archer"));
             var back=Button("Return From Practice",practiceSafe,"RETURN HOME",new Vector2(.02f,.03f),new Vector2(.19f,.12f),new Color(.8f,.3f,.15f));ReferenceText(back.GetComponentInChildren<Text>(),23,Color.white);back.onClick.AddListener(ClosePracticeBattle);
             practiceSurrender=Button("Surrender Practice",practiceSafe,"SURRENDER",new Vector2(.02f,.15f),new Vector2(.19f,.23f),new Color(.65f,.25f,.16f));
             ReferenceText(practiceSurrender.GetComponentInChildren<Text>(),22,Color.white);practiceSurrender.onClick.AddListener(SurrenderPracticeBattle);
@@ -70,6 +74,7 @@ namespace Kingdoms.UI
             raiderCloth=PracticeMaterial("Raider tunic",new Color(.1f,.55f,.8f));raiderSkin=PracticeMaterial("Raider skin",new Color(.9f,.65f,.4f));shotMaterial=PracticeMaterial("Practice shots",new Color(1,.8f,.16f),true);
             campaignBattleClaim=Button("Claim Campaign Battle",practiceSafe,"CLAIM",new Vector2(.81f,.03f),new Vector2(.98f,.12f),new Color(.45f,.64f,.24f));
             campaignBattleClaim.onClick.AddListener(ClaimCampaignBattle);campaignBattleClaim.gameObject.SetActive(false);
+            archerCloth=PracticeMaterial("Archer tunic",new Color(.22f,.62f,.18f));
             practiceSealedChallenge=mission>=0 && CampaignCatalog.Find(mission).Sealed;
             ResetPracticeBattle();
         }
@@ -114,8 +119,9 @@ namespace Kingdoms.UI
             practiceModels.Clear();practiceHealth.Clear();practiceShots.Clear();practiceAccumulator=0;practicePaused=false;
             practiceReplay=recording==null ? null : new PracticeReplay(recording);
             practiceScouting=recording==null;
-            practiceBattle=practiceReplay==null ? new PracticeBattle(practiceSealedChallenge,battleMission>=0 ? State.ArmyHousing : PracticeBattle.ArmySize) : practiceReplay.Battle;
+            practiceBattle=practiceReplay==null ? new PracticeBattle(practiceSealedChallenge,battleMission>=0 ? State.ArmyCount : PracticeBattle.ArmySize,battleMission>=0 ? State.ArmyCountOf("Archer") : 0) : practiceReplay.Battle;
             practiceSealedChallenge=practiceBattle.SealedEnclosure;
+            deployedTroop=practiceBattle.RaiderBudget>0 ? "Raider" : "Archer";
             practiceWorld=new GameObject("Practice Battlefield");practiceWorld.transform.SetParent(transform,false);
             foreach(var building in practiceBattle.Buildings)
             {
@@ -136,7 +142,7 @@ namespace Kingdoms.UI
         {
             var text=Label("Practice Health "+entity.Id,practiceSafe,"",17,Color.white);ReferenceText(text,17,Color.white);
             text.rectTransform.anchorMin=text.rectTransform.anchorMax=new Vector2(.5f,.5f);text.rectTransform.sizeDelta=new Vector2(150,30);practiceHealth.Add(entity.Id,text);
-            if(entity.Kind=="Raider" || entity.Kind=="Wall")
+            if(TroopCatalog.Find(entity.Kind)!=null || entity.Kind=="Wall")
             {
                 text.rectTransform.sizeDelta=new Vector2(30,7);
                 var track=Panel("Raider Health Track",text.transform,Vector2.zero,Vector2.one,new Color(.42f,.08f,.04f));track.raycastTarget=false;
@@ -144,19 +150,32 @@ namespace Kingdoms.UI
             }
         }
 
+        void SelectDeploymentTroop(string troop)
+        {if(!ScoutingPractice && !WatchingPracticeReplay && practiceBattle.RemainingOf(troop)>0){deployedTroop=troop;RefreshPracticeBattle();}}
+
         public void DeployPracticeRaider(int lane)
         {
-            if(practiceBattle==null || ScoutingPractice || WatchingPracticeReplay || !practiceBattle.Deploy(lane))return;
+            if(practiceBattle==null || ScoutingPractice || WatchingPracticeReplay || !practiceBattle.Deploy(lane,deployedTroop))return;
             var raider=practiceBattle.Raiders[practiceBattle.Raiders.Count-1];
             CreatePracticeRaider(raider);RefreshPracticeBattle();
         }
         void CreatePracticeRaider(PracticeBattle.Entity raider)
         {
-            var root=new GameObject("Practice Raider "+raider.Id);root.transform.SetParent(practiceWorld.transform,false);
+            var root=new GameObject("Practice "+raider.Kind+" "+raider.Id);root.transform.SetParent(practiceWorld.transform,false);
             root.transform.position=PracticePosition(raider);
-            var body=GameObject.CreatePrimitive(PrimitiveType.Capsule);body.transform.SetParent(root.transform,false);body.transform.localPosition=new Vector3(0,.55f,0);body.transform.localScale=new Vector3(.43f,.48f,.43f);body.GetComponent<Renderer>().sharedMaterial=raiderCloth;Destroy(body.GetComponent<Collider>());
+            var body=GameObject.CreatePrimitive(PrimitiveType.Capsule);body.transform.SetParent(root.transform,false);body.transform.localPosition=new Vector3(0,.55f,0);body.transform.localScale=new Vector3(.43f,.48f,.43f);body.GetComponent<Renderer>().sharedMaterial=raider.Kind=="Archer" ? archerCloth : raiderCloth;Destroy(body.GetComponent<Collider>());
             var head=GameObject.CreatePrimitive(PrimitiveType.Sphere);head.transform.SetParent(root.transform,false);head.transform.localPosition=new Vector3(0,1.12f,0);head.transform.localScale=Vector3.one*.38f;head.GetComponent<Renderer>().sharedMaterial=raiderSkin;Destroy(head.GetComponent<Collider>());
+            if(raider.Kind=="Archer")
+            {
+                var bow=new GameObject("Archer Bow",typeof(LineRenderer));bow.transform.SetParent(root.transform,false);
+                var line=bow.GetComponent<LineRenderer>();line.useWorldSpace=false;line.sharedMaterial=shotMaterial;line.widthMultiplier=.055f;line.positionCount=4;
+                line.SetPositions(new[]{new Vector3(.32f,.32f,0),new Vector3(.58f,.7f,0),new Vector3(.32f,1.1f,0),new Vector3(.32f,.32f,0)});
+                var quiver=GameObject.CreatePrimitive(PrimitiveType.Cylinder);quiver.name="Archer Quiver";quiver.transform.SetParent(root.transform,false);quiver.transform.localPosition=new Vector3(0,.7f,.25f);quiver.transform.localScale=new Vector3(.17f,.29f,.17f);quiver.GetComponent<Renderer>().sharedMaterial=shotMaterial;Destroy(quiver.GetComponent<Collider>());
+            }
+            else
+            {
             var spear=GameObject.CreatePrimitive(PrimitiveType.Cube);spear.transform.SetParent(root.transform,false);spear.transform.localPosition=new Vector3(.3f,.73f,0);spear.transform.localScale=new Vector3(.06f,1.25f,.06f);spear.GetComponent<Renderer>().sharedMaterial=shotMaterial;Destroy(spear.GetComponent<Collider>());
+            }
             practiceModels.Add(raider.Id,root);AddPracticeHealth(raider);
         }
 
@@ -195,8 +214,14 @@ namespace Kingdoms.UI
             foreach(var button in practiceDeployButtons)
             {
                 button.gameObject.SetActive(!ScoutingPractice);
-                button.interactable=running && !ScoutingPractice && !WatchingPracticeReplay && practiceBattle.Remaining>0;
+                button.interactable=running && !ScoutingPractice && !WatchingPracticeReplay && practiceBattle.RemainingOf(deployedTroop)>0;
             }
+            bool selectTroops=running && !ScoutingPractice && !WatchingPracticeReplay && practiceBattle.ArcherBudget>0;
+            deployRaiders.gameObject.SetActive(selectTroops);deployArchers.gameObject.SetActive(selectTroops);
+            deployRaiders.interactable=practiceBattle.RemainingOf("Raider")>0;deployArchers.interactable=practiceBattle.RemainingOf("Archer")>0;
+            deployRaiders.GetComponentInChildren<Text>().text=(deployedTroop=="Raider" ? "> " : "")+"RAIDERS: "+practiceBattle.RemainingOf("Raider");
+            deployArchers.GetComponentInChildren<Text>().text=(deployedTroop=="Archer" ? "> " : "")+"ARCHERS: "+practiceBattle.RemainingOf("Archer");
+            if(selectTroops){deployRaiders.transform.SetAsLastSibling();deployArchers.transform.SetAsLastSibling();}
             practiceBegin.gameObject.SetActive(ScoutingPractice);
             practiceScoutInfo.SetActive(ScoutingPractice);
             if(ScoutingPractice)
@@ -229,12 +254,12 @@ namespace Kingdoms.UI
             var model=practiceModels[entity.Id];model.SetActive(entity.Alive);model.transform.position=Vector3.Lerp(model.transform.position,PracticePosition(entity),1-Mathf.Exp(-22*Time.unscaledDeltaTime));
             var text=practiceHealth[entity.Id];text.gameObject.SetActive(entity.Alive && (entity.Kind!="Wall" || entity.HitPoints<entity.MaxHitPoints));
             text.text=entity.HitPoints+" / "+entity.MaxHitPoints;
-            if(entity.Kind=="Raider" || entity.Kind=="Wall")
+            if(TroopCatalog.Find(entity.Kind)!=null || entity.Kind=="Wall")
             {
                 text.text="";
                 var fill=(RectTransform)text.transform.Find("Raider Health Track/Raider Health Fill");fill.anchorMax=new Vector2((float)entity.HitPoints/entity.MaxHitPoints,1);
             }
-            Vector3 screen=viewCamera.WorldToScreenPoint(model.transform.position+Vector3.up*(entity.Kind=="ArcherTower" ? 4 : entity.Kind=="TownHall" ? 3.8f : entity.Kind=="Raider" ? 1.7f : 2));
+            Vector3 screen=viewCamera.WorldToScreenPoint(model.transform.position+Vector3.up*(entity.Kind=="ArcherTower" ? 4 : entity.Kind=="TownHall" ? 3.8f : TroopCatalog.Find(entity.Kind)!=null ? 1.7f : 2));
             var canvas=practiceCanvas.GetComponent<Canvas>();
             RectTransformUtility.ScreenPointToLocalPointInRectangle(practiceSafe,screen,canvas.renderMode==RenderMode.ScreenSpaceOverlay ? null : canvas.worldCamera,out var point);text.rectTransform.anchoredPosition=point;
         }

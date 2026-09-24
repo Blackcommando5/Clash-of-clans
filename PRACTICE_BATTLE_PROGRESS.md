@@ -55,3 +55,8 @@ Replay bypasses scouting and retains its original combat timing. Returning home 
 ## Campaign integration - 24 September 2026
 
 The simulation now accepts an explicit 1-80 Raider budget, and replay rules version 2 records that budget. Practice retains its free eight Raiders and both existing challenge layouts. The separate campaign flow reuses those layouts with an owned roster, saved results and first-clear rewards; see [the current guide](BEGINNER_GUIDE.md#first-offline-campaign-loop---24-september-2026). Historical rules-version-1 references above describe earlier in-memory recordings, which were never persisted.
+
+
+## Mixed troops - 24 September 2026
+
+Replay rules version 3 adds Raider/Archer budgets and typed commands. Campaign battles use the saved composition, constrained to 80 housing spaces (one per Raider, two per Archer). Archer range is 3.5 cells with wall-blocked line of sight, 55 HP and 14 damage per second. Practice retains eight Raiders. Earlier rules-version-1/2 notes describe superseded in-memory formats. See [mixed validation](MixedArmyValidation.txt) and [the current guide](BEGINNER_GUIDE.md#mixed-armies-and-archers---24-september-2026).

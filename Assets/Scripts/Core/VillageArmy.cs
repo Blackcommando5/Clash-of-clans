@@ -6,15 +6,16 @@ namespace Kingdoms
     public sealed class TroopDefinition
     {
         public readonly string Id, Name;
-        public readonly int Housing;
-        public TroopDefinition(string id, string name, int housing)
-        { Id = id; Name = name; Housing = housing; }
+        public readonly int Housing, HitPoints, Damage, Range;
+        public TroopDefinition(string id, string name, int housing, int hitPoints, int damage, int range)
+        { Id=id; Name=name; Housing=housing; HitPoints=hitPoints; Damage=damage; Range=range; }
     }
 
     public static class TroopCatalog
     {
-        public static readonly TroopDefinition Raider = new TroopDefinition("Raider", "Raider", 1);
-        public static TroopDefinition Find(string id) => id == Raider.Id ? Raider : null;
+        public static readonly TroopDefinition Raider = new TroopDefinition("Raider", "Raider", 1, 90, 20, 85);
+        public static readonly TroopDefinition Archer = new TroopDefinition("Archer", "Archer", 2, 55, 14, 350);
+        public static TroopDefinition Find(string id) => id == Raider.Id ? Raider : id == Archer.Id ? Archer : null;
     }
 
     [Serializable]
@@ -52,6 +53,9 @@ namespace Kingdoms
                 return total;
             }
         }
+        public int ArmyCountOf(string troop) => army?.Find(stack => stack != null && stack.troop == troop)?.count ?? 0;
+        public int ArmyCount => ArmyCountOf("Raider") + ArmyCountOf("Archer");
+        public bool TroopUnlocked(string troop) => troop == "Raider" || (troop == "Archer" && buildings != null && buildings.Exists(b => b != null && b.kind == "Barracks"));
         public bool ArmyReady => IsArmyValid() && ArmyHousing > 0;
 
         public bool IsArmyValid()
@@ -62,7 +66,7 @@ namespace Kingdoms
             foreach (var stack in army)
             {
                 var definition = stack == null ? null : TroopCatalog.Find(stack.troop);
-                if (definition == null || stack.count <= 0 || !seen.Add(stack.troop)) return false;
+                if (definition == null || !TroopUnlocked(stack.troop) || stack.count <= 0 || !seen.Add(stack.troop)) return false;
                 housing += (long)stack.count * definition.Housing;
                 if (housing > ArmyCapacity) return false;
             }
@@ -75,6 +79,8 @@ namespace Kingdoms
             var definition = TroopCatalog.Find(troop);
             if (!IsArmyValid() || definition == null || count < 0)
             { reason = "Choose a valid troop count."; return false; }
+            if (count > 0 && !TroopUnlocked(troop))
+            { reason = "Build Barracks to unlock Archers."; return false; }
             var existing = army.Find(stack => stack.troop == troop);
             long housing = (long)ArmyHousing + ((long)count - (existing?.count ?? 0)) * definition.Housing;
             if (housing > ArmyCapacity)
@@ -82,7 +88,7 @@ namespace Kingdoms
             if (count == 0) { if (existing != null) army.Remove(existing); }
             else if (existing != null) existing.count = count;
             else army.Add(new ArmyStack { troop = troop, count = count });
-            reason = count == 0 ? "Army cleared." : "Army prepared and ready.";
+            reason = count == 0 ? definition.Name + "s removed." : "Army prepared and ready.";
             return true;
         }
     }

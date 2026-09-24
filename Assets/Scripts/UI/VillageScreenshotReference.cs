@@ -288,7 +288,7 @@ namespace Kingdoms.UI
             string gain=definition.StorageBonus>0 ? "Storage Capacity\n"+(definition.StorageBonus*b.level).ToString("N0")+"  + "+definition.StorageBonus.ToString("N0") : definition.ProductionPerSecond>0 ? "Production / minute\n"+(definition.ProductionPerSecond*b.level*60)+"  + "+(definition.ProductionPerSecond*60) : b.kind=="TownHall" ? "Town Hall Level\n"+b.level+"  →  "+Mathf.Min(3,b.level+1) : "Connected village walls";
             referenceDetailGain.text=b.level>=3 ? "Maximum available level" : gain;
             if(b.kind=="ArmyCamp")referenceDetailGain.text="Army spaces: "+(VillageState.ArmySpacesPerCampLevel*b.level)+(b.level<3 ? " + 8" : " (maximum)");
-            if(b.kind=="Barracks")referenceDetailGain.text="Unlocks Army Camps";
+            if(b.kind=="Barracks")referenceDetailGain.text="Unlocks Archers and Army Camps";
             if(definition.IsDefense)referenceDetailGain.text=b.level>=3 ? "Maximum available level" : "Hit points: "+(definition.HitPoints*b.level)+" + "+definition.HitPoints+"\nDamage / second: "+(definition.DamagePerSecond*b.level)+" + "+definition.DamagePerSecond;
             referenceDetailTime.text=(b.kind=="Wall" || b.kind=="Barracks") ? "" : "Upgrade time\n"+Duration(b.upgradeFinishes>0 ? b.upgradeFinishes-VillageState.Now : VillageState.UpgradeSeconds(b));
             if(b.upgradeFinishes==0 && b.level<3 && b.kind!="Wall" && b.kind!="Barracks")detailTitle.text="Upgrade "+definition.Name+" to Level "+(b.level+1)+"?";

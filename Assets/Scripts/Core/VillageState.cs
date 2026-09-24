@@ -19,7 +19,7 @@ namespace Kingdoms
     public sealed partial class VillageState
     {
         public const int MineCost = 150, MineLimit = 3, MineCapacity = 500, ResourceCapacity = BuildingCatalog.BaseCapacity;
-        public int version = 5;
+        public int version = 6;
         public int gold = 1000, elixir = 500, gems = 50;
         public bool collectedFirstGold;
         public long lastProduction;
@@ -144,7 +144,7 @@ namespace Kingdoms
 
         public bool IsValid()
         {
-            if (version != 5 || !IsCampaignValid() || !IsArmyValid() || buildings == null || buildings.Count < 1 ||
+            if (version != 6 || !IsCampaignValid() || !IsArmyValid() || buildings == null || buildings.Count < 1 ||
                 gold < 0 || elixir < 0 || gems < 0 || lastProduction < 0) return false;
             int maximumBuildings = 1;
             foreach (var definition in BuildingCatalog.Purchasable) maximumBuildings += BuildingLimit(definition.Id);
@@ -210,6 +210,10 @@ namespace Kingdoms
                 {
                     loaded.campaignCleared=0;loaded.ResetCampaignRun();loaded.version=5;
                 }
+                if (loaded.version == 5)
+                {
+                    loaded.campaignArchers=0;loaded.version=6;
+                }
                 if (!loaded.IsValid()) return false;
                 state = loaded;
                 return true;
@@ -232,8 +236,8 @@ namespace Kingdoms
                 string json = PlayerPrefs.GetString(Key);
                 if (!VillageState.TryDeserialize(json, out var loaded)) throw new FormatException("Invalid village data");
                 var original = JsonUtility.FromJson<VillageState>(json);
-                string backupKey=original.version==1 ? LegacyBackupKey : original.version==2 ? "Kingdoms.Village.pre-v3" : original.version==3 ? "Kingdoms.Village.pre-v4" : "Kingdoms.Village.pre-v5";
-                if (original.version < 5 && !PlayerPrefs.HasKey(backupKey))
+                string backupKey=original.version==1 ? LegacyBackupKey : original.version==2 ? "Kingdoms.Village.pre-v3" : original.version==3 ? "Kingdoms.Village.pre-v4" : original.version==4 ? "Kingdoms.Village.pre-v5" : "Kingdoms.Village.pre-v6";
+                if (original.version < 6 && !PlayerPrefs.HasKey(backupKey))
                 { PlayerPrefs.SetString(backupKey, json); PlayerPrefs.Save(); }
                 loaded.Accrue(VillageState.Now);
                 state = loaded;

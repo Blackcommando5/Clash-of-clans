@@ -10,6 +10,8 @@ Latest army progression: **Shop > Army** now sells Barracks (200 elixir) and Arm
 
 Latest campaign: **Buildings > Prepare Army > Campaign** offers Gate Outpost and Sealed Keep. Starting spends the prepared roster; first victories grant saved, once-only resource rewards. Unclaimed results survive restart. See [the campaign walkthrough](BEGINNER_GUIDE.md#first-offline-campaign-loop---24-september-2026).
 
+Latest troop choice: Barracks unlock Archers (two spaces, 3.5-cell range). Prepare mixed Raider/Archer armies, select a troop type during campaign deployment, and replay the original composition. Version-5 saves migrate to version 6 with pending rewards preserved. See [the mixed-army walkthrough](BEGINNER_GUIDE.md#mixed-armies-and-archers---24-september-2026).
+
 ## Architecture
 
 Separate practice mode: [the practice battle](PRACTICE_BATTLE_PROGRESS.md). Tap Attack to deploy eight raiders against a walled practice Town Hall, Cannon and Archer Tower, then watch a replay, retry or return home. Scout without a timer, choose Open Gate or Wall Breach, then press Start Attack. Raiders route through openings and break sealed walls; retry and replay retain the challenge. Results show three-star practice scoring, destruction and army statistics; Surrender ends an attack with replayable results. [Defense village progression](DEFENSE_VILLAGE_PROGRESS.md) supports purchases, upgrades and persistence. Full battles and multiplayer remain outstanding.
