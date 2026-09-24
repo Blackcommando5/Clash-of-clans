@@ -46,6 +46,28 @@ public static class ResourceMilestoneValidation
         catch(Exception e) { Fail(e); }
     }
 
+    // Rules and persistence regression without scene/asset authoring.
+    public static void RunRules()
+    {
+        if(!Application.dataPath.Replace('\\','/').EndsWith("/.utmp/ResourceValidation/Assets") ||
+            PlayerSettings.companyName!="KingdomsResourceValidation" || PlayerSettings.productName!="ResourceMilestoneTests")
+            throw new InvalidOperationException("Use the isolated ResourceValidation project and test save identity.");
+        try
+        {
+            assertions = 0;
+            StateChecks();
+            ProgressionChecks();
+            File.WriteAllText(Path.Combine(Root, "ArmyResourceRegression.txt"),
+                "PASS: " + assertions + " existing resource/progression rule assertions with v4 saves. Unity " + Application.unityVersion + ". State-only run; no phone testing.");
+            EditorApplication.Exit(0);
+        }
+        catch(Exception e)
+        {
+            File.WriteAllText(Path.Combine(Root, "ArmyResourceRegression.txt"), "FAIL: " + e);
+            EditorApplication.Exit(1);
+        }
+    }
+
     static void StateChecks()
     {
         var s=VillageState.Create(1000);
@@ -83,7 +105,7 @@ public static class ResourceMilestoneValidation
         individual.TryPlace("ElixirCollector",5,5,1000,out _);individual.TryPlace("ElixirCollector",9,5,1000,out _);
         Check(individual.Collect(ResourceKind.Elixir,1060,individual.buildings[1])==60 && individual.CollectableElixir==60,"Individual collection leaves other producer untouched");
         string legacy="{\"version\":1,\"gold\":9999,\"elixir\":50,\"gems\":50,\"collectedFirstGold\":true,\"lastProduction\":1000,\"buildings\":[{\"kind\":\"TownHall\",\"x\":-2,\"z\":-2,\"storedGold\":0},{\"kind\":\"GoldMine\",\"x\":5,\"z\":-1,\"storedGold\":321}]}";
-        Check(VillageState.TryDeserialize(legacy,out var migrated) && migrated.version==3 && migrated.gold==9999 && migrated.elixir==50 && migrated.CollectableGold==321,"Legacy progress preserved");
+        Check(VillageState.TryDeserialize(legacy,out var migrated) && migrated.version==4 && migrated.gold==9999 && migrated.elixir==50 && migrated.CollectableGold==321,"Legacy progress preserved");
         Check(migrated.TryPlace("ElixirCollector",9,-1,1000,out _),"Legacy low-elixir village can buy collector with gold");
         PlayerPrefs.DeleteKey(VillageSave.LegacyBackupKey);PlayerPrefs.SetString(VillageSave.Key,legacy);
         Check(VillageSave.TryLoad(out _,out _) && PlayerPrefs.GetString(VillageSave.LegacyBackupKey)==legacy && PlayerPrefs.GetString(VillageSave.Key)==legacy,"Migration backup preserves original payload");
@@ -158,7 +180,7 @@ public static class ResourceMilestoneValidation
         Check(storage.TryStartUpgrade(1,1000,out _) && storage.GoldCapacity==15000,"Old storage capacity retained during upgrade");
         storage.Accrue(1030);Check(storage.GoldCapacity==20000 && storage.IsValid(),"Storage upgrade increases capacity");
         var old=VillageState.Create(1000);old.version=2;old.buildings[0].level=0;
-        Check(VillageState.TryDeserialize(JsonUtility.ToJson(old),out var upgraded) && upgraded.version==3 && upgraded.buildings[0].level==1,"Version 2 save gains valid levels");
+        Check(VillageState.TryDeserialize(JsonUtility.ToJson(old),out var upgraded) && upgraded.version==4 && upgraded.buildings[0].level==1,"Version 2 save gains valid levels");
     }
 
     static void Tick()
@@ -209,7 +231,7 @@ public static class ResourceMilestoneValidation
             {
                 if(GameObject.Find("Player Name")==null) return;
                 Check(game.State.buildings.Count==5 && game.State.GoldCapacity==15000 && game.State.elixir>=170,"Reload preserves buildings/resources");
-                Check(game.State.version==3 && game.State.IsValid(),"Reloaded save is valid");
+                Check(game.State.version==4 && game.State.IsValid(),"Reloaded save is valid");
                 game.SelectBuilding(1);Check(game.SelectedBuildingIndex==1,"Select building");
                 game.BeginSelectedMove();game.SetPreviewCell(-1,-1);game.ConfirmPlacement();
                 Check(game.IsPlacing && game.State.buildings[1].x==4,"Occupied move refused");

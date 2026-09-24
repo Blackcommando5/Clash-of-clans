@@ -6,6 +6,8 @@ Current work: [Home Village interface and progression](HOME_VILLAGE_PROGRESS.md)
 
 Latest development: [the supplied screenshot reference implementation](SCREENSHOT_REFERENCE_MATCH.md) adds a full-screen categorized shop, compact HUD, builder suggestions, two-column upgrade dialog, new resource models, and village scenery. [The builder queue and upgrade cancellation](HOME_VILLAGE_PROGRESS.md) retain working progression. See [the phase checklist](GAME_DEVELOPMENT_PHASES.md) for completed and remaining work.
 
+Latest army foundation: open **Buildings > Prepare Army** to manage a saved Raider roster with eight starter spaces and free instant preparation. Practice still supplies its own army. Barracks, camp expansion and campaign integration remain pending. See [the beginner walkthrough](BEGINNER_GUIDE.md#owned-army-foundation--24-september-2026).
+
 ## Architecture
 
 Newest playable addition: [the practice battle](PRACTICE_BATTLE_PROGRESS.md). Tap Attack to deploy eight raiders against a walled practice Town Hall, Cannon and Archer Tower, then watch a replay, retry or return home. Scout without a timer, choose Open Gate or Wall Breach, then press Start Attack. Raiders route through openings and break sealed walls; retry and replay retain the challenge. Results show three-star practice scoring, destruction and army statistics; Surrender ends an attack with replayable results. [Defense village progression](DEFENSE_VILLAGE_PROGRESS.md) supports purchases, upgrades and persistence. Full battles and multiplayer remain outstanding.

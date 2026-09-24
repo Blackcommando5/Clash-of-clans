@@ -1,0 +1,1 @@
+PASS: empty/full readiness; atomic invalid counts and overflow; unknown/duplicate/null stacks; saved-roster validation; v1/v2/v3 migration and v3 backup; JSON round trip; real scene Buildings > Prepare Army; add/fill/remove/clear; capacity button states; immediate save reload; free preparation; reopen; practice roster isolation. Unity 6000.3.13f1. No APK or phone testing.

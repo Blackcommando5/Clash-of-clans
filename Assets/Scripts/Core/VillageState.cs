@@ -19,7 +19,7 @@ namespace Kingdoms
     public sealed partial class VillageState
     {
         public const int MineCost = 150, MineLimit = 3, MineCapacity = 500, ResourceCapacity = BuildingCatalog.BaseCapacity;
-        public int version = 3;
+        public int version = 4;
         public int gold = 1000, elixir = 500, gems = 50;
         public bool collectedFirstGold;
         public long lastProduction;
@@ -143,7 +143,7 @@ namespace Kingdoms
 
         public bool IsValid()
         {
-            if (version != 3 || buildings == null || buildings.Count < 1 ||
+            if (version != 4 || !IsArmyValid() || buildings == null || buildings.Count < 1 ||
                 gold < 0 || elixir < 0 || gems < 0 || lastProduction < 0) return false;
             int maximumBuildings = 1;
             foreach (var definition in BuildingCatalog.Purchasable) maximumBuildings += BuildingLimit(definition.Id);
@@ -199,6 +199,11 @@ namespace Kingdoms
                     }
                     loaded.version=3;
                 }
+                if (loaded.version == 3)
+                {
+                    loaded.army = new List<ArmyStack>();
+                    loaded.version = 4;
+                }
                 if (!loaded.IsValid()) return false;
                 state = loaded;
                 return true;
@@ -221,8 +226,8 @@ namespace Kingdoms
                 string json = PlayerPrefs.GetString(Key);
                 if (!VillageState.TryDeserialize(json, out var loaded)) throw new FormatException("Invalid village data");
                 var original = JsonUtility.FromJson<VillageState>(json);
-                string backupKey=original.version==1 ? LegacyBackupKey : "Kingdoms.Village.pre-v3";
-                if (original.version < 3 && !PlayerPrefs.HasKey(backupKey))
+                string backupKey=original.version==1 ? LegacyBackupKey : original.version==2 ? "Kingdoms.Village.pre-v3" : "Kingdoms.Village.pre-v4";
+                if (original.version < 4 && !PlayerPrefs.HasKey(backupKey))
                 { PlayerPrefs.SetString(backupKey, json); PlayerPrefs.Save(); }
                 loaded.Accrue(VillageState.Now);
                 state = loaded;

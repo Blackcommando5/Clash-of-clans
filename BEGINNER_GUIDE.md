@@ -1,6 +1,6 @@
 # Kingdoms: a beginner's guide to rebuilding and understanding the game
 
-Updated: 23 September 2026.
+Updated: 24 September 2026.
 
 > Keep this guide current with every development update. Sections 1, 11, 12 and 14 describe the current game. The manual ground, camera, welcome and primitive-model lessons explain the original foundations; inspect the current scenes for the latest artwork and Inspector values.
 
@@ -46,10 +46,11 @@ The project is a Clash of Clans-inspired village prototype with its own Kingdoms
 | Progression | Two builders, timed upgrades through level 3, Town Hall limits, confirmed cancellation with a storage-capped 50% refund |
 | Defenses | Purchase, move, inspect range and upgrade; home defenses remain idle |
 | Practice battle | Eight raiders, three enemy buildings, walls, entrance routing, wall breach logic, star scoring, surrender, results, watch replay, retry and return |
-| Persistence | Local version 3 village saves; migrations from versions 1 and 2 |
+| Army preparation | Buildings > Prepare Army; free instant Raider roster, eight starter spaces, readiness and immediate saving |
+| Persistence | Local version 4 village saves; migrations from versions 1, 2 and 3 |
 | Mobile setup | Welcome scene first, village second, landscape orientation, Android IL2CPP/ARM64 settings |
 
-Not implemented yet: army training, battle rewards, arbitrary enemy villages, unit separation, matchmaking, multiplayer, online accounts, purchases or a server economy. The fixed practice battlefield is separate from your home village. Gem counters and reference-style buttons do not imply that all reference-game features exist.
+Not implemented yet: buildable barracks/camps, timed training, campaign use of the owned army, battle rewards, arbitrary enemy villages, unit separation, matchmaking, multiplayer, online accounts, purchases or a server economy. The fixed practice battlefield is separate from your home village. Gem counters and reference-style buttons do not imply that all reference-game features exist.
 
 The Android configuration exists, but an Android build and physical-phone testing have not been completed as part of this work.
 
@@ -731,8 +732,19 @@ Retry and challenge changes return to scouting; Watch Replay immediately plays t
 Validation waits across real Play Mode frames to check the tick stays zero, rejects deployment/surrender while scouting, starts at tick zero, locks challenges before deployment, and verifies retries and both existing replay flows. See [scouting preview](PracticePreviews/practice-ready.png) and [PracticeBattleValidation.txt](PracticeBattleValidation.txt). The guide, preview and code are updated together; APK and physical-phone testing remain outstanding.
 
 
-### Current roadmap and next milestones
+### Historical roadmap review - 23 September 2026
 
 The [phase plan and status table](GAME_DEVELOPMENT_PHASES.md#current-phase-status--23-september-2026) now distinguish completed local work from partial and future phases. Phase 2 resource production/storage is complete within its local scope. Phases 0?1, 3?7 and 15 are partial; online/social/release/expansion phases are not complete. Scouting, replay and stars are practice features, not a complete campaign or multiplayer game.
 
 Next priorities are: validate the latest mobile build, add an owned army and preparation/capacity rules, support multiple troop types and ground deployment, load authored enemy snapshots, and award campaign rewards exactly once. That creates the complete build ? prepare ? attack ? earn ? upgrade loop. Accounts, PvP and clans follow that foundation. See the [next implementation plan](GAME_DEVELOPMENT_PHASES.md#5-next-implementation-plan) for acceptance gates. This roadmap update changes documentation only; it does not add gameplay or claim new runtime tests.
+
+
+### Owned army foundation - 24 September 2026
+
+Open **Buildings**, then **Prepare Army**. Press **Add Raider** to prepare one unit, **Fill Army** to use all eight starter spaces, **Remove 1** to reduce the roster, or **Clear Army** to empty it. Preparation is free and instant; no gold, elixir or builder is spent. A nonempty legal roster shows READY. Full and empty rosters disable the corresponding add/remove controls. Close and reopen the screen, or restart the game, to confirm the roster persists.
+
+This is the first owned-army increment. Starter capacity is a fixed rule, not a placed camp. Barracks, camp expansion, other troop types, campaign deployment and troop consumption are still unimplemented. Attack continues to provide its separate free practice army; preparing or clearing your saved roster does not change practice difficulty.
+
+Study [the troop catalog and army rules](Assets/Scripts/Core/VillageArmy.cs), [the preparation screen](Assets/Scripts/UI/VillageArmy.cs), and [save migration](Assets/Scripts/Core/VillageState.cs). Each action edits a copy, validates it, writes it, then replaces the live state only after a successful save. Save version 4 adds the roster. Versions 1-3 migrate to an empty army without charging resources; version 3 JSON is backed up at `Kingdoms.Village.pre-v4` before later saves overwrite it. Unknown troops, duplicate stacks, nonpositive stack counts and excessive housing are rejected.
+
+Validation: [ArmyPreparationValidation.txt](ArmyPreparationValidation.txt) records the isolated Unity checks; [the validation source](Assets/Editor/ArmyPreparationValidation.cs) covers migration, invalid requests, persistence, actual UI controls and practice isolation. [Resource/save regression](ArmyResourceRegression.txt) also passed 66 existing assertions. No Android build or physical-phone test is included. Earlier v3-save explanations are historical; v4 is the current format.

@@ -19,12 +19,12 @@ We have a playable local village and a tested practice-combat slice. We do not y
 | Phase | Status | Implemented | Still needed |
 | --- | --- | --- | --- |
 | 0. Reliable baseline | Partial | Git history, pinned Unity/packages, scenes, Editor validation evidence | Rebuild latest APK; fresh-install/returning-save phone tests; performance measurements; final identity/asset audit |
-| 1. Architecture and data | Partial | Shared building catalog, separate state/progression rules, partial UI files, v3 saves and migrations | Stable village-instance IDs, authored level/content data, clock/repository/command interfaces, revisions and command IDs |
+| 1. Architecture and data | Partial | Shared building catalog, separate state/progression rules, partial UI files, v4 saves and migrations | Stable village-instance IDs, authored level/content data, clock/repository/command interfaces, revisions and command IDs |
 | 2. Resources and storage | Complete locally | Gold/elixir production and collection, storage capacities, Town Hall limits, offline behavior and save validation | Device regression testing and later server authority; these remain cross-phase release requirements |
 | 3. Village layout editing | Partial | Select, inspect, move/cancel, occupancy checks, individual walls | Continuous wall drawing, multi-selection, removable obstacles, saved layouts and interrupted-layout recovery |
 | 4. Builders and upgrades | Partial | Two builders, queue, timed upgrades, prerequisites, offline completion, capped cancellation refunds, initial level rules | Timed new construction, broader unlocks and level art, complete defense behavior during upgrades, optional notifications |
 | 5. Battle simulation | Partial | Cannon/tower fire, raiders, HP/damage, grid routing and wall breach, fixed ticks, timed commands and matching local replay hashes | Immutable arbitrary village snapshots, general-layout navigation, traps/target categories, persisted/versioned replays, server verification |
-| 6. Army preparation | Early partial | Eight practice raiders, lane deployment, army limit enforcement | Barracks/camps, owned army and capacity, readiness rules, troop selection, ground deployment zones, ranged/tank troops, research |
+| 6. Army preparation | Early partial | Saved Raider roster, eight starter spaces, free preparation/readiness screen; separate practice army and lane deployment | Barracks/camps, capacity progression, campaign army integration, troop selection, ground deployment zones, ranged/tank troops, research |
 | 7. Complete attack loop | Partial | Two practice enclosure variants, untimed scouting, explicit start, timer, surrender, stars/results, retry/return and replay | Authored campaign villages, reward settlement exactly once, saved campaign progress, guided/resumable tutorial |
 | 8. Accounts and backend | Not started | No implemented online service | Authentication/recovery, server economy, database, transactions, backups and monitoring |
 | 9. Asynchronous PvP | Not started | Local practice is not PvP | Opponent snapshots, battle tickets, server replay validation, atomic loot settlement, attack/defense history |
@@ -47,7 +47,7 @@ Current evidence: [resource milestone](RESOURCE_MILESTONE.md), [home progression
 ### Milestone status
 
 - **A ? Sustainable village:** playable locally; the full 0?4 acceptance gate remains partial.
-- **B ? Offline battle slice:** practice combat works; an owned army, campaign opponents and rewards are missing.
+- **B ? Offline battle slice:** practice combat works; owned-army preparation is now present; campaign integration, opponents and rewards are missing.
 - **C?F ? Online, social, release and expansion:** not reached.
 
 ## 1. Original starting point (before the resource milestone)
@@ -415,7 +415,7 @@ Prioritize finishing the offline game loop before adding more practice-only cont
 | 10 | Social, advanced content and release | 11?17 | Build clans/wars/events and advanced armies, then complete production art/audio, operations and release gates |
 | 11 | Optional expansion modes | 18?20 | Start only after the core service is stable and maintainable |
 
-**Next code milestone:** owned army data and capacity/readiness rules, with a simple preparation screen. Agree the Kingdoms readiness design before implementing timers or consumable army costs; historical reference-game rules are not assumed. In parallel with planning, the current build needs the Phase 0 phone validation gate. Backend providers, hosting spend and production releases remain future decisions.
+**24 September increment:** saved Raider roster, fixed eight-space starter capacity, free instant preparation and readiness UI are implemented with v4 save migration. See [army validation](ArmyPreparationValidation.txt). Barracks/camps, capacity progression and campaign consumption remain missing, so Phase 6 stays partial. **Next code milestone:** buildable army facilities and capacity progression, followed by troop selection and campaign integration. Timers and consumable training costs remain a future design decision. In parallel with planning, the current build needs the Phase 0 phone validation gate. Backend providers, hosting spend and production releases remain future decisions.
 
 Every development increment must update `BEGINNER_GUIDE.md`, record relevant validation evidence, and use a meaningful commit. Local commits remain valid progress even if remote authentication prevents a push; do not describe an unpushed commit as published.
 
