@@ -73,7 +73,7 @@ namespace Kingdoms.UI
                 if(!loaded.IsValid()){Debug.LogWarning("Starter Town Hall is outside the build area; using the default location.");loaded=VillageState.Create(VillageState.Now);}
             }
             State = loaded;
-            BuildArmyPreparation();BuildCampaignInterface();BuildTutorialInterface();
+            BuildArmyPreparation();BuildCampaignInterface();BuildBattleHistoryInterface();BuildTutorialInterface();
             world = new GameObject("Village Buildings").transform;
             world.SetParent(transform, false);
             foreach (var building in State.buildings) Spawn(building);

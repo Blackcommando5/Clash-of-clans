@@ -27,7 +27,7 @@ public static class EnemyLayoutValidation
     static void Rules()
     {
         var s=Seed();Check(s.CampaignUnlocked(2) && !s.CampaignUnlocked(3),"Sequential mission lock");
-        Check(VillageState.TryDeserialize(JsonUtility.ToJson(s),out var legacy) && legacy.campaignCleared==3 && legacy.version==8,"Existing v7 progress retained");
+        Check(VillageState.TryDeserialize(JsonUtility.ToJson(s),out var legacy) && legacy.campaignCleared==3 && legacy.version==VillageState.SaveVersion,"Existing v7 progress retained");
         for(int id=0;id<4;id++)
         {
             var layout=EnemyLayoutCatalog.Find(id);var a=new PracticeBattle(layout);var b=new PracticeBattle(layout);

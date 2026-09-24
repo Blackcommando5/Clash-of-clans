@@ -49,13 +49,14 @@ The project is a Clash of Clans-inspired village prototype with its own Kingdoms
 | Ground deployment | Click/tap within a visible southern zone; selected troop, half-cell snapping, placement feedback and exact-position replay; lane buttons retained |
 | Army preparation | Buildings > Prepare Army; free instant mixed Raider/Archer/Tank roster, weighted housing, troop selection, eight starter spaces plus camp capacity, readiness and immediate saving |
 | Campaign | Four authored missions, distinct layouts/deployment zones, dynamic scouting, prepared-army commitment, durable results, once-only first-clear rewards and saved unlocks |
-| Persistence | Local version 8 village saves; migrations from versions 1-7; saved guide milestones and hint preference |
+| Battle history | Latest 20 campaign results, newest first; outcome, stars, destruction, duration, committed army and actual claimed rewards; two entries per page and restart persistence |
+| Persistence | Local version 9 village saves; migrations from versions 1-8; saved guide milestones, hint preference and campaign history |
 | Guided onboarding | Eight-step Village Guide, contextual shortcuts, saved milestones, pause/resume hints and recognition of existing progress |
 | Mobile setup | Verified development APK, Welcome scene first, village second, landscape orientation, Android IL2CPP/ARM64; physical-phone checks pending |
 
 Not implemented yet: arbitrary enemy villages, unit separation, matchmaking, multiplayer, online accounts, purchases or a server economy. The fixed practice battlefield is separate from your home village. Gem counters and reference-style buttons do not imply that all reference-game features exist.
 
-The Android development APK now builds and passes package checks. Physical-phone testing remains pending because ADB detected no connected device. See [Android validation](ANDROID_BUILD_VALIDATION.md).
+The existing Android development APK builds and passes package checks, but predates battle history. Rebuild it to include this feature. Physical-phone testing remains pending and has been deferred by the user. See [Android validation](ANDROID_BUILD_VALIDATION.md).
 
 ## 2. How to practise without losing your work
 
@@ -898,3 +899,21 @@ For a phone test, enable USB debugging, connect an ARM64 Android phone and appro
 Source links: [PowerShell build launcher](Tools/Build-Android.ps1), [Unity build entry point](Assets/Editor/AndroidDevelopmentBuild.cs), [APK verification](Tools/Verify-AndroidApk.ps1), and [build instructions](ANDROID_BUILD.md). Generated APKs, logs, signing keys and isolated project caches are ignored and must remain uncommitted. Earlier Android status notes describe the evidence available at those historical increments; this section and the build validation record track the current increment.
 
 Validation: [Android build evidence](ANDROID_BUILD_VALIDATION.md) records the successful build, package checks and SHA-256. The APK is 75,881,750 bytes (72.37 MiB). Unity reported zero errors and 1,049 warnings, including installed inference-package shader variants and duplicate assembly versions. No connected device was detected, so installation, touch, resume, frame rate and memory are not yet verified.
+
+### Persistent campaign battle history - 24 September 2026
+
+Open **Buildings > Prepare Army > Campaign > Battle History** to review your latest **20 campaign results**, with the newest first. Use **Older** and **Newer** to browse two entries per page; **Campaign** returns to scouting and result resolution. An empty history explains how to create the first entry.
+
+Each finished attack records its mission, outcome, stars, destruction percentage, simulated battle duration, completion date and full committed Raider/Archer/Tank composition, including undeployed troops. Finishing a verified battle saves the summary alongside its pending result. Returning home, reopening the screen and restarting do not create duplicate entries. A repeat victory, defeat, surrender or timeout earns no additional resources under the existing reward rules.
+
+**Try it:** Prepare eight Raiders, scout Gate Outpost, start and deploy the army. After victory, return home and open Battle History. It shows a pending reward. Return to Campaign and press **Claim / Finish**, then reopen history: the same entry now shows the actual **500 gold + 300 elixir** payout. Restart the scene or game and inspect it again. If storage is full, both the reward and its history status remain pending until the complete reward fits.
+
+An interrupted attack stays in Campaign until you abandon it. Abandonment creates an **Abandoned** entry and retains the committed troop counts; it grants no reward and does not invent destruction or duration. The date is the time of abandonment. Ordinary finished results use local-device completion time, while duration comes from the battle simulation. History order follows when entries were added, even if the device clock changes.
+
+Saves now use **version 9**. Versions 1-8 migrate with their village, army, guide settings, unlocks and pending results preserved. Version-8 originals are backed up under `Kingdoms.Village.pre-v9`. A completed pending result from an older save becomes one history entry with its known outcome, stars and army; the missing date, duration and destruction are displayed as unavailable. Past attacks already dismissed or claimed before this update cannot be recovered. Earlier save-version notes are historical; replay rules remain version 6.
+
+Study [history records, retention and validation](Assets/Scripts/Core/VillageBattleHistory.cs), [campaign finish/claim/abandon integration](Assets/Scripts/Core/VillageCampaign.cs), [history menu and paging](Assets/Scripts/UI/VillageBattleHistory.cs), and [save migration](Assets/Scripts/Core/VillageState.cs). Evidence: [BattleHistoryValidation.txt](BattleHistoryValidation.txt) and [validation source](Assets/Editor/BattleHistoryValidation.cs). Previews: [empty history](BattleHistoryPreviews/history-empty.png), [pending victory](BattleHistoryPreviews/history-pending.png), [claimed reward](BattleHistoryPreviews/history-claimed.png), and [older results at 16:9](BattleHistoryPreviews/history-older-16x9.png).
+
+Validation passed in isolated Unity 6000.3.13f1: all five recorded outcomes (including abandonment), full mixed composition, rejection of malformed/duplicate entries, 20-result retention, versions 1-8 migration, backup preservation, storage-blocked and repeated claims, deep-copy isolation, live battle-to-history UI, claim update, scene reload, page boundaries and camera release. Existing campaign, mixed-army, Tank, tutorial and resource/progression rule checks also passed. Screenshots were inspected at 1600x702 and 1280x720.
+
+Known limits: this is a local campaign summary list, not persisted replay playback or interrupted battle resumption. Practice battles are excluded. Only the newest 20 summaries remain, and history cannot claim rewards directly. Phone testing is deferred at the user's request. The existing Android APK predates this change and must be rebuilt to include battle history.

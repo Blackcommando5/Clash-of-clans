@@ -29,8 +29,8 @@ public static class CampaignValidation
         var s=VillageState.Create(1000);
         Check(s.IsValid() && !s.TryBeginCampaign(0,out _),"Empty army cannot attack");
         Check(s.TrySetArmyCount("Raider",8,out _),"Prepare starter roster");
-        string legacy=JsonUtility.ToJson(s).Replace("\"version\":8","\"version\":4");
-        Check(VillageState.TryDeserialize(legacy,out var migrated) && migrated.version==8 && migrated.ArmyHousing==8 && !migrated.HasCampaignRun && migrated.campaignCleared==0,"v4 roster retained");
+        string legacy=JsonUtility.ToJson(s).Replace("\"version\":9","\"version\":4");
+        Check(VillageState.TryDeserialize(legacy,out var migrated) && migrated.version==VillageState.SaveVersion && migrated.ArmyHousing==8 && !migrated.HasCampaignRun && migrated.campaignCleared==0,"v4 roster retained");
         PlayerPrefs.DeleteKey("Kingdoms.Village.pre-v5");PlayerPrefs.SetString(VillageSave.Key,legacy);
         Check(VillageSave.TryLoad(out _,out _) && PlayerPrefs.GetString("Kingdoms.Village.pre-v5")==legacy,"v4 original backup");
         Check(!s.TryBeginCampaign(1,out _) && s.ArmyHousing==8,"Locked mission preserves roster");

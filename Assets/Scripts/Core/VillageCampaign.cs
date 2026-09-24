@@ -64,6 +64,7 @@ namespace Kingdoms
             for(int i=0;i<=PracticeBattle.TimeLimitTicks && !replay.Finished;i++)replay.Step();
             if(!replay.Matches)return false;
             campaignOutcome=replay.Battle.Outcome;campaignStars=replay.Battle.Stars;
+            RecordCampaignHistory(replay.Battle);
             reason="Campaign result saved. You can claim it after returning home or restarting.";
             return true;
         }
@@ -77,6 +78,9 @@ namespace Kingdoms
             if(reward && (GoldCapacity-gold<mission.Gold || ElixirCapacity-elixir<mission.Elixir))
             { reason="Make room for "+mission.Gold+" gold and "+mission.Elixir+" elixir. Your full reward remains saved."; return false; }
             if(reward){gold+=mission.Gold;elixir+=mission.Elixir;campaignCleared|=1<<campaignMission;}
+            var history=FindHistory(campaignRunId);
+            history.resolved=true;
+            if(reward){history.goldAwarded=mission.Gold;history.elixirAwarded=mission.Elixir;}
             reason=reward ? "Claimed "+mission.Gold+" gold and "+mission.Elixir+" elixir. Mission cleared!" : "Result dismissed. No additional reward.";
             ResetCampaignRun();return true;
         }
@@ -85,6 +89,7 @@ namespace Kingdoms
         {
             if(!HasCampaignRun || runId!=campaignRunId || campaignOutcome!=PracticeOutcome.Running)
             { reason="There is no interrupted attack to abandon.";return false; }
+            RecordCampaignHistory(abandoned:true);
             ResetCampaignRun();reason="Interrupted attack abandoned. Prepare a new army for free.";return true;
         }
 
