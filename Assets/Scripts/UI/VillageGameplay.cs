@@ -160,6 +160,7 @@ namespace Kingdoms.UI
             placementBar.SetActive(true);
             cameraController.InputBlocked = true;
             dragging = false;
+            BeginWallRowPreview();
             int x = 5, z = -1;
             if (!State.CanPlace(kind,x,z,out _))
             {
@@ -182,6 +183,7 @@ namespace Kingdoms.UI
         {
             if (!IsPlacing) return;
             cellX=x;cellZ=z;
+            if(PlacingWallRow){RefreshWallRowPreview();return;}
             float half = BuildingCatalog.Find(placingKind).Size * .5f;
             preview.transform.position = new Vector3(x+half,0,z+half);
             footprint.transform.position = new Vector3(x+half,.035f,z+half);
@@ -199,12 +201,13 @@ namespace Kingdoms.UI
             if (!IsPlacing || !PlayerProfile.HasPlayerName) return;
             var candidate=State.Copy();
             string message;
-            bool success=movingIndex>=0 ? candidate.TryMove(movingIndex,cellX,cellZ,out message) : candidate.TryPlace(placingKind,cellX,cellZ,VillageState.Now,out message);
+            int previousBuildingCount=State.buildings.Count;
+            bool success=movingIndex>=0 ? candidate.TryMove(movingIndex,cellX,cellZ,out message) : PlacingWallRow ? candidate.TryPlaceWallRow(cellX,cellZ,wallRowLength,wallRowDirection,VillageState.Now,out message) : candidate.TryPlace(placingKind,cellX,cellZ,VillageState.Now,out message);
             if (!success) { placementInfo.text=message;return; }
             if (!VillageSave.TryWrite(candidate,out string error)) { placementInfo.text=error;return; }
             State=candidate;
             if(movingIndex>=0) buildingInstances[movingIndex].transform.position=new Vector3(cellX+State.buildings[movingIndex].Size*.5f,0,cellZ+State.buildings[movingIndex].Size*.5f);
-            else Spawn(State.buildings[State.buildings.Count-1]);
+            else for(int i=previousBuildingCount;i<State.buildings.Count;i++)Spawn(State.buildings[i]);
             CancelPlacement();
             ShowMessage(message);
             RefreshHUD();
@@ -212,6 +215,7 @@ namespace Kingdoms.UI
 
         public void CancelPlacement()
         {
+            ClearWallRowPreview();
             if (preview!=null) { preview.SetActive(false);Destroy(preview); }
             if (footprint!=null) { footprint.SetActive(false);Destroy(footprint); }
             if (previewMaterial!=null) Destroy(previewMaterial);

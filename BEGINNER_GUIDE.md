@@ -42,6 +42,7 @@ The project is a Clash of Clans-inspired village prototype with its own Kingdoms
 | HUD and shop | Resource bars, builder queue, categorized full-screen shop and model portraits |
 | Buildings | Gold Mine, Elixir Collector, both storage types, Cannon, Archer Tower, individual walls, Barracks and Army Camps |
 | Placement | Grid snapping, overlap/boundary checks, preview cancellation and moving existing buildings |
+| Wall rows | Preview and build 1-10 connected wall segments in any grid direction; full-row cost/limit/overlap checks, one save, and individual movement afterward |
 | Economy | Gold and elixir production, collection, storage limits and offline accrual |
 | Progression | Two builders, timed upgrades through level 3, Town Hall limits, confirmed cancellation with a storage-capped 50% refund |
 | Defenses | Purchase, move, inspect range and upgrade; home defenses remain idle |
@@ -59,7 +60,7 @@ The project is a Clash of Clans-inspired village prototype with its own Kingdoms
 
 Not implemented yet: arbitrary enemy villages, unit separation, matchmaking, multiplayer, online accounts, purchases or a server economy. The fixed practice battlefield is separate from your home village. Gem counters and reference-style buttons do not imply that all reference-game features exist.
 
-The existing Android development APK builds and passes package checks, but predates battle history, saved replays, battle recovery, replay controls and army reuse. Rebuild it to include these features. Physical-phone testing remains pending and has been deferred by the user. See [Android validation](ANDROID_BUILD_VALIDATION.md).
+The existing Android development APK builds and passes package checks, but predates battle history, saved replays, battle recovery, replay controls, army reuse and wall-row placement. Rebuild it to include these features. Physical-phone testing remains pending and has been deferred by the user. See [Android validation](ANDROID_BUILD_VALIDATION.md).
 
 ## 2. How to practise without losing your work
 
@@ -532,6 +533,8 @@ Use these as checkpoints after each lesson, rather than waiting until everything
 | Place preview over Town Hall | Red/invalid; no charge |
 | Place outside border | Rejected |
 | Cancel preview | Elixir unchanged; camera works again |
+| Buy Wall, increase length and rotate | Whole row previews with its total gold cost; Build places every segment once |
+| Put the middle of a wall row over a building | Entire row is rejected; no walls appear and no gold is spent |
 | Build first mine | One mine placed; elixir falls from 500 to 350 |
 | Wait about 60 seconds | About 60 gold produced in that mine |
 | Collect | Village gold increases; mine storage decreases |
@@ -992,3 +995,19 @@ Source links: [atomic composition replacement and requirements](Assets/Scripts/C
 Validation passed in isolated Unity 6000.3.13f1: exact mixed replacement, removal of absent troop types, housing/unlock rejection, malformed data, every outcome, older summaries, pending rewards, save-rejection atomicity, history paging, Last Army, scene reload and preservation of a separate active checkpoint. History and preparation screenshots were inspected at 1600x702 and 1280x720. The existing saved-replay UI suite also passed playback, same-page return, reload and corrupt-recording feedback after the history layout change. Recovery, saved-replay, history, campaign, mixed-army, Tank, tutorial and resource/progression rule regressions passed.
 
 Known limits: this reuses retained campaign results, not named custom army presets. It does not preserve deployment positions or deploy automatically. Training remains free and instant. The Android APK has not been rebuilt; physical-phone testing remains deferred.
+
+### Build wall rows - 25 September 2026
+
+Buying **Wall** now opens controls for a straight row of **1-10 segments**. Use **+ / -** to choose the count and **Rotate** to cycle East, North, West and South along the village grid. Each segment still costs **25 gold**; the controls show the full price. The starting cell follows the usual ground tap/drag placement input. The footprint covers the full row and turns green or red according to whether the entire purchase is valid.
+
+**Beginner walkthrough:** Open the wall purchase from the shop, press + four times for five walls, and move the preview into open ground. Check the **125 gold** total. Rotate to change the direction extending from the starting cell, then press **Build**. Five separate wall segments appear and connect automatically. Select any one segment afterward and use Move to adjust it for free. Begin another wall purchase: length resets to one and direction resets to East. Cancel removes the whole preview without spending resources.
+
+Every cell must be inside the village and empty, including cells occupied by existing walls. The full row must fit the remaining wall allowance: 25, 50 or 75 total walls at Town Hall levels 1, 2 or 3. A row that crosses an obstacle, exceeds the limit or costs too much is rejected in full. The message identifies an obstructed/out-of-bounds segment where applicable. Shorten, rotate or reposition the row to correct it. Existing walls are not skipped, merged or purchased twice.
+
+The state validates the complete row before adding buildings or charging gold. The interface saves a candidate village before accepting the purchase and spawning all segments. If the write fails, the previous village and gold balance stay intact and the preview remains available to retry or cancel. Confirming twice cannot repeat a completed purchase. Rows use the ordinary saved wall records, so saves remain **version 9** and no migration is required. Rows consume no builders and have no construction timer, consistent with existing wall purchases.
+
+Source links: [row validation and atomic placement](Assets/Scripts/Core/VillageWallRows.cs), [row controls and grouped preview](Assets/Scripts/UI/VillageWallRows.cs), [purchase/save/spawn integration](Assets/Scripts/UI/VillageGameplay.cs), and [validation source](Assets/Editor/WallRowValidation.cs). Evidence: [WallRowValidation.txt](WallRowValidation.txt). Previews: [five-wall preview](WallRowPreviews/wall-row-preview.png), [16:9 preview](WallRowPreviews/wall-row-preview-16x9.png), [obstructed row](WallRowPreviews/wall-row-blocked.png), and [saved walls](WallRowPreviews/wall-row-built.png).
+
+Validation passed in isolated Unity 6000.3.13f1: four directions, row-length limits, exact cost and coordinates, insufficient funds, Town Hall wall limits, obstructions, all village edges, extreme arguments and unchanged-state rejection. UI checks covered plus/minus, rotation, full price, connected models, disabled preview colliders, rejected saves, duplicate confirmation, cancellation, individual movement, ordinary Gold Mine placement and scene reload. Economy/progression, recovery, saved-replay, history, campaign, mixed-army, Tank and tutorial rule regressions passed. The valid and blocked previews were inspected at 1600x702, with the valid preview also checked at 1280x720.
+
+Known limits: straight grid-aligned rows only, up to ten per purchase; no corner drawing, obstacle skipping or moving a whole row together. Preview segments connect to each other; connections to existing walls appear after building. Home-wall upgrades and home combat remain unavailable. Phone touch/performance testing remains deferred and the APK still requires rebuilding for recent updates.
