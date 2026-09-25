@@ -7,7 +7,7 @@ namespace Kingdoms
 
     // Integer positions (100 units/cell), fixed 100 ms ticks, stable list/ID ordering.
     // This encounter owns all combat state and never receives a VillageState.
-    public sealed class PracticeBattle
+    public sealed partial class PracticeBattle
     {
         public const int TickMilliseconds=100, ArmySize=8, MaximumArmySize=80, TimeLimitTicks=1800;
         public sealed class Entity
@@ -25,7 +25,8 @@ namespace Kingdoms
         }
         public sealed class Recording
         {
-            public const int RulesVersion=6;
+            public const int RulesVersion=7;
+            public readonly int CombatRules;
             public readonly EnemyLayout Layout;
             public readonly bool SealedEnclosure;
             public readonly int EndTick, ArmyBudget, ArcherBudget, TankBudget;
@@ -34,11 +35,14 @@ namespace Kingdoms
             public readonly IReadOnlyList<Deployment> Deployments;
             internal Recording(PracticeBattle battle)
             {
+                CombatRules=battle.CombatRules;
                 Layout=battle.Layout;TankBudget=battle.TankBudget;ArcherBudget=battle.ArcherBudget;ArmyBudget=battle.ArmyBudget;SealedEnclosure=battle.sealedEnclosure;EndTick=battle.Tick;Outcome=battle.Outcome;
                 FinalHash=battle.StateHash();Deployments=Array.AsReadOnly(battle.deployments.ToArray());
             }
         }
         public EnemyLayout Layout {get;}
+        public int CombatRules {get;}
+        public static bool SupportsRules(int rules)=>rules==6 || rules==Recording.RulesVersion;
         bool sealedEnclosure=>Layout.Sealed;
         public bool SealedEnclosure=>sealedEnclosure;
         readonly List<Deployment> deployments=new List<Deployment>();
@@ -67,13 +71,14 @@ namespace Kingdoms
         sealed class Route { public Entity Target; public readonly Queue<int> Cells=new Queue<int>(); }
         readonly Dictionary<int,Route> routes=new Dictionary<int,Route>();
 
-        public PracticeBattle(bool sealedEnclosure=false, int armyBudget=ArmySize, int archerBudget=0, int tankBudget=0)
-            : this(sealedEnclosure ? EnemyLayoutCatalog.Keep : EnemyLayoutCatalog.Gate,armyBudget,archerBudget,tankBudget) {}
-        public PracticeBattle(EnemyLayout layout,int armyBudget=ArmySize,int archerBudget=0,int tankBudget=0)
+        public PracticeBattle(bool sealedEnclosure=false, int armyBudget=ArmySize, int archerBudget=0, int tankBudget=0,int combatRules=Recording.RulesVersion)
+            : this(sealedEnclosure ? EnemyLayoutCatalog.Keep : EnemyLayoutCatalog.Gate,armyBudget,archerBudget,tankBudget,combatRules) {}
+        public PracticeBattle(EnemyLayout layout,int armyBudget=ArmySize,int archerBudget=0,int tankBudget=0,int combatRules=Recording.RulesVersion)
         {
+            if(!SupportsRules(combatRules))throw new ArgumentOutOfRangeException(nameof(combatRules));
             if(layout==null)throw new ArgumentNullException(nameof(layout));
             if(armyBudget<1 || armyBudget>MaximumArmySize || archerBudget<0 || tankBudget<0 || (long)archerBudget+tankBudget>armyBudget || (long)armyBudget+archerBudget+3L*tankBudget>MaximumArmySize)throw new ArgumentOutOfRangeException(nameof(armyBudget));
-            Layout=layout;TankBudget=tankBudget;ArcherBudget=archerBudget;ArmyBudget=armyBudget;
+            CombatRules=combatRules;Layout=layout;TankBudget=tankBudget;ArcherBudget=archerBudget;ArmyBudget=armyBudget;
             foreach(var b in layout.Buildings)
                 buildings.Add(new Entity{Id=b.Id,Kind=b.Kind,X=b.X,Z=b.Z,HitPoints=b.HitPoints,MaxHitPoints=b.HitPoints,HalfSize=b.HalfSize,Damage=b.Damage,Range=b.Range});
         }
@@ -185,8 +190,11 @@ namespace Kingdoms
             int cell=route.Cells.Peek(),dx=CellX(cell)-raider.X,dz=CellZ(cell)-raider.Z;
             int distance=Math.Max(1,(int)Math.Ceiling(Math.Sqrt((long)dx*dx+(long)dz*dz)));
             int step=Math.Min(TroopCatalog.Find(raider.Kind).Speed,distance);
-            raider.X+=dx*step/distance;raider.Z+=dz*step/distance;
-            if(raider.X==CellX(cell) && raider.Z==CellZ(cell))route.Cells.Dequeue();
+            int nextX=raider.X+dx*step/distance,nextZ=raider.Z+dz*step/distance;
+            if(CombatRules>=7 && !ClearMovement(raider.X,raider.Z,nextX,nextZ)){routes.Remove(raider.Id);return;}
+            raider.X=nextX;raider.Z=nextZ;
+            int leftX=CellX(cell)-raider.X,leftZ=CellZ(cell)-raider.Z;
+            if((leftX==0 && leftZ==0) || (CombatRules>=7 && route.Cells.Count>1 && leftX*leftX+leftZ*leftZ<=24*24))route.Cells.Dequeue();
         }
         public void Step()
         {
@@ -203,6 +211,7 @@ namespace Kingdoms
                 if(!raider.Alive)continue;
                 MoveOrAttack(raider);
             }
+            if(CombatRules>=7)SeparateTroops();
             if(buildings.TrueForAll(b=>b.Kind=="Wall" || !b.Alive))Outcome=PracticeOutcome.Victory;
             else if(Remaining==0 && raiders.TrueForAll(r=>!r.Alive))Outcome=PracticeOutcome.Defeat;
             else if(Tick>=TimeLimitTicks)Outcome=PracticeOutcome.Timeout;
@@ -219,7 +228,7 @@ namespace Kingdoms
         {
             ulong hash=14695981039346656037UL;
             Action<int> add=value=>{unchecked{for(int i=0;i<4;i++){hash^=(byte)(value>>(i*8));hash*=1099511628211UL;}}};
-            add(Recording.RulesVersion);add(Layout.Id);add(Layout.Revision);add(ArmyBudget);add(ArcherBudget);add(TankBudget);add(sealedEnclosure ? 1 : 0);add(Tick);add((int)Outcome);add(Remaining);
+            add(CombatRules);add(Layout.Id);add(Layout.Revision);add(ArmyBudget);add(ArcherBudget);add(TankBudget);add(sealedEnclosure ? 1 : 0);add(Tick);add((int)Outcome);add(Remaining);
             foreach(var list in new[]{buildings,raiders})
             {
                 add(list.Count);
@@ -240,7 +249,7 @@ namespace Kingdoms
         public PracticeReplay(PracticeBattle.Recording recording)
         {
             this.recording=recording ?? throw new ArgumentNullException(nameof(recording));
-            Battle=new PracticeBattle(recording.Layout,recording.ArmyBudget,recording.ArcherBudget,recording.TankBudget);ApplyCommands();
+            Battle=new PracticeBattle(recording.Layout,recording.ArmyBudget,recording.ArcherBudget,recording.TankBudget,recording.CombatRules);ApplyCommands();
         }
         void ApplyCommands()
         {

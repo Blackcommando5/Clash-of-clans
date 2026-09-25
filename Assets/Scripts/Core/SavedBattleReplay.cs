@@ -20,7 +20,7 @@ namespace Kingdoms
         public static string Encode(PracticeBattle.Recording recording, string runId=null)
         {
             var saved = new SavedBattleReplay {
-                runId=runId, format=FormatVersion, rules=PracticeBattle.Recording.RulesVersion,
+                runId=runId, format=FormatVersion, rules=recording.CombatRules,
                 layout=recording.Layout.Id, layoutRevision=recording.Layout.Revision,
                 army=recording.ArmyBudget, archers=recording.ArcherBudget, tanks=recording.TankBudget,
                 endTick=recording.EndTick, outcome=recording.Outcome,
@@ -46,7 +46,7 @@ namespace Kingdoms
             catch(Exception) {return false;}
             if(saved==null)return false;
             var layout=EnemyLayoutCatalog.Find(saved.layout);
-            if(saved.format!=FormatVersion || saved.rules!=PracticeBattle.Recording.RulesVersion || layout==null || saved.layoutRevision!=layout.Revision)
+            if(saved.format!=FormatVersion || !PracticeBattle.SupportsRules(saved.rules) || layout==null || saved.layoutRevision!=layout.Revision)
             {reason="Replay expired";return false;}
             if(saved.layout!=entry.mission || saved.army!=(long)entry.raiders+entry.archers+entry.tanks || saved.archers!=entry.archers || saved.tanks!=entry.tanks ||
                 saved.army<1 || saved.archers<0 || saved.tanks<0 || (long)saved.archers+saved.tanks>saved.army ||
@@ -90,7 +90,7 @@ namespace Kingdoms
 
         static bool TryRebuild(SavedBattleReplay saved, out PracticeBattle battle)
         {
-            battle=new PracticeBattle(EnemyLayoutCatalog.Find(saved.layout),saved.army,saved.archers,saved.tanks);
+            battle=new PracticeBattle(EnemyLayoutCatalog.Find(saved.layout),saved.army,saved.archers,saved.tanks,saved.rules);
             int next=0;
             for(int tick=0;tick<=saved.endTick;tick++)
             {

@@ -47,6 +47,7 @@ The project is a Clash of Clans-inspired village prototype with its own Kingdoms
 | Progression | Two builders, timed upgrades through level 3, Town Hall limits, confirmed cancellation with a storage-capped 50% refund |
 | Defenses | Purchase, move, inspect range and upgrade; home defenses remain idle |
 | Practice battle | Eight raiders, three enemy buildings, walls, entrance routing, wall breach logic, star scoring, surrender, results, watch replay, retry and return |
+| Troop movement | Deterministic soft spacing between living troops, larger spacing for Tanks, and movement checks against live walls/buildings; old rules-6 attacks retain their original behavior |
 | Ground deployment | Click/tap within a visible southern zone; selected troop, half-cell snapping, placement feedback and exact-position replay; lane buttons retained |
 | Army preparation | Buildings > Prepare Army; free instant mixed Raider/Archer/Tank roster, weighted housing, troop selection, eight starter spaces plus camp capacity, readiness and immediate saving |
 | Army reuse | Use Army on a campaign history entry or Last Army in preparation to replace the roster with an exact previous troop mix; current housing and unlock requirements still apply |
@@ -58,9 +59,9 @@ The project is a Clash of Clans-inspired village prototype with its own Kingdoms
 | Guided onboarding | Eight-step Village Guide, contextual shortcuts, saved milestones, pause/resume hints and recognition of existing progress |
 | Mobile setup | Verified development APK, Welcome scene first, village second, landscape orientation, Android IL2CPP/ARM64; physical-phone checks pending |
 
-Not implemented yet: arbitrary enemy villages, unit separation, matchmaking, multiplayer, online accounts, purchases or a server economy. The fixed practice battlefield is separate from your home village. Gem counters and reference-style buttons do not imply that all reference-game features exist.
+Not implemented yet: arbitrary enemy villages, hard crowd collision/formation control, matchmaking, multiplayer, online accounts, purchases or a server economy. The fixed practice battlefield is separate from your home village. Gem counters and reference-style buttons do not imply that all reference-game features exist.
 
-The existing Android development APK builds and passes package checks, but predates battle history, saved replays, battle recovery, replay controls, army reuse and wall-row placement. Rebuild it to include these features. Physical-phone testing remains pending and has been deferred by the user. See [Android validation](ANDROID_BUILD_VALIDATION.md).
+The existing Android development APK builds and passes package checks, but predates battle history, saved replays, battle recovery, replay controls, army reuse, wall-row placement and troop separation. Rebuild it to include these features. Physical-phone testing remains pending and has been deferred by the user. See [Android validation](ANDROID_BUILD_VALIDATION.md).
 
 ## 2. How to practise without losing your work
 
@@ -542,6 +543,7 @@ Use these as checkpoints after each lesson, rather than waiting until everything
 | Upgrade and open builder queue | Job, target level and remaining time appear |
 | Confirm upgrade cancellation | Current level retained; builder freed; storage-capped half refund |
 | Open Attack and deploy | Separate practice battle; defenses fire and raiders route through the entrance |
+| Deploy several troops at the same ground point in a new attack | Living troops spread as they move, without being pushed through live walls/buildings; crowd spacing is soft, not a guarantee of zero overlap |
 | Finish, retry and return | Encounter resets; home village state is preserved |
 | Watch Replay, pause, change speed and resume | Timer freezes while paused; playback continues at the selected 1x/2x/4x speed and verifies the original result |
 | Restart a replay before it finishes | Original attack begins again at 1x with the complete recording retained |
@@ -867,7 +869,7 @@ Source links: [combat/replay](Assets/Scripts/Core/PracticeBattle.cs), [mission r
 
 The original campaign and practice regression suites also passed, covering pending rewards, legacy mission wins, replay/retry, surrender and home-save preservation.
 
-Known limits: four authored villages, a fixed navigation grid, fixed defense stats, no unit separation, no external snapshot import and no persisted/exported replays. Phone performance and an updated APK remain unvalidated.
+Known limits at this historical increment: four authored villages, a fixed navigation grid, fixed defense stats, no unit separation, no external snapshot import and no persisted/exported replays. Later sections add persistence and soft troop separation. Phone performance and an updated APK remain unvalidated.
 
 
 ### Resumable Village Guide ? 24 September 2026
@@ -960,7 +962,7 @@ Source links: [capture and campaign lifecycle](Assets/Scripts/Core/VillageCampai
 
 Validation passed in isolated Unity 6000.3.13f1: all four authored layouts, mixed troops, checkpoint and continued per-tick state equality, resumed deployment and full replay, wrong-run/army rejection, corrupt/incompatible/legacy checkpoint handling, once-only victory payout, immediate and periodic saves, simulated pause plus scene reload, Save & Return, save-rejection pause/retry, explicit surrender cleanup and separate practice behavior. Saved replay, history, campaign, mixed-army, Tank, tutorial and resource/progression rule regressions also passed. Screenshots were inspected at 1600x702 and 1280x720.
 
-Known limits: recovery is local and campaign-only. Practice battles still reset when closed. Checkpoints require compatible combat rules and authored layouts; there is no cross-version recovery engine or online verification. Physical-phone lifecycle, abrupt termination and storage faults remain unverified. The Android APK has not been rebuilt for this increment; phone testing remains deferred.
+Known limits at this historical increment: recovery is local and campaign-only. Practice battles still reset when closed. Checkpoints require compatible combat rules and authored layouts. The separation increment below retains the rules-6 engine alongside rules 7 for replay and checkpoint compatibility; other unsupported versions still cannot resume. There is no online verification. Physical-phone lifecycle, abrupt termination and storage faults remain unverified. The Android APK has not been rebuilt for this increment; phone testing remains deferred.
 
 ### Replay playback controls - 25 September 2026
 
@@ -970,7 +972,7 @@ Saved campaign replays and the current practice replay now have **Pause / Resume
 
 Playback speed changes how many fixed simulation ticks run per frame. Troop commands, damage, cooldowns, outcomes and recording hashes use the same rules. A replay paused by the player stays paused through application suspension/resume. Opening another recording resets to normal speed and playing. Finished recordings disable Pause and Speed while leaving Restart available; an immediate surrender correctly displays 0:00.0 / 0:00.0. These controls cannot pause or accelerate a live attack. Village production retains its normal application-pause save behavior.
 
-Saves remain **version 9** and combat/replay rules remain **version 6**. Playback controls do not change the recording format, so existing compatible saved replays and campaign checkpoints remain usable. Speed and manual pause are session preferences and are not persisted. Restart retains the full original recording, including deployments that have not happened yet.
+At this playback-controls increment, saves remained **version 9** and combat/replay rules remained **version 6**. Playback controls do not change the recording format, so existing compatible saved replays and campaign checkpoints remain usable. Speed and manual pause are session preferences and are not persisted. Restart retains the full original recording, including deployments that have not happened yet. New combat uses rules 7 after the separation increment below.
 
 Study [playback controls and fixed-tick scheduling](Assets/Scripts/UI/VillageReplayControls.cs), [battle lifecycle and replay integration](Assets/Scripts/UI/VillagePracticeBattle.cs), and [validation source](Assets/Editor/ReplayControlsValidation.cs). Validation evidence: [ReplayControlsValidation.txt](ReplayControlsValidation.txt). Previews: [paused at 4x](ReplayControlsPreviews/replay-controls-paused.png), [16:9 paused view](ReplayControlsPreviews/replay-controls-paused-16x9.png), and [completed replay](ReplayControlsPreviews/replay-controls-complete.png).
 
@@ -1011,3 +1013,21 @@ Source links: [row validation and atomic placement](Assets/Scripts/Core/VillageW
 Validation passed in isolated Unity 6000.3.13f1: four directions, row-length limits, exact cost and coordinates, insufficient funds, Town Hall wall limits, obstructions, all village edges, extreme arguments and unchanged-state rejection. UI checks covered plus/minus, rotation, full price, connected models, disabled preview colliders, rejected saves, duplicate confirmation, cancellation, individual movement, ordinary Gold Mine placement and scene reload. Economy/progression, recovery, saved-replay, history, campaign, mixed-army, Tank and tutorial rule regressions passed. The valid and blocked previews were inspected at 1600x702, with the valid preview also checked at 1280x720.
 
 Known limits: straight grid-aligned rows only, up to ten per purchase; no corner drawing, obstacle skipping or moving a whole row together. Preview segments connect to each other; connections to existing walls appear after building. Home-wall upgrades and home combat remain unavailable. Phone touch/performance testing remains deferred and the APK still requires rebuilding for recent updates.
+
+### Troop separation and compatible combat rules - 25 September 2026
+
+New practice and campaign attacks now apply **soft troop separation**. Living troops deployed close together spread out as they move and attack; Tanks prefer a larger gap than Raiders and Archers. Nearby path waypoints can be passed without forcing every unit through the exact same center point. Troops still select their own targets, use gates and breach walls under the existing combat rules.
+
+**Beginner walkthrough:** Open **Attack!**, start practice and deploy several Raiders at the same point inside the green outline. Watch them spread on their approach. Finish or surrender and use **Watch Replay** at 1x or 4x: the same positions, damage and result repeat. For campaign recovery, prepare an army, begin an attack, deploy troops, choose **Save & Return**, then resume. The checkpoint restores the same crowd positions and continues the same simulation.
+
+Separation uses integer coordinates and stable troop ordering on the existing fixed 100 ms simulation tick. Each troop receives a bounded correction of at most 0.12 world cells per tick. Every attempted displacement checks the path against live building and wall footprints and the navigation boundary; invalid corrections are rejected. Route movement also checks its segment, preventing crowd offsets from causing corner cutting. This does not introduce Unity rigidbody physics or change the global playback clock.
+
+New attacks use **combat/replay rules 7**. The game also retains **rules 6** for existing saved replays and checkpointed attacks. An old checkpoint resumes with its original engine, including its original overlapping troop behavior; saving it again, completing it, and watching its replay retain rules 6. This keeps the previous result reproducible instead of silently applying the new movement to an old attack. Start a new attack to see separation. Unsupported other rule versions and changed layout revisions still follow the existing replay-expiry handling.
+
+Village saves remain **version 9**, and the recording format remains **version 1**. Recording and checkpoint headers already contain a rules field; that field now selects the matching simulation. No reset or save migration is needed. Damage, troop stats, mission rewards and layout revisions have not changed. Outcomes of newly started attacks can differ because troops now occupy different positions and follow slightly different paths.
+
+Study [crowd spacing and movement clearance](Assets/Scripts/Core/PracticeBattleSeparation.cs), [versioned combat and waypoint movement](Assets/Scripts/Core/PracticeBattle.cs), [replay/checkpoint rule selection](Assets/Scripts/Core/SavedBattleReplay.cs), and [validation source](Assets/Editor/CrowdSeparationValidation.cs). The fixed [rules-6 compatibility fixtures](Assets/Editor/Fixtures/CombatRules6.json) were captured from the unmodified previous engine; [fixture provenance](Assets/Editor/Fixtures/README.md) explains their synthetic inputs. Evidence: [CrowdSeparationValidation.txt](CrowdSeparationValidation.txt). Previews: [eight separated Raiders](CrowdSeparationPreviews/separated-troops.png) and [16:9 combat](CrowdSeparationPreviews/separated-troops-16x9.png).
+
+Validation passed in isolated Unity 6000.3.13f1. Eight coincident Raiders now have at most six pairs closer than 0.3 cells after 40 ticks, versus all 28 pairs under the old engine. The 80-unit case also spreads and replays deterministically. The existing 32-space mixed army still wins all four layouts; every tick matches during replay and checkpoint continuation, and living troops remain outside live wall/building footprints. Pre-change rules-6 fixtures retain their original final hashes and reward behavior. Live UI checks cover legacy resume/save/replay/history, new combat, 4x replay, and new checkpoint recovery after scene reload. Practice navigation/scoring, authored layouts, recovery, saved replay, history, campaign, mixed-army, Tank, tutorial and economy/progression rule regressions passed. Both landscape previews were inspected.
+
+Known limits: this is soft spacing, not rigid troop collision or formation control. Crowds can still overlap, especially at deployment and narrow approaches; it does not guarantee a minimum gap between every pair. Dead troops do not repel living troops. Only rules 6 and 7 are retained. Device frame rate, memory, physical touch and the updated Android APK remain unvalidated; phone testing stays deferred.
