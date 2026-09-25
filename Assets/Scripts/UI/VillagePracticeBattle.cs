@@ -23,7 +23,8 @@ namespace Kingdoms.UI
         readonly List<Material> practiceMaterials=new List<Material>();
         Material raiderCloth,archerCloth,tankArmor,raiderSkin,shotMaterial;
         Vector3 homeCameraFocus;
-        float homeCameraZoom,practiceAccumulator;
+        float homeCameraZoom;
+        double practiceAccumulator;
         bool practicePaused;
         bool historyReplayOpen;
         public bool PracticeOpen=>practiceBattle!=null;
@@ -82,6 +83,7 @@ namespace Kingdoms.UI
             campaignBattleClaim=Button("Claim Campaign Battle",practiceSafe,"CLAIM",new Vector2(.81f,.03f),new Vector2(.98f,.12f),new Color(.45f,.64f,.24f));
             campaignBattleClaim.onClick.AddListener(ClaimCampaignBattle);campaignBattleClaim.gameObject.SetActive(false);
             BuildCheckpointRetry();
+            BuildReplayControls();
             tankArmor=PracticeMaterial("Tank armor",new Color(.38f,.32f,.48f));
             archerCloth=PracticeMaterial("Archer tunic",new Color(.22f,.62f,.18f));
             practiceSealedChallenge=mission>=0 && CampaignCatalog.Find(mission).Sealed;
@@ -127,6 +129,7 @@ namespace Kingdoms.UI
             foreach(var label in practiceHealth.Values){label.gameObject.SetActive(false);Destroy(label.gameObject);}
             practiceModels.Clear();practiceHealth.Clear();practiceShots.Clear();practiceAccumulator=0;practicePaused=false;
             practiceReplay=recording==null ? null : new PracticeReplay(recording);
+            replayRecording=recording;replayUserPaused=false;replaySpeed=1;
             practiceScouting=recording==null && restoredBattle==null;
             practiceBattle=restoredBattle ?? (practiceReplay==null ? new PracticeBattle(battleMission>=0 ? CampaignCatalog.Find(battleMission).Layout : practiceSealedChallenge ? EnemyLayoutCatalog.Keep : EnemyLayoutCatalog.Gate,battleMission>=0 ? State.ArmyCount : PracticeBattle.ArmySize,battleMission>=0 ? State.ArmyCountOf("Archer") : 0,battleMission>=0 ? State.ArmyCountOf("Tank") : 0) : practiceReplay.Battle);
             practiceSealedChallenge=practiceBattle.SealedEnclosure;
@@ -204,14 +207,7 @@ namespace Kingdoms.UI
             if(ScoutingPractice){RefreshPracticeBattle();return;}
             HandleGroundDeployment();
             if(checkpointSaveBlocked)return;
-            practiceAccumulator+=Mathf.Min(Time.unscaledDeltaTime,.5f);
-            while(practiceAccumulator>=.1f)
-            {
-                practiceAccumulator-=.1f;
-                if(practiceReplay==null)practiceBattle.Step();else practiceReplay.Step();
-                foreach(var raider in practiceBattle.Raiders)if(!practiceModels.ContainsKey(raider.Id))CreatePracticeRaider(raider);
-                foreach(var strike in practiceBattle.Strikes)ShowPracticeStrike(strike);
-            }
+            AdvancePracticeSimulation(Time.unscaledDeltaTime);
             practiceShots.RemoveAll(shot=>shot==null);
             if(CampaignBattleOpen && !WatchingPracticeReplay && practiceBattle.Outcome==PracticeOutcome.Running && practiceBattle.Tick>=checkpointNextTick)SaveCampaignCheckpoint();
             RefreshPracticeBattle();
@@ -234,7 +230,7 @@ namespace Kingdoms.UI
             if(ScoutingPractice)practiceStatus.text="SCOUTING  |  "+(practiceSealedChallenge ? "WALL BREACH" : "OPEN GATE")+"\n8 raiders ready  |  3-minute attack  |  No resource cost";
             foreach(var button in practiceDeployButtons)
             {
-                button.gameObject.SetActive(!ScoutingPractice);
+                button.gameObject.SetActive(!ScoutingPractice && !WatchingPracticeReplay);
                 button.interactable=running && !ScoutingPractice && !WatchingPracticeReplay && practiceBattle.RemainingOf(deployedTroop)>0;
             }
             bool selectTroops=running && !ScoutingPractice && !WatchingPracticeReplay && (practiceBattle.ArcherBudget>0 || practiceBattle.TankBudget>0);
@@ -284,6 +280,7 @@ namespace Kingdoms.UI
             }
             RefreshGroundDeployment();
             practiceSurrender.interactable=true;RefreshCheckpointControls();
+            RefreshReplayControls();
         }
         void RefreshPracticeEntity(PracticeBattle.Entity entity)
         {
@@ -307,6 +304,7 @@ namespace Kingdoms.UI
             CancelGroundGesture();
             battleMission=-1;battleRunId="";
             practiceBattle.Surrender();practiceBattle=null;practiceReplay=null;
+            replayRecording=null;replayUserPaused=false;replaySpeed=1;practiceAccumulator=0;
             if(practiceWorld!=null){practiceWorld.SetActive(false);Destroy(practiceWorld);}
             if(practiceCanvas!=null){practiceCanvas.SetActive(false);Destroy(practiceCanvas);}
             practiceCanvas=null;practiceModels.Clear();practiceHealth.Clear();practiceShots.Clear();practiceDeployButtons.Clear();

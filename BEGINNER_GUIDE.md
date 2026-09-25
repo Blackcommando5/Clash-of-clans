@@ -1,6 +1,6 @@
 # Kingdoms: a beginner's guide to rebuilding and understanding the game
 
-Updated: 24 September 2026.
+Updated: 25 September 2026.
 
 > Keep this guide current with every development update. Sections 1, 11, 12 and 14 describe the current game. The manual ground, camera, welcome and primitive-model lessons explain the original foundations; inspect the current scenes for the latest artwork and Inspector values.
 
@@ -50,6 +50,7 @@ The project is a Clash of Clans-inspired village prototype with its own Kingdoms
 | Army preparation | Buildings > Prepare Army; free instant mixed Raider/Archer/Tank roster, weighted housing, troop selection, eight starter spaces plus camp capacity, readiness and immediate saving |
 | Campaign | Four authored missions, distinct layouts/deployment zones, dynamic scouting, prepared-army commitment, durable results, once-only first-clear rewards and saved unlocks |
 | Battle history | Latest 20 campaign results, newest first; outcome, stars, destruction, duration, committed army, claimed rewards and saved replay playback after restart |
+| Replay controls | Pause/resume, 1x/2x/4x playback, restart at any point, and elapsed/total time for saved campaign and in-memory practice replays |
 | Battle recovery | Resume checkpointed campaign attacks with the same timer, damage, troop positions and reserves; automatic saves, Save & Return, and paused retry on save failure |
 | Persistence | Local version 9 village saves; migrations from versions 1-8; saved guide milestones, hint preference and campaign history |
 | Guided onboarding | Eight-step Village Guide, contextual shortcuts, saved milestones, pause/resume hints and recognition of existing progress |
@@ -57,7 +58,7 @@ The project is a Clash of Clans-inspired village prototype with its own Kingdoms
 
 Not implemented yet: arbitrary enemy villages, unit separation, matchmaking, multiplayer, online accounts, purchases or a server economy. The fixed practice battlefield is separate from your home village. Gem counters and reference-style buttons do not imply that all reference-game features exist.
 
-The existing Android development APK builds and passes package checks, but predates battle history, saved replays and battle recovery. Rebuild it to include these features. Physical-phone testing remains pending and has been deferred by the user. See [Android validation](ANDROID_BUILD_VALIDATION.md).
+The existing Android development APK builds and passes package checks, but predates battle history, saved replays, battle recovery and replay controls. Rebuild it to include these features. Physical-phone testing remains pending and has been deferred by the user. See [Android validation](ANDROID_BUILD_VALIDATION.md).
 
 ## 2. How to practise without losing your work
 
@@ -538,6 +539,8 @@ Use these as checkpoints after each lesson, rather than waiting until everything
 | Confirm upgrade cancellation | Current level retained; builder freed; storage-capped half refund |
 | Open Attack and deploy | Separate practice battle; defenses fire and raiders route through the entrance |
 | Finish, retry and return | Encounter resets; home village state is preserved |
+| Watch Replay, pause, change speed and resume | Timer freezes while paused; playback continues at the selected 1x/2x/4x speed and verifies the original result |
+| Restart a replay before it finishes | Original attack begins again at 1x with the complete recording retained |
 | Stop and play again | Confirmed buildings and resources reload |
 | Change landscape aspect ratio | UI remains usable and camera remains bounded |
 | Pause/relaunch on phone | Saved village returns; capped offline progress applies |
@@ -933,7 +936,7 @@ Source links: [recording serialization and verification](Assets/Scripts/Core/Sav
 
 Validation covers per-tick reconstruction, four layouts, mixed troops and exact ground coordinates, victory/defeat/surrender/timeout, zero-tick surrender, maximum command count, incompatible and corrupt recordings, unchanged village loading and economy, UI playback after reload, replaying again, returning to the same history page, and preserving a separate active campaign. The existing battle-history, campaign, mixed-army, Tank, tutorial and resource/progression rule suites also passed. The new suite passed in isolated Unity 6000.3.13f1, and screenshots were inspected at 1600x702 and 1280x720.
 
-Known limits: saved playback applies to campaign attacks completed after this update; practice replays remain in memory. Playback runs at normal speed with no seeking or export. Incompatible recordings expire, while summaries remain. At this replay-only increment, interrupted combat could not yet resume; recovery is added below. Phone testing remains deferred, and the existing APK needs a rebuild to include this update.
+Known limits at this historical increment: saved playback applied to newly completed campaign attacks; practice replays remained in memory. Playback initially ran at normal speed; controls are added below. Incompatible recordings expire, while summaries remain. At this replay-only increment, interrupted combat could not yet resume; recovery is added below. Phone testing remains deferred, and the existing APK needs a rebuild to include these updates.
 
 ### Resumable campaign attacks - 24 September 2026
 
@@ -952,3 +955,19 @@ Source links: [capture and campaign lifecycle](Assets/Scripts/Core/VillageCampai
 Validation passed in isolated Unity 6000.3.13f1: all four authored layouts, mixed troops, checkpoint and continued per-tick state equality, resumed deployment and full replay, wrong-run/army rejection, corrupt/incompatible/legacy checkpoint handling, once-only victory payout, immediate and periodic saves, simulated pause plus scene reload, Save & Return, save-rejection pause/retry, explicit surrender cleanup and separate practice behavior. Saved replay, history, campaign, mixed-army, Tank, tutorial and resource/progression rule regressions also passed. Screenshots were inspected at 1600x702 and 1280x720.
 
 Known limits: recovery is local and campaign-only. Practice battles still reset when closed. Checkpoints require compatible combat rules and authored layouts; there is no cross-version recovery engine or online verification. Physical-phone lifecycle, abrupt termination and storage faults remain unverified. The Android APK has not been rebuilt for this increment; phone testing remains deferred.
+
+### Replay playback controls - 25 September 2026
+
+Saved campaign replays and the current practice replay now have **Pause / Resume**, **Speed: 1x / 2x / 4x**, and **Restart** controls beneath the battlefield. The progress label shows playback state and elapsed/total recorded time in minutes, seconds and tenths. Deployment buttons are hidden during playback.
+
+**Try it:** Open **Campaign > Battle History**, find a recorded attack and select **Watch Replay**. Press **Pause**: combat and the replay timer stop. Press **Speed** to cycle through 1x, 2x and 4x, then **Resume**. You can change speed while paused. Press **Restart** during playback or after completion to replay the entire original attack from zero at normal speed. Restart clears the manual pause. **Back to History** returns to the same page. For practice, finish an attack and press **Watch Replay** to use the same controls.
+
+Playback speed changes how many fixed simulation ticks run per frame. Troop commands, damage, cooldowns, outcomes and recording hashes use the same rules. A replay paused by the player stays paused through application suspension/resume. Opening another recording resets to normal speed and playing. Finished recordings disable Pause and Speed while leaving Restart available; an immediate surrender correctly displays 0:00.0 / 0:00.0. These controls cannot pause or accelerate a live attack. Village production retains its normal application-pause save behavior.
+
+Saves remain **version 9** and combat/replay rules remain **version 6**. Playback controls do not change the recording format, so existing compatible saved replays and campaign checkpoints remain usable. Speed and manual pause are session preferences and are not persisted. Restart retains the full original recording, including deployments that have not happened yet.
+
+Study [playback controls and fixed-tick scheduling](Assets/Scripts/UI/VillageReplayControls.cs), [battle lifecycle and replay integration](Assets/Scripts/UI/VillagePracticeBattle.cs), and [validation source](Assets/Editor/ReplayControlsValidation.cs). Validation evidence: [ReplayControlsValidation.txt](ReplayControlsValidation.txt). Previews: [paused at 4x](ReplayControlsPreviews/replay-controls-paused.png), [16:9 paused view](ReplayControlsPreviews/replay-controls-paused-16x9.png), and [completed replay](ReplayControlsPreviews/replay-controls-complete.png).
+
+Validation passed in isolated Unity 6000.3.13f1: all three speeds matched the original simulation across four layouts with staggered mixed-troop deployments; pause/application resume, restart, immediate surrender, progress, completion, scene reload and real-frame 4x playback passed. Gameplay fields and the separate active campaign checkpoint remained unchanged; the normal production timestamp update on application pause was allowed. The existing recovery UI suite also passed, including periodic saves, rejected-save pause/retry, Save & Return and restored combat. Recovery, saved-replay, history, campaign, mixed-army, Tank, tutorial and resource/progression rule regressions passed. The paused and completed layouts were inspected at the screenshot sizes above.
+
+Known limits: no seeking, single-tick stepping, replay export or remembered playback preferences. Visual effects use their ordinary display lifetime; faster playback accelerates combat ticks. Practice recordings remain in memory. The Android APK still requires rebuilding for the recent development increments, and physical-phone testing remains deferred.
