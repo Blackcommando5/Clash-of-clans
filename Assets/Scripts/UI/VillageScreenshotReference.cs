@@ -290,8 +290,9 @@ namespace Kingdoms.UI
             if(b.kind=="ArmyCamp")referenceDetailGain.text="Army spaces: "+(VillageState.ArmySpacesPerCampLevel*b.level)+(b.level<3 ? " + 8" : " (maximum)");
             if(b.kind=="Barracks")referenceDetailGain.text=b.level>=2 ? "Tanks unlocked (maximum level)" : "Level 2 unlocks Tanks";
             if(definition.IsDefense)referenceDetailGain.text=b.level>=3 ? "Maximum available level" : "Hit points: "+(definition.HitPoints*b.level)+" + "+definition.HitPoints+"\nDamage / second: "+(definition.DamagePerSecond*b.level)+" + "+definition.DamagePerSecond;
-            referenceDetailTime.text=(b.kind=="Wall" || (b.kind=="Barracks" && b.level>=2)) ? "" : "Upgrade time\n"+Duration(b.upgradeFinishes>0 ? b.upgradeFinishes-VillageState.Now : VillageState.UpgradeSeconds(b));
-            if(b.upgradeFinishes==0 && b.level<3 && b.kind!="Wall" && (b.kind!="Barracks" || b.level<2))detailTitle.text="Upgrade "+definition.Name+" to Level "+(b.level+1)+"?";
+            if(b.kind=="Wall")referenceDetailGain.text=b.level>=3 ? "Fortified stone (maximum level)" : WallSegment.LevelName(b.level)+" to "+WallSegment.LevelName(b.level+1);
+            referenceDetailTime.text=(b.level>=3 || (b.kind=="Barracks" && b.level>=2)) ? "" : "Upgrade time\n"+Duration(b.upgradeFinishes>0 ? b.upgradeFinishes-VillageState.Now : VillageState.UpgradeSeconds(b));
+            if(b.upgradeFinishes==0 && b.level<3 && (b.kind!="Barracks" || b.level<2))detailTitle.text="Upgrade "+definition.Name+" to Level "+(b.level+1)+"?";
         }
 
         void LayoutReferenceDetails()

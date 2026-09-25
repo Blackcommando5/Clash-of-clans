@@ -107,6 +107,7 @@ namespace Kingdoms.UI
             if(selectedIndex<0 || IsPlacing || DetailsOpen)return;
             movingIndex=selectedIndex;var b=State.buildings[movingIndex];placingKind=b.kind;
             preview=Instantiate(PrefabFor(b.kind),world);preview.name="Move Preview";
+            if(b.kind=="Wall")preview.GetComponent<WallSegment>()?.ApplyLevel(b.level);
             foreach(var collider in preview.GetComponentsInChildren<Collider>())collider.enabled=false;
             footprint=GameObject.CreatePrimitive(PrimitiveType.Plane);footprint.transform.SetParent(world,false);
             footprint.transform.localScale=new Vector3(b.Size/10f,1,b.Size/10f);Destroy(footprint.GetComponent<Collider>());
@@ -224,8 +225,7 @@ namespace Kingdoms.UI
             string stats=d.ProductionPerSecond>0 ? "Production: "+(d.ProductionPerSecond*b.level*60)+" "+d.Resource.ToString().ToLowerInvariant()+" / minute\nProducer capacity: "+(d.ProductionCapacity*b.level).ToString("N0") : d.StorageBonus>0 ? "Village capacity: +"+(d.StorageBonus*b.level).ToString("N0")+" "+d.Resource.ToString().ToLowerInvariant() : "Village level: "+b.level+"\nUnlocks more resource buildings";
             if(b.kind=="Wall")
             {
-                detailStats.text="One grid cell. Adjacent wall segments connect automatically.\n\nWall upgrades and combat damage are under development.";
-                upgradeCaption.text="UPGRADES COMING LATER";upgradeAction.interactable=false;return;
+                stats="One grid cell; connects across all wall levels.\nAppearance: "+WallSegment.LevelName(b.level)+".\nHome walls are not used in battles.";
             }
             bool allowed=State.CanUpgrade(selectedIndex,out string reason);
             if(b.kind=="ArmyCamp")stats="Army capacity: +"+(VillageState.ArmySpacesPerCampLevel*b.level)+" spaces\nKeeps capacity while upgrading.\nFree, instant army preparation.";
@@ -253,7 +253,8 @@ namespace Kingdoms.UI
             {
                 visualLevels[index]=b.level;
                 var existing=instance.transform.Find("Level Banner");if(existing!=null)Destroy(existing.gameObject);
-                if(b.level>1)
+                if(b.kind=="Wall")instance.GetComponent<WallSegment>()?.ApplyLevel(b.level);
+                else if(b.level>1)
                 {
                     var flag=GameObject.CreatePrimitive(PrimitiveType.Cube);flag.name="Level Banner";flag.transform.SetParent(instance.transform,false);
                     flag.transform.localPosition=new Vector3(0,2.7f,0);flag.transform.localScale=new Vector3(.6f*b.level,.18f,.2f);

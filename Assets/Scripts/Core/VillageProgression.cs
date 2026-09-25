@@ -26,7 +26,6 @@ namespace Kingdoms
         {
             if(index<0 || index>=buildings.Count) { reason="Select a building.";return false; }
             var b=buildings[index];
-            if(b.kind=="Wall") { reason=BuildingCatalog.Find(b.kind).Name+" upgrades are not available yet.";return false; }
             if(b.upgradeFinishes>0) { reason="This building is already upgrading.";return false; }
             if(b.level>=3 || (b.kind=="Barracks" && b.level>=2)) { reason="Maximum available level reached.";return false; }
             if(b.kind!="TownHall" && b.level>=TownHallLevel+1) { reason="Upgrade your Town Hall first.";return false; }

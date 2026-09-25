@@ -43,6 +43,7 @@ The project is a Clash of Clans-inspired village prototype with its own Kingdoms
 | Buildings | Gold Mine, Elixir Collector, both storage types, Cannon, Archer Tower, individual walls, Barracks and Army Camps |
 | Placement | Grid snapping, overlap/boundary checks, preview cancellation and moving existing buildings |
 | Wall rows | Preview and build 1-10 connected wall segments in any grid direction; full-row cost/limit/overlap checks, one save, and individual movement afterward |
+| Wall upgrades | Individual home walls upgrade to level 3 with distinct stone finishes, shared builders, timers, cancellation refunds and saved progress; home walls do not affect battles |
 | Economy | Gold and elixir production, collection, storage limits and offline accrual |
 | Progression | Two builders, timed upgrades through level 3, Town Hall limits, confirmed cancellation with a storage-capped 50% refund |
 | Defenses | Purchase, move, inspect range and upgrade; home defenses remain idle |
@@ -61,7 +62,7 @@ The project is a Clash of Clans-inspired village prototype with its own Kingdoms
 
 Not implemented yet: arbitrary enemy villages, hard crowd collision/formation control, matchmaking, multiplayer, online accounts, purchases or a server economy. The fixed practice battlefield is separate from your home village. Gem counters and reference-style buttons do not imply that all reference-game features exist.
 
-The existing Android development APK builds and passes package checks, but predates battle history, saved replays, battle recovery, replay controls, army reuse, wall-row placement and troop separation. Rebuild it to include these features. Physical-phone testing remains pending and has been deferred by the user. See [Android validation](ANDROID_BUILD_VALIDATION.md).
+The existing Android development APK builds and passes package checks, but predates battle history, saved replays, battle recovery, replay controls, army reuse, wall-row placement, troop separation and wall upgrades. Rebuild it to include these features. Physical-phone testing remains pending and has been deferred by the user. See [Android validation](ANDROID_BUILD_VALIDATION.md).
 
 ## 2. How to practise without losing your work
 
@@ -1012,7 +1013,7 @@ Source links: [row validation and atomic placement](Assets/Scripts/Core/VillageW
 
 Validation passed in isolated Unity 6000.3.13f1: four directions, row-length limits, exact cost and coordinates, insufficient funds, Town Hall wall limits, obstructions, all village edges, extreme arguments and unchanged-state rejection. UI checks covered plus/minus, rotation, full price, connected models, disabled preview colliders, rejected saves, duplicate confirmation, cancellation, individual movement, ordinary Gold Mine placement and scene reload. Economy/progression, recovery, saved-replay, history, campaign, mixed-army, Tank and tutorial rule regressions passed. The valid and blocked previews were inspected at 1600x702, with the valid preview also checked at 1280x720.
 
-Known limits: straight grid-aligned rows only, up to ten per purchase; no corner drawing, obstacle skipping or moving a whole row together. Preview segments connect to each other; connections to existing walls appear after building. Home-wall upgrades and home combat remain unavailable. Phone touch/performance testing remains deferred and the APK still requires rebuilding for recent updates.
+Known limits: straight grid-aligned rows only, up to ten per purchase; no corner drawing, obstacle skipping or moving a whole row together. Preview segments connect to each other; connections to existing walls appear after building. Home-wall upgrades were unavailable at this increment and are added below; home combat remains unavailable. Phone touch/performance testing remains deferred and the APK still requires rebuilding for recent updates.
 
 ### Troop separation and compatible combat rules - 25 September 2026
 
@@ -1031,3 +1032,24 @@ Study [crowd spacing and movement clearance](Assets/Scripts/Core/PracticeBattleS
 Validation passed in isolated Unity 6000.3.13f1. Eight coincident Raiders now have at most six pairs closer than 0.3 cells after 40 ticks, versus all 28 pairs under the old engine. The 80-unit case also spreads and replays deterministically. The existing 32-space mixed army still wins all four layouts; every tick matches during replay and checkpoint continuation, and living troops remain outside live wall/building footprints. Pre-change rules-6 fixtures retain their original final hashes and reward behavior. Live UI checks cover legacy resume/save/replay/history, new combat, 4x replay, and new checkpoint recovery after scene reload. Practice navigation/scoring, authored layouts, recovery, saved replay, history, campaign, mixed-army, Tank, tutorial and economy/progression rule regressions passed. Both landscape previews were inspected.
 
 Known limits: this is soft spacing, not rigid troop collision or formation control. Crowds can still overlap, especially at deployment and narrow approaches; it does not guarantee a minimum gap between every pair. Dead troops do not repel living troops. Only rules 6 and 7 are retained. Device frame rate, memory, physical touch and the updated Android APK remain unvalidated; phone testing stays deferred.
+
+### Home-wall upgrades - 25 September 2026
+
+Select an individual home wall and open **Info / Upgrade** (or **Upgrade** on the selection bar). Walls now use the same two builders as other village upgrades. The screen shows the stone finish, price, duration and any Town Hall or builder requirement. Home walls remain outside the authored practice/campaign battle layouts; these upgrades change their village appearance, not battle damage or rewards.
+
+| Upgrade | Cost | Duration | Minimum Town Hall | Finished appearance |
+| --- | --- | --- | --- | --- |
+| Level 1 to 2 | 50 gold | 30 seconds | 1 | Taller dressed stone with pale coping |
+| Level 2 to 3 | 125 gold | 2 minutes | 2 | Taller dark fortified stone with gold trim |
+
+**Beginner walkthrough:** Build a wall or a short row, select one segment, and press Upgrade. Check the 50-gold price and 30-second timer, then confirm. Open **Builders** to find the wall's active job. Open that job to inspect its remaining time. To cancel, press **Cancel Upgrade**, review the refund, then press **Confirm Cancellation**; closing the dialog keeps the upgrade running. Let an upgrade finish and inspect the new stone finish. Upgrade your Town Hall to level 2 before taking the wall to level 3. Level 3 displays **Max Level**.
+
+Only the selected segment upgrades; adjacent segments keep their own levels. Mixed levels still connect, occupy one grid cell each and count toward the same 25/50/75-wall limits. New row purchases create level-1 segments. Moving a wall is free, preserves its level and running timer, and shows its current finish in the move preview. Upgrading walls remain at their current tier until completion. Cancellation keeps that tier and returns half the cost, rounded down and capped by free gold storage (25 gold for the first upgrade, up to 62 for the second).
+
+Active timers and completed levels use the existing building fields in **version-9 saves**. Existing supported saves still load without a reset or a new migration. Closing/reopening the game catches up finished upgrades through the normal offline progression rules. The interface saves a candidate before charging the live village; a rejected save leaves the prior balance and job intact. The older Android APK does not support upgraded home-wall records; rebuild before using this feature on Android.
+
+Study [upgrade rules and refunds](Assets/Scripts/Core/VillageProgression.cs), [save validation and offline completion](Assets/Scripts/Core/VillageState.cs), [wall finishes and connections](Assets/Scripts/Core/WallSegment.cs), [upgrade and move interaction](Assets/Scripts/UI/VillageInteractions.cs), [upgrade presentation](Assets/Scripts/UI/VillageScreenshotReference.cs), [wall portrait authoring](Assets/Editor/WallAuthoring.cs), and [validation source](Assets/Editor/WallUpgradeValidation.cs).
+
+Validation evidence: [WallUpgradeValidation.txt](WallUpgradeValidation.txt). Previews: [three connected tiers](WallUpgradePreviews/wall-upgrade-levels.png), [upgrade dialog](WallUpgradePreviews/wall-upgrade-details.png), [16:9 dialog](WallUpgradePreviews/wall-upgrade-details-16x9.png), and [cancellation confirmation](WallUpgradePreviews/wall-upgrade-cancel.png). Isolated Unity 6000.3.13f1 checks cover both upgrade prices/timers, shared builders, Town Hall gating, offline completion, refund limits, malformed saves, versions 3-9 with existing walls, failed-save rollback, mixed-level connections, model colors/heights, moving upgraded walls and scene reloads. Existing wall-row, economy/progression and campaign/recovery/replay rule regressions also pass. The save-rejection test uses invalid candidate data; physical disk failures remain untested.
+
+Known limits: no batch wall upgrades, home-village combat or new enemy-wall tiers. The model portrait in the upgrade dialog remains the base wall icon; finished tiers appear in the village and move preview. Physical-phone testing remains deferred and the Android APK needs rebuilding.

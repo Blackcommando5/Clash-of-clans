@@ -157,7 +157,6 @@ namespace Kingdoms
                 var definition = b == null ? null : BuildingCatalog.Find(b.kind);
                 if (definition == null) return false;
                 if (b.kind == "TownHall") halls++;
-                if (b.kind == "Wall" && (b.level != 1 || b.upgradeStarted != 0 || b.upgradeFinishes != 0)) return false;
                 if (b.kind == "Barracks" && (b.level>2 || (b.level==2 && b.upgradeFinishes!=0))) return false;
                 if (b.kind == "ArmyCamp" && Count("Barracks") != 1) return false;
                 if (b.level<1 || b.level>3 || b.upgradeStarted<0 || b.upgradeFinishes<0) return false;

@@ -32,7 +32,15 @@ public static class WallAuthoring
         }
         var game=UnityEngine.Object.FindFirstObjectByType<VillageGameplay>();
         game.AddEditableWalls(prefab);EditorUtility.SetDirty(game);
-        StateChecks();
+        RenderPortrait();StateChecks();
+    }
+
+    public static void RenderPortrait()
+    {
+        var prefab=AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Walls/StoneWall.prefab");
+        if(prefab==null)throw new InvalidOperationException("Build the wall prefab before rendering its portrait.");
+        Directory.CreateDirectory("Assets/Resources/BuildingIcons");
+        typeof(HomeVillageArtFactory).GetMethod("RenderIcon",System.Reflection.BindingFlags.Static|System.Reflection.BindingFlags.NonPublic).Invoke(null,new object[]{prefab,"Wall"});
     }
 
     static GameObject Box(GameObject root,string name,Vector3 pos,Vector3 scale,Material material)
@@ -57,7 +65,7 @@ public static class WallAuthoring
         Check(!s.TryPlace("Wall",5,5,1000,out _) && s.gold==975,"overlap does not charge");
         Check(!s.TryPlace("Wall",22,0,1000,out _),"boundary");
         Check(s.TryMove(1,6,5,out _) && s.gold==975,"free move");
-        Check(!s.CanUpgrade(1,out _),"unsupported upgrade refused");
+        Check(s.CanUpgrade(1,out _),"wall upgrade available");
         Check(VillageState.TryDeserialize(JsonUtility.ToJson(s),out var restored) && restored.Count("Wall")==1,"wall save reload");
         for(int i=0;i<24;i++)Check(s.TryPlace("Wall",-20+i%12,10+i/12,1000,out _),"wall limit setup");
         Check(!s.CanBuy("Wall",out _) && s.IsValid(),"wall limit");
