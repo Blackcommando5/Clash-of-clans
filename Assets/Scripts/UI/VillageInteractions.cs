@@ -217,6 +217,7 @@ namespace Kingdoms.UI
             if(guide!=null)guide.transform.parent.gameObject.SetActive(selectedIndex<0 || IsPlacing || DetailsOpen);
             RefreshLayouts();
             for(int i=0;i<buildingInstances.Count;i++) UpdateBuildingVisual(i);
+            RefreshWallMoveAction();
             if(viewingBuilderQueue){RefreshBuilderQueue();return;}
             if(selectedIndex<0 || selectedIndex>=State.buildings.Count)return;
             var b=State.buildings[selectedIndex];var d=BuildingCatalog.Find(b.kind);

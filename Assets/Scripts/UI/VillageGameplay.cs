@@ -183,6 +183,7 @@ namespace Kingdoms.UI
         {
             if (!IsPlacing) return;
             cellX=x;cellZ=z;
+            if(MovingConnectedWalls){RefreshConnectedWallPreview();return;}
             if(PlacingWallRow){RefreshWallRowPreview();return;}
             float half = BuildingCatalog.Find(placingKind).Size * .5f;
             preview.transform.position = new Vector3(x+half,0,z+half);
@@ -202,11 +203,12 @@ namespace Kingdoms.UI
             var candidate=State.Copy();
             string message;
             int previousBuildingCount=State.buildings.Count;
-            bool success=movingIndex>=0 ? candidate.TryMove(movingIndex,cellX,cellZ,out message) : PlacingWallRow ? candidate.TryPlaceWallRow(cellX,cellZ,wallRowLength,wallRowDirection,VillageState.Now,out message) : candidate.TryPlace(placingKind,cellX,cellZ,VillageState.Now,out message);
+            bool success=MovingConnectedWalls ? candidate.TryMoveConnectedWalls(movingIndex,cellX,cellZ,out message) : movingIndex>=0 ? candidate.TryMove(movingIndex,cellX,cellZ,out message) : PlacingWallRow ? candidate.TryPlaceWallRow(cellX,cellZ,wallRowLength,wallRowDirection,VillageState.Now,out message) : candidate.TryPlace(placingKind,cellX,cellZ,VillageState.Now,out message);
             if (!success) { placementInfo.text=message;return; }
             if (!VillageSave.TryWrite(candidate,out string error)) { placementInfo.text=error;return; }
             State=candidate;
-            if(movingIndex>=0) buildingInstances[movingIndex].transform.position=new Vector3(cellX+State.buildings[movingIndex].Size*.5f,0,cellZ+State.buildings[movingIndex].Size*.5f);
+            if(MovingConnectedWalls)ApplyConnectedWallPositions();
+            else if(movingIndex>=0) buildingInstances[movingIndex].transform.position=new Vector3(cellX+State.buildings[movingIndex].Size*.5f,0,cellZ+State.buildings[movingIndex].Size*.5f);
             else for(int i=previousBuildingCount;i<State.buildings.Count;i++)Spawn(State.buildings[i]);
             CancelPlacement();
             ShowMessage(message);
@@ -216,6 +218,7 @@ namespace Kingdoms.UI
         public void CancelPlacement()
         {
             ClearWallRowPreview();
+            ClearConnectedWallPreview();
             if (preview!=null) { preview.SetActive(false);Destroy(preview); }
             if (footprint!=null) { footprint.SetActive(false);Destroy(footprint); }
             if (previewMaterial!=null) Destroy(previewMaterial);
@@ -380,6 +383,8 @@ namespace Kingdoms.UI
             RefreshReferenceUI();
             UpdateResourceBars();
             RefreshWallsHUD();
+            if(MovingConnectedWalls)RefreshConnectedWallPreview();
+            confirmButton.GetComponentInChildren<Text>().text=MovingConnectedWalls ? "MOVE WALLS" : movingIndex>=0 ? "MOVE" : "BUILD";
             collectLabel.text="COLLECT ALL\n"+State.CollectableGold+" gold / "+State.CollectableElixir+" elixir";
             collectButton.interactable=!IsPlacing && ((State.CollectableGold>0 && State.gold<State.GoldCapacity) || (State.CollectableElixir>0 && State.elixir<State.ElixirCapacity));
             for (int i=0;i<shopButtons.Count;i++)

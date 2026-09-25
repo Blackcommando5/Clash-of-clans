@@ -44,6 +44,7 @@ The project is a Clash of Clans-inspired village prototype with its own Kingdoms
 | Placement | Grid snapping, overlap/boundary checks, preview cancellation and moving existing buildings |
 | Wall rows | Preview and build 1-10 connected wall segments in any grid direction; full-row cost/limit/overlap checks, one save, and individual movement afterward |
 | Wall upgrades | Individual home walls upgrade to level 3 with distinct stone finishes, shared builders, timers, cancellation refunds and saved progress; home walls do not affect battles |
+| Move connected walls | Select a wall > Info / Upgrade > Move Connected to translate its entire edge-connected section for free; exact-shape previews, collision checks, and atomic saving preserve levels and timers |
 | Economy | Gold and elixir production, collection, storage limits and offline accrual |
 | Progression | Two builders, timed upgrades through level 3, Town Hall limits, confirmed cancellation with a storage-capped 50% refund |
 | Defenses | Purchase, move, inspect range and upgrade; home defenses remain idle |
@@ -62,7 +63,7 @@ The project is a Clash of Clans-inspired village prototype with its own Kingdoms
 
 Not implemented yet: arbitrary enemy villages, hard crowd collision/formation control, matchmaking, multiplayer, online accounts, purchases or a server economy. The fixed practice battlefield is separate from your home village. Gem counters and reference-style buttons do not imply that all reference-game features exist.
 
-The existing Android development APK builds and passes package checks, but predates battle history, saved replays, battle recovery, replay controls, army reuse, wall-row placement, troop separation and wall upgrades. Rebuild it to include these features. Physical-phone testing remains pending and has been deferred by the user. See [Android validation](ANDROID_BUILD_VALIDATION.md).
+The existing Android development APK builds and passes package checks, but predates battle history, saved replays, battle recovery, replay controls, army reuse, wall-row placement, troop separation, wall upgrades and connected-wall movement. Rebuild it to include these features. Physical-phone testing remains pending and has been deferred by the user. See [Android validation](ANDROID_BUILD_VALIDATION.md).
 
 ## 2. How to practise without losing your work
 
@@ -491,7 +492,7 @@ The main component is [VillageGameplay.cs](Assets/Scripts/UI/VillageGameplay.cs)
 
 1. Start from WelcomeScene and enter or confirm your name if prompted.
 2. Open Shop, select a supported resource or defense building, choose a clear grid location, and confirm placement.
-3. Tap a building without dragging. Choose Move or Info / Upgrade. Select a defense to see its range circle.
+3. Tap a building without dragging. Choose Move or Info / Upgrade. Select a defense to see its range circle. For a whole wall section, select one wall, open Info / Upgrade, then choose Move Connected; the button shows the number of walls included.
 4. Tap the builder indicator to inspect both builder slots and active jobs. Select a job to open its details.
 5. Tap Attack! to scout the practice battlefield. Inspect the defense summary, choose a challenge, then press Start Attack. Deploy Left, Center or Right spends one of eight practice raiders per tap.
 6. Watch raiders avoid footprints and approach the enclosed Town Hall through its entrance. If all remaining buildings are sealed off, the simulation can target and break a wall; choose Try Wall Breach while scouting to play the sealed layout.
@@ -1013,7 +1014,7 @@ Source links: [row validation and atomic placement](Assets/Scripts/Core/VillageW
 
 Validation passed in isolated Unity 6000.3.13f1: four directions, row-length limits, exact cost and coordinates, insufficient funds, Town Hall wall limits, obstructions, all village edges, extreme arguments and unchanged-state rejection. UI checks covered plus/minus, rotation, full price, connected models, disabled preview colliders, rejected saves, duplicate confirmation, cancellation, individual movement, ordinary Gold Mine placement and scene reload. Economy/progression, recovery, saved-replay, history, campaign, mixed-army, Tank and tutorial rule regressions passed. The valid and blocked previews were inspected at 1600x702, with the valid preview also checked at 1280x720.
 
-Known limits: straight grid-aligned rows only, up to ten per purchase; no corner drawing, obstacle skipping or moving a whole row together. Preview segments connect to each other; connections to existing walls appear after building. Home-wall upgrades were unavailable at this increment and are added below; home combat remains unavailable. Phone touch/performance testing remains deferred and the APK still requires rebuilding for recent updates.
+Known limits at the wall-row increment: straight grid-aligned rows only, up to ten per purchase; no corner drawing or obstacle skipping. Preview segments connect to each other; connections to existing walls appear after building. Moving connected sections and home-wall upgrades are added in later increments below; home combat remains unavailable. Phone touch/performance testing remains deferred and the APK still requires rebuilding for recent updates.
 
 ### Troop separation and compatible combat rules - 25 September 2026
 
@@ -1053,3 +1054,19 @@ Study [upgrade rules and refunds](Assets/Scripts/Core/VillageProgression.cs), [s
 Validation evidence: [WallUpgradeValidation.txt](WallUpgradeValidation.txt). Previews: [three connected tiers](WallUpgradePreviews/wall-upgrade-levels.png), [upgrade dialog](WallUpgradePreviews/wall-upgrade-details.png), [16:9 dialog](WallUpgradePreviews/wall-upgrade-details-16x9.png), and [cancellation confirmation](WallUpgradePreviews/wall-upgrade-cancel.png). Isolated Unity 6000.3.13f1 checks cover both upgrade prices/timers, shared builders, Town Hall gating, offline completion, refund limits, malformed saves, versions 3-9 with existing walls, failed-save rollback, mixed-level connections, model colors/heights, moving upgraded walls and scene reloads. Existing wall-row, economy/progression and campaign/recovery/replay rule regressions also pass. The save-rejection test uses invalid candidate data; physical disk failures remain untested.
 
 Known limits: no batch wall upgrades, home-village combat or new enemy-wall tiers. The model portrait in the upgrade dialog remains the base wall icon; finished tiers appear in the village and move preview. Physical-phone testing remains deferred and the Android APK needs rebuilding.
+
+### Move connected wall sections - 25 September 2026
+
+Select a home wall and open **Info / Upgrade**, then press **Move Connected**. The button shows how many walls will move. The selection follows shared cell edges through straight runs, corners, branches and closed loops, including different wall levels and active upgrade jobs. Walls that touch only diagonally remain separate. The entire connected section is included, up to the village's existing 75-wall maximum at Town Hall 3; this is independent of the ten-wall purchase limit.
+
+**Beginner walkthrough:** Build a short row, then add walls at one end to make a corner. Select a segment near the middle, open its details and press **Move Connected**. Tap or drag on the ground to position the selected segment; every other wall retains its offset from that anchor. Each occupied cell has a green footprint when the complete move is valid. Move over a building or beyond the village border to see red footprints and a disabled confirmation button. Choose **Move Walls** to save, or **Cancel** to restore the original section. The ordinary selection-bar **Move** action still moves only one wall.
+
+Moving is free and does not occupy another builder. Levels, active upgrade finish times, resource balances and building limits stay intact. Production and upgrade timers continue normally during the preview. A section may move through its own previous cells; validation excludes its original positions. Only the cells occupied by walls are checked, so an enclosure's empty interior may contain a stationary building. Buildings inside a wall loop are never moved with it. If the destination touches a separate wall section, both sections connect after confirmation and are included together the next time you use Move Connected.
+
+The interface hides the original selected models while showing a separate preview. The village data still holds the original positions until a complete candidate passes placement checks and saves successfully. A rejected move or failed save changes no positions; after a failed save the preview stays open for retry or cancellation. Cancelling or leaving the scene discards an unconfirmed move. Accepted positions use existing wall records, so saves remain **version 9**, with no new migration. Combat rules and campaign layouts are unchanged.
+
+Study [connected-section discovery and atomic translation](Assets/Scripts/Core/VillageWallMovement.cs), [move action and preview](Assets/Scripts/UI/VillageWallMovement.cs), [placement/save integration](Assets/Scripts/UI/VillageGameplay.cs), and [validation source](Assets/Editor/WallMovementValidation.cs).
+
+Validation: [WallMovementValidation.txt](WallMovementValidation.txt). Previews: [connected-wall action](WallMovementPreviews/wall-move-action.png), [valid preview](WallMovementPreviews/wall-move-preview.png), [16:9 preview](WallMovementPreviews/wall-move-preview-16x9.png), [blocked destination](WallMovementPreviews/wall-move-blocked.png), and [saved section after reload](WallMovementPreviews/wall-move-saved.png). Isolated Unity 6000.3.13f1 checks passed for connected and diagonal walls, middle anchors, loops/branches, all 75 walls, enclosed-building exclusion, overlap with former cells, border/obstacle rejection, joining sections, unchanged resources/timers, save round trips, and later upgrade completion. Live UI checks covered exact-shape previews, mixed tiers, cancellation, rejected-save rollback, duplicate confirmation, scene reload and discarding unconfirmed previews on teardown. Existing wall-upgrade, wall-row, economy/progression, recovery/replay and campaign rule regressions also passed. Both landscape layouts were inspected. Storage rejection was simulated using invalid candidate data, not a physical disk failure.
+
+Known limits: translation only, with no group rotation, partial-section selection, wall deletion or enclosed-building movement. Preview walls connect within the moving section; their links to stationary walls appear after confirmation. Physical touch/performance testing remains deferred and the APK needs rebuilding.
