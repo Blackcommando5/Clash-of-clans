@@ -84,6 +84,7 @@ namespace Kingdoms.UI
             campaignBattleClaim.onClick.AddListener(ClaimCampaignBattle);campaignBattleClaim.gameObject.SetActive(false);
             BuildCheckpointRetry();
             BuildReplayControls();
+            BuildScoutInspection();
             tankArmor=PracticeMaterial("Tank armor",new Color(.38f,.32f,.48f));
             archerCloth=PracticeMaterial("Archer tunic",new Color(.22f,.62f,.18f));
             practiceSealedChallenge=mission>=0 && CampaignCatalog.Find(mission).Sealed;
@@ -101,7 +102,7 @@ namespace Kingdoms.UI
         {
             if(!ScoutingPractice || WatchingPracticeReplay)return;
             if(battleMission>=0 && !CommitCampaignArmy()){RefreshPracticeBattle();return;}
-            practiceScouting=false;practiceAccumulator=0;CancelGroundGesture();deploymentInputAfterFrame=Time.frameCount;
+            practiceScouting=false;practiceAccumulator=0;ResetScoutInspection();CancelGroundGesture();deploymentInputAfterFrame=Time.frameCount;
             practiceInstructions.text=practiceSealedChallenge
                 ? "WALL BREACH: Break through the sealed enclosure and destroy all three buildings."
                 : "OPEN GATE: Deploy from the south. Raiders use the entrance to reach the Town Hall.";
@@ -125,6 +126,7 @@ namespace Kingdoms.UI
         void StartPracticeBattle(PracticeBattle.Recording recording, PracticeBattle restoredBattle=null)
         {
             if(practiceCanvas==null)return;
+            ResetScoutInspection(true);
             if(practiceWorld!=null){practiceWorld.SetActive(false);Destroy(practiceWorld);}
             foreach(var label in practiceHealth.Values){label.gameObject.SetActive(false);Destroy(label.gameObject);}
             practiceModels.Clear();practiceHealth.Clear();practiceShots.Clear();practiceAccumulator=0;practicePaused=false;
@@ -204,7 +206,7 @@ namespace Kingdoms.UI
             if(practicePaused)return;
             if(checkpointSaveBlocked){RefreshPracticeBattle();return;}
             Rect area=Screen.safeArea;practiceSafe.anchorMin=new Vector2(area.xMin/Screen.width,area.yMin/Screen.height);practiceSafe.anchorMax=new Vector2(area.xMax/Screen.width,area.yMax/Screen.height);
-            if(ScoutingPractice){RefreshPracticeBattle();return;}
+            if(ScoutingPractice){HandleScoutInspectionInput();RefreshPracticeBattle();return;}
             HandleGroundDeployment();
             if(checkpointSaveBlocked)return;
             AdvancePracticeSimulation(Time.unscaledDeltaTime);
@@ -281,6 +283,7 @@ namespace Kingdoms.UI
             RefreshGroundDeployment();
             practiceSurrender.interactable=true;RefreshCheckpointControls();
             RefreshReplayControls();
+            RefreshScoutInspection();
         }
         void RefreshPracticeEntity(PracticeBattle.Entity entity)
         {
@@ -301,14 +304,14 @@ namespace Kingdoms.UI
             if(!PracticeOpen)return;
             if(battleMission>=0 && !ScoutingPractice && !WatchingPracticeReplay)
             {if(!SaveCampaignCheckpoint()){RefreshPracticeBattle();return;}}
-            CancelGroundGesture();
+            CancelGroundGesture();ResetScoutInspection(true);
             battleMission=-1;battleRunId="";
             practiceBattle.Surrender();practiceBattle=null;practiceReplay=null;
             replayRecording=null;replayUserPaused=false;replaySpeed=1;practiceAccumulator=0;
             if(practiceWorld!=null){practiceWorld.SetActive(false);Destroy(practiceWorld);}
             if(practiceCanvas!=null){practiceCanvas.SetActive(false);Destroy(practiceCanvas);}
             practiceCanvas=null;practiceModels.Clear();practiceHealth.Clear();practiceShots.Clear();practiceDeployButtons.Clear();
-            foreach(var material in practiceMaterials)Destroy(material);practiceMaterials.Clear();deploymentMaterial=null;deploymentZone=null;
+            foreach(var material in practiceMaterials)Destroy(material);practiceMaterials.Clear();deploymentMaterial=null;deploymentZone=null;scoutMaterial=null;
             world.gameObject.SetActive(true);hud.SetActive(PlayerProfile.HasPlayerName);
             cameraController.focus=homeCameraFocus;viewCamera.orthographicSize=homeCameraZoom;cameraController.InputBlocked=false;RefreshHUD();
             if(historyReplayOpen){historyReplayOpen=false;OpenProfile(historyPageIndex);RefreshBattleHistory();}

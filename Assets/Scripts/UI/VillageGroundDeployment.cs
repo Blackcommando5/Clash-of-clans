@@ -91,6 +91,6 @@ namespace Kingdoms.UI
             deploymentZone.SetActive(!WatchingPracticeReplay && practiceBattle.Outcome==PracticeOutcome.Running);
             if(GroundInputAllowed)practiceInstructions.text=Time.unscaledTime<deploymentFeedbackUntil ? deploymentFeedback : "Select a troop, then tap inside the green outline. Lane buttons also work.";
         }
-        void OnApplicationFocus(bool focused){if(!focused){CancelGroundGesture();if(CampaignBattleOpen)SaveProgress();}}
+        void OnApplicationFocus(bool focused){if(!focused){CancelGroundGesture();CancelScoutGesture();if(CampaignBattleOpen)SaveProgress();}}
     }
 }

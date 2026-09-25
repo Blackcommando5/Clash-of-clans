@@ -411,7 +411,7 @@ namespace Kingdoms.UI
 
         void ShowMessage(string message) { guide.text=message;messageUntil=Time.unscaledTime+5f; }
         void SaveProgress() { if(State!=null) { if(CampaignBattleOpen && !ScoutingPractice && !WatchingPracticeReplay){SaveCampaignCheckpoint();return;} State.Accrue(VillageState.Now);if(!VillageSave.TryWrite(State,out string error)) ShowMessage(error); } }
-        void OnApplicationPause(bool paused) { practicePaused=paused;if(paused){CancelGroundGesture();SaveProgress();} }
+        void OnApplicationPause(bool paused) { practicePaused=paused;if(paused){CancelGroundGesture();CancelScoutGesture();SaveProgress();} }
         void OnApplicationQuit() { SaveProgress(); }
         void OnDisable() { if(CampaignBattleOpen)SaveProgress();shuttingDown=true;EnhancedTouchSupport.Disable();CancelPlacement(); }
 
