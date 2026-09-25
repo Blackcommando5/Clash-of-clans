@@ -15,7 +15,7 @@ namespace Kingdoms.UI
         void BuildCampaignInterface()
         {
             var armyPage=profilePages[armyPageIndex];
-            armyPage.Find("Army Title").GetComponent<RectTransform>().anchorMax=new Vector2(.72f,.98f);
+            armyPage.Find("Army Title").GetComponent<RectTransform>().anchorMax=new Vector2(.46f,.98f);
             var entry=Button("Open Campaign",armyPage,"CAMPAIGN",new Vector2(.73f,.85f),new Vector2(.97f,.98f),new Color(.28f,.55f,.76f));
             entry.onClick.AddListener(OpenCampaign);
             campaignPageIndex=profilePages.Count;

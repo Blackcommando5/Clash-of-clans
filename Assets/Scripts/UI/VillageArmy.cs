@@ -6,7 +6,7 @@ namespace Kingdoms.UI
     public sealed partial class VillageGameplay
     {
         Text armySummary, armyRules;
-        Button armyAdd, armyRemove, armyFill, armyClear, armyRaiders, armyArchers, armyTanks;
+        Button armyAdd, armyRemove, armyFill, armyClear, armyRaiders, armyArchers, armyTanks, armyLast;
         string preparedTroop="Raider";
         int armyPageIndex;
 
@@ -32,6 +32,8 @@ namespace Kingdoms.UI
             armyAdd = ArmyButton(page, "Add Raider", "ADD RAIDER", .28f, () => ChangePreparedArmy(State.ArmyCountOf(preparedTroop) + 1));
             armyFill = ArmyButton(page, "Fill Army", "FILL ARMY", .52f, () => ChangePreparedArmy(State.ArmyCountOf(preparedTroop)+(State.ArmyCapacity-State.ArmyHousing)/TroopCatalog.Find(preparedTroop).Housing));
             armyClear = ArmyButton(page, "Clear Army", "CLEAR ARMY", .76f, () => ChangePreparedArmy(0,true));
+            armyLast=Button("Prepare Last Army",page,"LAST ARMY",new Vector2(.48f,.85f),new Vector2(.71f,.98f),new Color(.35f,.60f,.25f));
+            armyLast.onClick.AddListener(()=>PrepareArmyFromHistory(0));
             page.gameObject.SetActive(false);
         }
 
@@ -67,6 +69,7 @@ namespace Kingdoms.UI
 
         void RefreshArmyPreparation()
         {
+            armyLast.interactable=State.CanPrepareHistoryArmy(0,out var repeatReason);
             int count = State.ArmyHousing;
             armySummary.text = "Raiders: " + State.ArmyCountOf("Raider") + "   |   Archers: " + State.ArmyCountOf("Archer") + "   |   Tanks: " + State.ArmyCountOf("Tank") + "\nArmy space: " + count + " / " + State.ArmyCapacity +
                 "\n" + (State.ArmyReady ? "READY - Your roster is prepared." : "EMPTY - Add troops to prepare your army.");
@@ -83,7 +86,21 @@ namespace Kingdoms.UI
             armyRules.text = troop.Name+": "+troop.Housing+" space(s), "+troop.HitPoints+" HP, "+troop.Damage+" damage/sec, "+(troop.Range/100f).ToString("0.##")+"-cell range."+
                 (preparedTroop=="Tank" ? "\nPrefers defenses. Slower movement: 1.8 cells/sec." : "")+
                 "\nFree, instant preparation. Fill adds the selected type; Clear removes all types."+
-                "\nCampaign uses this roster. Practice supplies eight free Raiders.";
+                "\nCampaign uses this roster. Practice supplies eight free Raiders."+
+                "\n"+(armyLast.interactable ? "Last Army replaces this roster with your latest campaign army." : "Last Army: "+repeatReason);
+        }
+
+        public void PrepareArmyFromHistory(int index)
+        {
+            if(State==null || PracticeOpen || IsPlacing || !ProfileOpen)return;
+            bool fromHistory=profilePages[historyPageIndex].gameObject.activeSelf;
+            if(!fromHistory && !profilePages[armyPageIndex].gameObject.activeSelf)return;
+            var candidate=State.Copy();
+            if(!candidate.TryPrepareHistoryArmy(index,out var reason) || !VillageSave.TryWrite(candidate,out reason))
+            {if(fromHistory)historyHelp.text=reason;else armySummary.text=reason;return;}
+            State=candidate;
+            preparedTroop=State.ArmyCountOf("Raider")>0 ? "Raider" : State.ArmyCountOf("Archer")>0 ? "Archer" : "Tank";
+            OpenArmyPreparation();
         }
     }
 }

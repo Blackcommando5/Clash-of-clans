@@ -48,6 +48,7 @@ The project is a Clash of Clans-inspired village prototype with its own Kingdoms
 | Practice battle | Eight raiders, three enemy buildings, walls, entrance routing, wall breach logic, star scoring, surrender, results, watch replay, retry and return |
 | Ground deployment | Click/tap within a visible southern zone; selected troop, half-cell snapping, placement feedback and exact-position replay; lane buttons retained |
 | Army preparation | Buildings > Prepare Army; free instant mixed Raider/Archer/Tank roster, weighted housing, troop selection, eight starter spaces plus camp capacity, readiness and immediate saving |
+| Army reuse | Use Army on a campaign history entry or Last Army in preparation to replace the roster with an exact previous troop mix; current housing and unlock requirements still apply |
 | Campaign | Four authored missions, distinct layouts/deployment zones, dynamic scouting, prepared-army commitment, durable results, once-only first-clear rewards and saved unlocks |
 | Battle history | Latest 20 campaign results, newest first; outcome, stars, destruction, duration, committed army, claimed rewards and saved replay playback after restart |
 | Replay controls | Pause/resume, 1x/2x/4x playback, restart at any point, and elapsed/total time for saved campaign and in-memory practice replays |
@@ -58,7 +59,7 @@ The project is a Clash of Clans-inspired village prototype with its own Kingdoms
 
 Not implemented yet: arbitrary enemy villages, unit separation, matchmaking, multiplayer, online accounts, purchases or a server economy. The fixed practice battlefield is separate from your home village. Gem counters and reference-style buttons do not imply that all reference-game features exist.
 
-The existing Android development APK builds and passes package checks, but predates battle history, saved replays, battle recovery and replay controls. Rebuild it to include these features. Physical-phone testing remains pending and has been deferred by the user. See [Android validation](ANDROID_BUILD_VALIDATION.md).
+The existing Android development APK builds and passes package checks, but predates battle history, saved replays, battle recovery, replay controls and army reuse. Rebuild it to include these features. Physical-phone testing remains pending and has been deferred by the user. See [Android validation](ANDROID_BUILD_VALIDATION.md).
 
 ## 2. How to practise without losing your work
 
@@ -541,6 +542,8 @@ Use these as checkpoints after each lesson, rather than waiting until everything
 | Finish, retry and return | Encounter resets; home village state is preserved |
 | Watch Replay, pause, change speed and resume | Timer freezes while paused; playback continues at the selected 1x/2x/4x speed and verifies the original result |
 | Restart a replay before it finishes | Original attack begins again at 1x with the complete recording retained |
+| Use Army from Battle History | Preparation opens with that entry's exact Raider/Archer/Tank mix, replacing the current roster for free |
+| Clear the prepared roster, then choose Last Army | Latest campaign result's composition is restored and saved; active attack and pending reward stay unchanged |
 | Stop and play again | Confirmed buildings and resources reload |
 | Change landscape aspect ratio | UI remains usable and camera remains bounded |
 | Pause/relaunch on phone | Saved village returns; capped offline progress applies |
@@ -971,3 +974,21 @@ Study [playback controls and fixed-tick scheduling](Assets/Scripts/UI/VillageRep
 Validation passed in isolated Unity 6000.3.13f1: all three speeds matched the original simulation across four layouts with staggered mixed-troop deployments; pause/application resume, restart, immediate surrender, progress, completion, scene reload and real-frame 4x playback passed. Gameplay fields and the separate active campaign checkpoint remained unchanged; the normal production timestamp update on application pause was allowed. The existing recovery UI suite also passed, including periodic saves, rejected-save pause/retry, Save & Return and restored combat. Recovery, saved-replay, history, campaign, mixed-army, Tank, tutorial and resource/progression rule regressions passed. The paused and completed layouts were inspected at the screenshot sizes above.
 
 Known limits: no seeking, single-tick stepping, replay export or remembered playback preferences. Visual effects use their ordinary display lifetime; faster playback accelerates combat ticks. Practice recordings remain in memory. The Android APK still requires rebuilding for the recent development increments, and physical-phone testing remains deferred.
+
+### Reuse a campaign army - 25 September 2026
+
+You can now rebuild a previous campaign composition in one action. Open **Campaign > Battle History**, find a result and press **Use Army**. The preparation screen opens with that result's exact Raider, Archer and Tank counts. This replaces the entire current roster for free, including removing troop types absent from the selected result. It saves immediately. The recorded composition includes every committed troop, even troops never deployed or lost during the battle.
+
+**Beginner walkthrough:** Finish a campaign attack with a mixed army. Open Battle History and press **Use Army** beside it, then inspect the three troop counts and housing total. Change the composition or press Clear, then press **Last Army** at the top of preparation. The newest campaign result's full army returns. To reuse an older composition, browse Older/Newer in history and select its own Use Army button. Last Army always uses the newest result, regardless of the entry you reused most recently.
+
+The current village must have enough Army Camp capacity and the required Barracks level. An oversized composition is rejected as a whole, with the required and available spaces shown. There is no partial fill or automatic substitution. Historical Archers require Barracks; Tanks require level-2 Barracks. Use Army remains available in history so it can explain an unmet requirement. Last Army is disabled when no usable latest result exists, with the reason in the preparation instructions.
+
+Victories, losses, surrenders, timeouts and abandoned attacks all retain usable troop counts. Older summaries without replay data also work, as do summaries whose optional recording has expired. Reusing an army neither claims a reward nor begins an attack. An existing committed campaign army and its checkpoint remain separate; the replacement is the roster for a later attack. Finish or abandon the current attempt through Campaign before starting another. Practice still supplies its own eight free Raiders and does not add campaign history.
+
+The state rule validates the full replacement before changing the roster. The interface writes a candidate save before accepting it; a rejected write leaves the previous roster and last successful save intact. Saves remain **version 9**, with no new saved fields or migration. The latest-20 history limit still applies, so an entry removed by retention can no longer supply its composition.
+
+Source links: [atomic composition replacement and requirements](Assets/Scripts/Core/VillageArmy.cs), [Last Army and save handling](Assets/Scripts/UI/VillageArmy.cs), [history actions and paging](Assets/Scripts/UI/VillageBattleHistory.cs), and [validation source](Assets/Editor/RepeatArmyValidation.cs). Evidence: [RepeatArmyValidation.txt](RepeatArmyValidation.txt). Previews: [history actions](RepeatArmyPreviews/reuse-army-history.png), [16:9 history](RepeatArmyPreviews/reuse-army-history-16x9.png), [prepared mixed roster](RepeatArmyPreviews/reuse-army-preparation.png), and [16:9 preparation](RepeatArmyPreviews/reuse-army-preparation-16x9.png).
+
+Validation passed in isolated Unity 6000.3.13f1: exact mixed replacement, removal of absent troop types, housing/unlock rejection, malformed data, every outcome, older summaries, pending rewards, save-rejection atomicity, history paging, Last Army, scene reload and preservation of a separate active checkpoint. History and preparation screenshots were inspected at 1600x702 and 1280x720. The existing saved-replay UI suite also passed playback, same-page return, reload and corrupt-recording feedback after the history layout change. Recovery, saved-replay, history, campaign, mixed-army, Tank, tutorial and resource/progression rule regressions passed.
+
+Known limits: this reuses retained campaign results, not named custom army presets. It does not preserve deployment positions or deploy automatically. Training remains free and instant. The Android APK has not been rebuilt; physical-phone testing remains deferred.

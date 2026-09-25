@@ -59,6 +59,37 @@ namespace Kingdoms
         public bool TroopUnlocked(string troop) => troop == "Raider" || ((troop == "Archer" || troop == "Tank") && buildings != null && buildings.Exists(b => b != null && b.kind == "Barracks" && b.level >= (troop == "Tank" ? 2 : 1)));
         public bool ArmyReady => IsArmyValid() && ArmyHousing > 0;
 
+        public bool CanPrepareHistoryArmy(int index, out string reason)
+        {
+            if (!IsArmyValid() || !IsBattleHistoryValid())
+            { reason = "Your army or battle history could not be read."; return false; }
+            if (index < 0 || index >= battleHistory.Count)
+            { reason = "Finish a campaign attack to reuse its army."; return false; }
+            var entry = battleHistory[index];
+            if (entry.archers > 0 && !TroopUnlocked("Archer"))
+            { reason = "Build Barracks to reuse this army's Archers."; return false; }
+            if (entry.tanks > 0 && !TroopUnlocked("Tank"))
+            { reason = "Upgrade Barracks to level 2 to reuse this army's Tanks."; return false; }
+            long housing = (long)entry.raiders + 2L * entry.archers + 4L * entry.tanks;
+            if (housing > ArmyCapacity)
+            { reason = "This army needs " + housing + " spaces; you have " + ArmyCapacity + ". Build or upgrade Army Camps."; return false; }
+            reason = "Replace your prepared roster with this army for free."; return true;
+        }
+
+        // Replace the entire prepared roster atomically, including types absent from the source.
+        // History is a composition template; rewards, replays and the committed army stay untouched.
+        public bool TryPrepareHistoryArmy(int index, out string reason)
+        {
+            if (!CanPrepareHistoryArmy(index, out reason)) return false;
+            var entry = battleHistory[index];
+            var replacement = new List<ArmyStack>();
+            if (entry.raiders > 0) replacement.Add(new ArmyStack { troop = "Raider", count = entry.raiders });
+            if (entry.archers > 0) replacement.Add(new ArmyStack { troop = "Archer", count = entry.archers });
+            if (entry.tanks > 0) replacement.Add(new ArmyStack { troop = "Tank", count = entry.tanks });
+            army = replacement;
+            reason = "Army replaced and ready. No resources spent."; return true;
+        }
+
         public bool IsArmyValid()
         {
             if (army == null) return false;

@@ -11,6 +11,7 @@ namespace Kingdoms.UI
         Text historyPageNumber;
         readonly Text[] historyRows = new Text[HistoryPageSize];
         readonly Button[] historyReplayButtons = new Button[HistoryPageSize];
+        readonly Button[] historyArmyButtons = new Button[HistoryPageSize];
         Text historyHelp;
         Button historyNewer, historyOlder;
 
@@ -24,7 +25,7 @@ namespace Kingdoms.UI
             var page = Box("Battle History Page", profilePages[0].parent, Vector2.zero, Vector2.one);
             profilePages.Add(page);
             Label("Battle History Title", page, "Battle History", 38, new Color(.23f,.25f,.3f), new Vector2(.05f,.87f), new Vector2(.95f,.99f));
-            historyHelp=Label("Battle History Help", page, "Latest 20 campaign results. Watch saved attacks without spending troops or claiming rewards.", 21, new Color(.3f,.32f,.36f), new Vector2(.05f,.79f), new Vector2(.95f,.87f));
+            historyHelp=Label("Battle History Help", page, "Latest 20 results. Use Army replaces your prepared roster for free; rewards stay unchanged.", 21, new Color(.3f,.32f,.36f), new Vector2(.05f,.79f), new Vector2(.95f,.87f));
             for (int i=0; i<HistoryPageSize; i++)
             {
                 float top = .78f - i*.31f;
@@ -32,9 +33,12 @@ namespace Kingdoms.UI
                 historyRows[i] = Label("Battle History Text " + i, row.transform, "", 24, new Color(.23f,.25f,.3f), new Vector2(.025f,.04f), new Vector2(.76f,.96f));
                 historyRows[i].alignment = TextAnchor.MiddleLeft;
                 int index=i;
-                historyReplayButtons[i]=Button("History Replay "+i,row.transform,"WATCH REPLAY",new Vector2(.78f,.22f),new Vector2(.98f,.78f),new Color(.28f,.55f,.76f));
+                historyReplayButtons[i]=Button("History Replay "+i,row.transform,"WATCH REPLAY",new Vector2(.78f,.54f),new Vector2(.98f,.94f),new Color(.28f,.55f,.76f));
                 historyReplayButtons[i].GetComponentInChildren<Text>().resizeTextMaxSize=22;
                 historyReplayButtons[i].onClick.AddListener(()=>WatchHistoryReplay(historyOffset+index));
+                historyArmyButtons[i]=Button("History Army "+i,row.transform,"USE ARMY",new Vector2(.78f,.06f),new Vector2(.98f,.46f),new Color(.35f,.60f,.25f));
+                historyArmyButtons[i].GetComponentInChildren<Text>().resizeTextMaxSize=22;
+                historyArmyButtons[i].onClick.AddListener(()=>PrepareArmyFromHistory(historyOffset+index));
             }
             historyNewer = Button("History Newer", page, "NEWER", new Vector2(.05f,.02f), new Vector2(.25f,.13f), new Color(.28f,.55f,.76f));
             historyOlder = Button("History Older", page, "OLDER", new Vector2(.28f,.02f), new Vector2(.48f,.13f), new Color(.28f,.55f,.76f));
@@ -60,9 +64,12 @@ namespace Kingdoms.UI
             {
                 bool exists=historyOffset+i<count;
                 historyReplayButtons[i].gameObject.SetActive(exists);
+                historyArmyButtons[i].gameObject.SetActive(exists);
                 historyRows[i].transform.parent.gameObject.SetActive(exists || (count==0 && i==0));
                 if(!exists){historyRows[i].text="No campaign results yet.\nPrepare an army and finish a campaign attack to begin your history.";continue;}
                 var result=State.battleHistory[historyOffset+i];
+                // Keep the action available so rejected capacity/unlock requests explain the requirement.
+                historyArmyButtons[i].interactable=true;
                 historyReplayButtons[i].interactable=SavedBattleReplay.CanRead(result,out var replayReason);
                 historyReplayButtons[i].GetComponentInChildren<Text>().text=replayReason.ToUpperInvariant();
                 string date=result.completedUtc==0 ? "Date unavailable (older save)" : DateTimeOffset.FromUnixTimeSeconds(result.completedUtc).ToLocalTime().ToString("dd MMM yyyy HH:mm");
